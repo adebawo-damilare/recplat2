@@ -49,4 +49,14 @@ npm run migrate:vacancies
 
 Postgres row primary keys match **Firestore document ids**, so re-running is idempotent.
 
+### Seed sample jobs (Neon only, no Firestore)
+
+After `DATABASE_URL` is set in `.env.local`:
+
+```bash
+npm run db:seed:samples
+```
+
+Optional: set `SEED_OWNER_FIREBASE_UID` to your Firebase `uid` so jobs appear under recruiter “mine” / dashboard when you’re signed in. Re-running inserts **additional** rows (new ids).
+
 `companies` enforces “one row per owner + normalized name” via a **unique index** on `(owner_firebase_uid, lower(name))`, not an inline `UNIQUE(...)` constraint (PostgreSQL does not allow function calls inside table-level `UNIQUE`).

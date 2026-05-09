@@ -13,6 +13,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "db:apply": "node scripts/db-apply.mjs",
+    "db:seed:samples": "tsx scripts/seed-neon-sample.ts",
     "smoke:api": "node scripts/smoke-api.mjs",
     "migrate:vacancies": "tsx scripts/migrate-vacancies-from-firestore.ts",
     "env:firebase": "node scripts/write-firebase-service-account-env.mjs",
