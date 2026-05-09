@@ -7,18 +7,23 @@ import { isAbsolute, resolve } from "node:path";
  */
 export function loadFirebaseServiceAccount(): Record<string, unknown> | null {
   const inline = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  if (inline) {
-    try {
-      return JSON.parse(inline) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
-  }
 
   const pathCandidates = [
     process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim(),
     process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim(),
   ].filter(Boolean) as string[];
+
+  if (inline) {
+    try {
+      const parsed = JSON.parse(inline) as Record<string, unknown>;
+      if (parsed && typeof parsed === "object" && "private_key" in parsed) {
+        return parsed;
+      }
+    } catch {
+      // Often a path was mistakenly set in FIREBASE_SERVICE_ACCOUNT_JSON — try as file.
+      pathCandidates.unshift(inline);
+    }
+  }
 
   const cwd = process.cwd();
 

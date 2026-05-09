@@ -88,10 +88,27 @@ async function main() {
   }
 
   const app = initFirebaseAdmin();
-  const dbId = loadFirestoreDatabaseId();
-  const fsDb = dbId && dbId !== "(default)" ? getFirestore(app, dbId) : getFirestore(app);
+  const namedId = loadFirestoreDatabaseId();
+  let fsDb =
+    namedId && namedId !== "(default)" ? getFirestore(app, namedId) : getFirestore(app);
 
-  const snapshot = await fsDb.collection("vacancies").get();
+  let snapshot;
+  try {
+    snapshot = await fsDb.collection("vacancies").get();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const isNotFound = /NOT_FOUND|^5 NOT_FOUND/.test(msg) || (e as { code?: number })?.code === 5;
+    if (namedId && namedId !== "(default)" && isNotFound) {
+      console.warn(
+        `[migrate] Firestore database "${namedId}" was not found for this service account project. ` +
+          `Using the default database instead. Set FIRESTORE_DATABASE_ID in .env.local if you use another named DB.`,
+      );
+      fsDb = getFirestore(app);
+      snapshot = await fsDb.collection("vacancies").get();
+    } else {
+      throw e;
+    }
+  }
   let processed = 0;
   let skipped = 0;
   let upserted = 0;
