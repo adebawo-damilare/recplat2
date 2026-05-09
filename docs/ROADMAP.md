@@ -14,15 +14,14 @@
 ## Tooling
 
 - `npm run db:apply` — apply SQL migrations via `DATABASE_URL`
+- `npm run db:seed:samples` — insert demo vacancies into Postgres (see `database/README.md`)
 - `npm run smoke:api` — smoke `GET /api/health`, `GET /api/jobs`, `GET /api/ai/health` (set `SMOKE_BASE_URL` if not local)
-- `npm run migrate:vacancies` — Firestore → Postgres vacancy upsert (`scripts/migrate-vacancies-from-firestore.ts`)
 
 ## Next
 
-1. ~~Implement Firestore → Postgres vacancy migration script.~~ See `npm run migrate:vacancies` and `scripts/migrate-vacancies-from-firestore.ts`.
-2. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
-3. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
-4. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
+1. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
+2. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
+3. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
 
 ## E2E note
 
