@@ -30,6 +30,8 @@ This project now uses Next.js App Router for:
 
 See **`docs/ROADMAP.md`** for dual-backend rollout and tooling (`npm run db:apply`, `npm run smoke:api`).
 
+For **Vercel / hosting env vars** (Postgres URL, optional Upstash, redeploy + smoke)—**without** auth setup—see **`docs/DEPLOYMENT_ENV.md`**.
+
 ## SEO primitives
 
 - route metadata per page
