@@ -32,6 +32,8 @@ See **`docs/ROADMAP.md`** for dual-backend rollout and tooling (`npm run db:appl
 
 For **Vercel / hosting env vars** (Postgres URL, optional Upstash, redeploy + smoke)—**without** auth setup—see **`docs/DEPLOYMENT_ENV.md`**.
 
+GitHub Actions **CI** (lint + `next build` + Playwright) and **branch protection** are documented in **`docs/CICD.md`**.
+
 ## SEO primitives
 
 - route metadata per page

@@ -16,6 +16,7 @@
 - `npm run db:apply` — apply SQL migrations via `DATABASE_URL`
 - `npm run db:seed:samples` — insert demo vacancies into Postgres (see `database/README.md`)
 - `npm run smoke:api` — smoke `GET /api/health`, `GET /api/jobs`, `GET /api/ai/health` (set `SMOKE_BASE_URL` if not local)
+- GitHub **`CI`** workflow (`.github/workflows/ci.yml`): lint → `npm run build` → Playwright; see **`docs/CICD.md`**
 
 ## Next
 
