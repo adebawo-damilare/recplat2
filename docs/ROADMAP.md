@@ -19,7 +19,7 @@
 
 ## Next
 
-1. Implement `scripts/migrate-vacancies-from-firestore.mjs` (idempotent batch from Firestore → Postgres).
+1. ~~Implement Firestore → Postgres vacancy migration script.~~ See `npm run migrate:vacancies` and `scripts/migrate-vacancies-from-firestore.ts`.
 2. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
 3. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
 4. E2E coverage for authenticated flows when Playwright test credentials are available in CI.

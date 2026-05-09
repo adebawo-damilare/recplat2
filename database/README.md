@@ -29,4 +29,16 @@ npx drizzle-kit generate
 
 ## Firestore → Postgres
 
-Use `scripts/migrate-vacancies-from-firestore.mjs` (requires service account + `DATABASE_URL`) to copy open vacancies. See `docs/ROADMAP.md`.
+1. Set `FIREBASE_SERVICE_ACCOUNT_JSON` (same JSON as production API verification) and `DATABASE_URL`, then apply SQL (above).
+
+2. Run the migration (uses `firebase-applet-config.json` → `firestoreDatabaseId`, or override with `FIRESTORE_DATABASE_ID`):
+
+```bash
+npm run migrate:vacancies -- --dry-run
+npm run migrate:vacancies
+```
+
+- **`--dry-run`** — list first few rows and totals; **no** `DATABASE_URL` required (read-only from Firestore).
+- **`--open-only`** — import only documents with `status: "open"` (omit this to sync all vacancies).
+
+Postgres row primary keys match **Firestore document ids**, so re-running is idempotent.

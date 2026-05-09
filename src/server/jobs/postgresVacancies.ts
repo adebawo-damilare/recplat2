@@ -197,3 +197,56 @@ export async function recordApplicationPostgres(vacancyId: string, candidateUid:
     .values({ vacancyId, candidateFirebaseUid: candidateUid })
     .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateFirebaseUid] });
 }
+
+/**
+ * Idempotent upsert using the Firestore document id as the primary key
+ * (migration / backfill from Firestore).
+ */
+export async function upsertVacancyFromFirestore(input: {
+  firestoreDocId: string;
+  ownerUid: string;
+  companyName: string;
+  jobTitle: string;
+  location: string;
+  salary: string;
+  description: string;
+  requirements: string;
+  status: Vacancy["status"];
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  const db = getDrizzleDb();
+  const company = await ensureCompanyForOwner(input.ownerUid, input.companyName);
+
+  await db
+    .insert(vacancies)
+    .values({
+      id: input.firestoreDocId,
+      companyId: company.id,
+      companyNameDenorm: input.companyName,
+      jobTitle: input.jobTitle,
+      location: input.location,
+      salary: input.salary,
+      description: input.description,
+      requirements: input.requirements,
+      status: input.status,
+      postedByFirebaseUid: input.ownerUid,
+      createdAt: input.createdAt,
+      updatedAt: input.updatedAt,
+    })
+    .onConflictDoUpdate({
+      target: vacancies.id,
+      set: {
+        companyId: company.id,
+        companyNameDenorm: input.companyName,
+        jobTitle: input.jobTitle,
+        location: input.location,
+        salary: input.salary,
+        description: input.description,
+        requirements: input.requirements,
+        status: input.status,
+        postedByFirebaseUid: input.ownerUid,
+        updatedAt: input.updatedAt,
+      },
+    });
+}

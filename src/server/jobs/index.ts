@@ -8,6 +8,7 @@ import {
   listVacanciesForOwner,
   recordApplicationPostgres,
   updateVacancyForOwner,
+  upsertVacancyFromFirestore,
 } from "./postgresVacancies";
 
 export type { PaginatedVacanciesResult };
@@ -19,6 +20,7 @@ export {
   listVacanciesForOwner,
   recordApplicationPostgres,
   updateVacancyForOwner,
+  upsertVacancyFromFirestore,
 };
 
 export async function fetchOpenVacanciesPage(
