@@ -3,13 +3,16 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Expression uniqueness is not valid as a table UNIQUE(...); use a unique index (Postgres).
 CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_firebase_uid TEXT NOT NULL,
   name TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (owner_firebase_uid, lower(name))
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS companies_owner_uid_name_lower_uidx
+  ON companies (owner_firebase_uid, (lower(name)));
 
 CREATE TABLE IF NOT EXISTS vacancies (
   id TEXT PRIMARY KEY,

@@ -48,3 +48,5 @@ npm run migrate:vacancies
 - **`--open-only`** — import only documents with `status: "open"` (omit this to sync all vacancies).
 
 Postgres row primary keys match **Firestore document ids**, so re-running is idempotent.
+
+`companies` enforces “one row per owner + normalized name” via a **unique index** on `(owner_firebase_uid, lower(name))`, not an inline `UNIQUE(...)` constraint (PostgreSQL does not allow function calls inside table-level `UNIQUE`).
