@@ -26,11 +26,55 @@ if (!url) {
 const migrationPath = resolve(process.argv[2] ?? join(repoRoot, "database/migrations/0001_initial.sql"));
 const sqlText = readFileSync(migrationPath, "utf8");
 
-const sql = postgres(url, { max: 1 });
+function postgresOptions(databaseUrl) {
+  let hostname = "";
+  try {
+    hostname = new URL(databaseUrl).hostname;
+  } catch {
+    // non-URL form; still try with defaults below
+  }
+
+  const isLocal =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname.endsWith(".local") ||
+    hostname === "host.docker.internal";
+
+  const sslExplicitlyOff =
+    /sslmode\s*=\s*disable/i.test(databaseUrl) ||
+    /[?&]ssl\s*=\s*0\b/i.test(databaseUrl);
+
+  const opts = {
+    max: 1,
+    connect_timeout: 45,
+  };
+
+  // Cloud DBs often reset the TCP session if TLS is not used; local Docker usually has no TLS.
+  if (!sslExplicitlyOff && !isLocal) {
+    opts.ssl = "require";
+  }
+
+  return opts;
+}
+
+const sql = postgres(url, postgresOptions(url));
 
 try {
   await sql.unsafe(sqlText);
   console.log("Applied:", migrationPath);
+} catch (err) {
+  const code = err?.code ?? err?.errno;
+  if (code === "ECONNRESET" || code === "ETIMEDOUT" || code === "ECONNREFUSED") {
+    console.error(`
+Connection failed (${code}). Typical fixes:
+  • Neon / Supabase / managed Postgres: ensure DATABASE_URL includes SSL, e.g. ?sslmode=require
+    (this script already sets ssl=require for non-local hosts; double-check the URL host/user/password.)
+  • Special characters in the password (@ # : etc.) must be percent-encoded in the URL.
+  • VPN / firewall may block outbound 5432; try another network or allowlist rules on the DB provider.
+`);
+  }
+  throw err;
 } finally {
   await sql.end({ timeout: 5 });
 }
