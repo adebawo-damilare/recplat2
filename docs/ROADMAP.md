@@ -15,7 +15,7 @@
 
 - `npm run db:apply` — apply SQL migrations via `DATABASE_URL`
 - `npm run smoke:api` — smoke `GET /api/health`, `GET /api/jobs`, `GET /api/ai/health` (set `SMOKE_BASE_URL` if not local)
-- `npm run migrate:vacancies` — placeholder; real backfill TBD
+- `npm run migrate:vacancies` — Firestore → Postgres vacancy upsert (`scripts/migrate-vacancies-from-firestore.ts`)
 
 ## Next
 
