@@ -34,6 +34,14 @@ Then merges that would break **`lint`**, **`build`**, or **E2E** never reach **`
 
 Adjust your Vercel **Production Branch** (**Project → Settings → Git**) to **`main`** (or whatever branch you protected).
 
+### Development branch: `dev` → `main`
+
+Ongoing work should land on **`dev`** first, then merge to **`main`** via **pull request** (so protected rules and CI still apply).
+
+- **Default local branch for new work:** `git checkout dev` (then `git pull` before starting a feature).
+- **Feature work:** open a PR **into `dev`**, or commit on `dev` and open a PR **from `dev` to `main`** when ready to release.
+- **CI** (`.github/workflows/ci.yml`) runs on **pushes and PRs** to **`dev`** and **`main`** so both branches stay green.
+
 ---
 
 ## Optional Vercel settings
