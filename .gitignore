@@ -1,0 +1,20 @@
+node_modules/
+build/
+dist/
+.next/
+out/
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/

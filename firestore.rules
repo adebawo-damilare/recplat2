@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Candidate Rules ---
+    function isValidCandidate(data) {
+      return data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+          && data.email is string && data.email.size() <= 100
+          && (!('portfolioUrl' in data) || (data.portfolioUrl is string && data.portfolioUrl.size() <= 500))
+          && (!('portfolioContent' in data) || (data.portfolioContent is string && data.portfolioContent.size() <= 10000))
+          && (isOwner(data.userId) || data.userId.matches('^sample-.*'));
+    }
+
+    match /candidates/{candidateId} {
+      allow read: if true;
+      allow create: if (isSignedIn() || (incoming().userId.matches('^sample-.*')))
+                    && isValidId(candidateId) 
+                    && candidateId == incoming().userId
+                    && isValidCandidate(incoming())
+                    && incoming().createdAt == request.time
+                    && incoming().updatedAt == request.time;
+      allow update: if (isOwner(existing().userId) || existing().userId.matches('^sample-.*'))
+                    && isValidCandidate(incoming())
+                    && incoming().userId == existing().userId
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().updatedAt == request.time
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'email', 'headline', 'summary', 'skills', 'experience', 'portfolioUrl', 'portfolioContent', 'updatedAt']);
+      allow delete: if isOwner(existing().userId) || existing().userId.matches('^sample-.*');
+    }
+
+    // --- Vacancy Rules ---
+    function isValidVacancy(data) {
+      return data.jobTitle is string && data.jobTitle.size() <= 100
+          && data.companyName is string && data.companyName.size() <= 100
+          && data.postedBy == request.auth.uid;
+    }
+
+    match /vacancies/{vacancyId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+                    && isValidId(vacancyId)
+                    && isValidVacancy(incoming())
+                    && incoming().status == 'open'
+                    && incoming().createdAt == request.time
+                    && incoming().updatedAt == request.time;
+      allow update: if isOwner(existing().postedBy)
+                    && isValidVacancy(incoming())
+                    && incoming().postedBy == existing().postedBy
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().updatedAt == request.time
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['jobTitle', 'companyName', 'location', 'salary', 'description', 'requirements', 'status', 'updatedAt']);
+      allow delete: if isOwner(existing().postedBy);
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Candidate": {
+      "title": "Candidate Profile",
+      "description": "Professional profile for job seekers.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "description": "Contact email" },
+        "headline": { "type": "string", "description": "Professional headline (e.g. Senior Frontend Dev)" },
+        "summary": { "type": "string", "description": "Professional summary" },
+        "skills": { "type": "string", "description": "Comma separated skills" },
+        "experience": { "type": "string", "description": "Work experience summary" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string", "description": "Owner UID" }
+      },
+      "required": ["fullName", "email", "userId"]
+    },
+    "Vacancy": {
+      "title": "Vacancy Notice",
+      "description": "Job posting from a company.",
+      "type": "object",
+      "properties": {
+        "jobTitle": { "type": "string" },
+        "companyName": { "type": "string" },
+        "location": { "type": "string" },
+        "salary": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "postedBy": { "type": "string", "description": "Recruiter UID" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobTitle", "companyName", "postedBy"]
+    }
+  },
+  "firestore": {
+    "candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Collection of professional candidate profiles"
+    },
+    "vacancies/{vacancyId}": {
+      "schema": "Vacancy",
+      "description": "Collection of job postings"
+    }
+  }
+}

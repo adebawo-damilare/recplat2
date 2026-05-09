@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
