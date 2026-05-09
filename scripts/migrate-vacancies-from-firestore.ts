@@ -3,7 +3,7 @@
  * using each Firestore document id as `vacancies.id` (idempotent re-runs).
  *
  * Prerequisites:
- * - FIREBASE_SERVICE_ACCOUNT_JSON (same as API routes)
+ * - Firebase Admin credentials: FIREBASE_SERVICE_ACCOUNT_JSON **or** FIREBASE_SERVICE_ACCOUNT_PATH (or GOOGLE_APPLICATION_CREDENTIALS)
  * - DATABASE_URL + applied migration (`npm run db:apply`)
  *
  * Optional env:
@@ -18,9 +18,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
-import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { cert, getApps, initializeApp, type ServiceAccount } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { upsertVacancyFromFirestore } from "../src/server/jobs/postgresVacancies";
+import { loadFirebaseServiceAccount } from "../src/server/auth/loadServiceAccount";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
@@ -49,12 +50,14 @@ function loadFirestoreDatabaseId(): string | undefined {
 }
 
 function initFirebaseAdmin() {
-  const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  if (!json) {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is required.");
+  const serviceAccount = loadFirebaseServiceAccount();
+  if (!serviceAccount || !serviceAccount.private_key) {
+    throw new Error(
+      "Firebase Admin credentials required: set FIREBASE_SERVICE_ACCOUNT_JSON, or FIREBASE_SERVICE_ACCOUNT_PATH / GOOGLE_APPLICATION_CREDENTIALS pointing at the downloaded JSON.",
+    );
   }
   if (getApps().length > 0) return getApps()[0]!;
-  return initializeApp({ credential: cert(JSON.parse(json) as Record<string, unknown>) });
+  return initializeApp({ credential: cert(serviceAccount as ServiceAccount) });
 }
 
 function coerceString(data: Record<string, unknown>, key: string) {

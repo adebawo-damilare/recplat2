@@ -15,6 +15,7 @@
     "db:apply": "node scripts/db-apply.mjs",
     "smoke:api": "node scripts/smoke-api.mjs",
     "migrate:vacancies": "tsx scripts/migrate-vacancies-from-firestore.ts",
+    "env:firebase": "node scripts/write-firebase-service-account-env.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:load": "node scripts/load-test.mjs"

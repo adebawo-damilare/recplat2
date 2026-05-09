@@ -1,12 +1,15 @@
-import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
+import { cert, getApps, initializeApp, type App, type ServiceAccount } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+
+import { isFirebaseServiceAccountConfigured, loadFirebaseServiceAccount } from "./loadServiceAccount";
 
 let app: App | null | undefined;
 
 function initAdminApp(): App | null {
   if (app !== undefined) return app;
-  const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  if (!json) {
+
+  const serviceAccount = loadFirebaseServiceAccount();
+  if (!serviceAccount) {
     app = null;
     return app;
   }
@@ -16,15 +19,14 @@ function initAdminApp(): App | null {
     return app;
   }
 
-  const serviceAccount = JSON.parse(json);
   app = initializeApp({
-    credential: cert(serviceAccount),
+    credential: cert(serviceAccount as ServiceAccount),
   });
   return app;
 }
 
 export function isFirebaseAdminConfigured() {
-  return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim());
+  return isFirebaseServiceAccountConfigured();
 }
 
 export async function verifyFirebaseIdToken(authHeader: string | null): Promise<
