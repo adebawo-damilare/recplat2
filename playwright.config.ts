@@ -9,6 +9,7 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
+    navigationTimeout: 45_000,
   },
   projects: [
     {
@@ -21,5 +22,9 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      ...process.env,
+      TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS: "1",
+    },
   },
 });

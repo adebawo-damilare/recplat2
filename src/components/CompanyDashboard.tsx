@@ -19,7 +19,9 @@ import {
   Search,
   LayoutDashboard
 } from "lucide-react";
-import { auth, getVacanciesByUser, deleteVacancy, type Vacancy } from '../lib/firebase';
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, type Vacancy } from '../lib/firebase';
+import { fetchMyVacanciesWithFallback, closeVacancyWithFallback } from "../lib/jobsApi";
 import VacancyForm from './VacancyForm';
 
 export default function CompanyDashboard() {
@@ -28,11 +30,15 @@ export default function CompanyDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
 
-  const fetchData = async () => {
-    if (!auth.currentUser) return;
+  const fetchDataForUser = async (uid: string | undefined) => {
+    if (!uid) {
+      setVacancies([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await getVacanciesByUser(auth.currentUser.uid);
+      const data = await fetchMyVacanciesWithFallback(uid);
       setVacancies(data || []);
     } catch (error) {
       console.error("Error fetching vacancies", error);
@@ -42,14 +48,27 @@ export default function CompanyDashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    let cancelled = false;
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (cancelled) return;
+      if (!user) {
+        setVacancies([]);
+        setLoading(false);
+        return;
+      }
+      await fetchDataForUser(user.uid);
+    });
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to close this vacancy?")) return;
     try {
-      await deleteVacancy(id);
-      fetchData();
+      await closeVacancyWithFallback(id);
+      await fetchDataForUser(auth.currentUser?.uid);
     } catch (error) {
       console.error("Error deleting vacancy", error);
     }
@@ -232,7 +251,7 @@ export default function CompanyDashboard() {
                 vacancy={editingVacancy || undefined}
                 onSuccess={() => {
                   setShowForm(false);
-                  fetchData();
+                  void fetchDataForUser(auth.currentUser?.uid);
                 }}
                 onCancel={() => setShowForm(false)}
               />

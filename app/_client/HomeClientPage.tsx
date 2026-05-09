@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import HomePage from "../../src/components/home/HomePage";
 import { AppView } from "../../src/appView";
-import { auth, getVacancies, seedVacancies, signIn, type Vacancy } from "../../src/lib/firebase";
+import { auth, signIn, type Vacancy } from "../../src/lib/firebase";
+import { fetchPublicJobsWithFallback, seedSampleVacanciesViaApi } from "../../src/lib/jobsApi";
 import { onAuthStateChanged, type User } from "firebase/auth";
 
 export default function HomeClientPage() {
@@ -19,8 +20,8 @@ export default function HomeClientPage() {
   const fetchVacancies = async () => {
     setLoading(true);
     try {
-      const data = await getVacancies();
-      if (data) setVacancies(data);
+      const data = await fetchPublicJobsWithFallback(75);
+      setVacancies(data);
     } catch (error) {
       console.error("Failed to fetch vacancies", error);
     } finally {
@@ -42,7 +43,7 @@ export default function HomeClientPage() {
 
     setSeeding(true);
     try {
-      await seedVacancies(auth.currentUser.uid);
+      await seedSampleVacanciesViaApi();
       await fetchVacancies();
     } catch (error) {
       console.error("Seeding failed", error);

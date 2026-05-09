@@ -9,12 +9,11 @@ import {
   auth,
   signIn,
   logout,
-  getVacancies,
-  seedVacancies,
   type Vacancy,
   type CandidateProfile,
 } from "./lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { fetchPublicJobsWithFallback, seedSampleVacanciesViaApi } from "./lib/jobsApi";
 import CandidateForm from "./components/CandidateForm";
 import JobBoard from "./components/JobBoard";
 import TalentBoard from "./components/TalentBoard";
@@ -38,8 +37,8 @@ export default function App() {
   const fetchVacancies = async () => {
     setLoading(true);
     try {
-      const data = await getVacancies();
-      if (data) setVacancies(data);
+      const data = await fetchPublicJobsWithFallback(75);
+      setVacancies(data);
     } catch (error) {
       console.error("Failed to fetch vacancies", error);
     } finally {
@@ -67,7 +66,7 @@ export default function App() {
     }
     setSeeding(true);
     try {
-      await seedVacancies(user.uid);
+      await seedSampleVacanciesViaApi();
       await fetchVacancies();
     } catch (error) {
       console.error("Seeding failed", error);

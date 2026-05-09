@@ -6,7 +6,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from "motion/react";
 import { Search, MapPin, Briefcase, DollarSign, Filter, ChevronRight, X, Database } from "lucide-react";
-import { getVacancies, seedVacancies, auth, applyToJob, type Vacancy } from '../lib/firebase';
+import { auth, type Vacancy } from '../lib/firebase';
+import {
+  fetchPublicJobsWithFallback,
+  applyToVacancyWithFallback,
+  seedSampleVacanciesViaApi,
+} from "../lib/jobsApi";
 
 export default function JobBoard() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
@@ -20,8 +25,8 @@ export default function JobBoard() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const data = await getVacancies();
-      if (data) setVacancies(data);
+      const data = await fetchPublicJobsWithFallback(75);
+      setVacancies(data);
     } catch (error) {
       console.error("Failed to fetch jobs", error);
     } finally {
@@ -42,9 +47,11 @@ export default function JobBoard() {
 
     setApplying(true);
     try {
-      await applyToJob(selectedJob.id, auth.currentUser.uid);
-      setAppliedJobs(prev => new Set(prev).add(selectedJob.id!));
-      alert("Application sent successfully!");
+      const ok = await applyToVacancyWithFallback(selectedJob.id);
+      if (ok) {
+        setAppliedJobs((prev) => new Set(prev).add(selectedJob.id!));
+        alert("Application sent successfully!");
+      }
     } catch (error) {
       console.error("Failed to apply", error);
     } finally {
@@ -59,7 +66,7 @@ export default function JobBoard() {
     }
     setSeeding(true);
     try {
-      await seedVacancies(auth.currentUser.uid);
+      await seedSampleVacanciesViaApi();
       await fetchJobs();
     } catch (error) {
       console.error("Failed to seed data", error);

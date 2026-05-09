@@ -9,37 +9,19 @@ import {
   Timestamp,
   where,
 } from "firebase/firestore/lite";
-import type { Vacancy } from "../lib/firebase";
-import { serverDb } from "./firebaseServer";
+import type { Vacancy } from "../../lib/firebase";
+import { serverDb } from "../firebaseServer";
+import { decodeVacancyCursor, encodeVacancyCursor } from "./cursor";
 
 export interface PaginatedVacanciesResult {
   jobs: Vacancy[];
   nextCursor: string | null;
 }
 
-interface CursorPayload {
-  createdAtMs: number;
-  id: string;
-}
-
-function encodeCursor(payload: CursorPayload): string {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-}
-
-function decodeCursor(cursor: string): CursorPayload | null {
-  try {
-    const decoded = Buffer.from(cursor, "base64url").toString("utf8");
-    const parsed = JSON.parse(decoded) as CursorPayload;
-    if (!parsed || typeof parsed.createdAtMs !== "number" || typeof parsed.id !== "string") {
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-export async function fetchOpenVacanciesPage(rawLimit: number, cursor?: string | null): Promise<PaginatedVacanciesResult> {
+export async function fetchOpenVacanciesPageFromFirestore(
+  rawLimit: number,
+  cursor?: string | null,
+): Promise<PaginatedVacanciesResult> {
   const pageSize = Math.max(1, Math.min(rawLimit, 50));
 
   let baseQuery = query(
@@ -50,7 +32,7 @@ export async function fetchOpenVacanciesPage(rawLimit: number, cursor?: string |
     limit(pageSize + 1),
   );
 
-  const cursorPayload = cursor ? decodeCursor(cursor) : null;
+  const cursorPayload = cursor ? decodeVacancyCursor(cursor) : null;
   if (cursor && !cursorPayload) {
     throw new Error("INVALID_CURSOR");
   }
@@ -79,7 +61,7 @@ export async function fetchOpenVacanciesPage(rawLimit: number, cursor?: string |
   if (hasMore && last) {
     const createdAt = last.data().createdAt;
     const createdAtMs = createdAt instanceof Timestamp ? createdAt.toMillis() : Date.now();
-    nextCursor = encodeCursor({ createdAtMs, id: last.id });
+    nextCursor = encodeVacancyCursor({ createdAtMs, id: last.id });
   }
 
   return { jobs, nextCursor };

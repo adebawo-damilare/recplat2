@@ -19,11 +19,16 @@ This project now uses Next.js App Router for:
 ## API scaffolding
 
 - `GET /api/health` health endpoint
-- `GET /api/jobs` paginated jobs endpoint with cursor-based pagination and rate limiting
+- `GET /api/jobs` paginated jobs endpoint with cursor-based pagination and rate limiting (Postgres when `DATABASE_URL` is set, else Firestore-backed listing)
   - query params: `limit` (max 50), `cursor`
   - response includes `pagination.nextCursor`
   - rate limit: sliding window **120 requests / 60s** per client IP (proxied via `x-forwarded-for` / `x-real-ip`)
   - if `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set (see `.env.example`), limits are enforced with **Upstash** (distributed). Otherwise the app uses the **in-memory** limiter for local/dev.
+- `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` — Postgres writes + Firebase ID token (`Authorization: Bearer …`) when Postgres + Admin are configured
+- `POST /api/applications` — Postgres application row when configured
+- `GET /api/ai/health` — reports AI provider wiring
+
+See **`docs/ROADMAP.md`** for dual-backend rollout and tooling (`npm run db:apply`, `npm run smoke:api`).
 
 ## SEO primitives
 
@@ -36,7 +41,9 @@ This project now uses Next.js App Router for:
 - `npm run dev` (Next dev server)
 - `npm run build`
 - `npm run start`
-- `npm run test:e2e`
+- `npm run test:e2e` — Playwright’s `webServer` sets `TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS=1` so `GET /api/jobs` does not hang on Firestore when no DB/network; use `CI=1 npm run test:e2e` (or unset `reuseExistingServer`) so a fresh dev server picks up that env instead of an already-running instance.
+- `npm run db:apply`
+- `npm run smoke:api`
 - `npm run test:load`
 
 ## Concurrency hardening checklist

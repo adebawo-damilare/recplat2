@@ -6,7 +6,8 @@
 import React, { useState } from 'react';
 import { motion } from "motion/react";
 import { X, Briefcase, MapPin, DollarSign, FileText, CheckCircle, Building2 } from "lucide-react";
-import { auth, postVacancy, updateVacancy, type Vacancy } from '../lib/firebase';
+import { auth, type Vacancy } from '../lib/firebase';
+import { persistVacancyWithFallback } from '../lib/jobsApi';
 
 interface VacancyFormProps {
   vacancy?: Vacancy;
@@ -31,14 +32,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
 
     setLoading(true);
     try {
-      if (vacancy?.id) {
-        await updateVacancy(vacancy.id, formData);
-      } else {
-        await postVacancy({
-          ...formData,
-          postedBy: auth.currentUser.uid
-        });
-      }
+      await persistVacancyWithFallback(formData, vacancy);
       onSuccess();
     } catch (error) {
       console.error("Error saving vacancy", error);
