@@ -6,14 +6,20 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
 import postgres from "postgres";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
 
+config({ path: join(repoRoot, ".env.local") });
+config({ path: join(repoRoot, ".env") });
+
 const url = process.env.DATABASE_URL?.trim();
 if (!url) {
-  console.error("DATABASE_URL is required.");
+  console.error(
+    "DATABASE_URL is required. Add it to .env.local (or .env), or set it in the shell for this command.",
+  );
   process.exit(1);
 }
 

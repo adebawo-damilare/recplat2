@@ -4,8 +4,14 @@ TalentBridge can use **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`)
 
 ## Apply migrations
 
-1. Create a database and copy its connection string into `DATABASE_URL` (see `.env.example`).
-2. Run the SQL in order:
+1. Create a database and copy its connection string into `DATABASE_URL` in `.env.local` (or `.env`); see `.env.example`.
+2. Apply SQL with the helper (loads `.env.local` / `.env` automatically):
+
+```bash
+npm run db:apply
+```
+
+Or with `psql`:
 
 ```bash
 psql "$DATABASE_URL" -f database/migrations/0001_initial.sql
