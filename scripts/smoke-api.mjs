@@ -3,7 +3,8 @@
  * Usage: npm run smoke:api
  *        SMOKE_BASE_URL=https://example.com npm run smoke:api
  */
-const base = (process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+/** Default localhost (not 127.0.0.1): Node fetch on some Windows setups hangs on IPv4 loopback.) */
+const base = (process.env.SMOKE_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 async function check(label, path, { expectJson = true } = {}) {
   const res = await fetch(`${base}${path}`, { cache: "no-store" });
