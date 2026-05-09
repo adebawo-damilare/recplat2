@@ -1,5 +1,7 @@
 # TalentBridge roadmap (data & API)
 
+What we took from the nested **`recruit/`** reference vs what we skipped is summarized in **`docs/REFERENCE_PARITY.md`**.
+
 ## Done (slices)
 
 - Postgres schema + SQL migration for companies, vacancies, applications, `ai_audit_events` (`database/migrations/0001_initial.sql`).
