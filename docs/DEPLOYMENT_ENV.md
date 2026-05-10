@@ -38,6 +38,25 @@ Use a **single Vercel project**, **Git Production Branch = `main`**, and **two N
 
 **CI note:** GitHub Actions does **not** deploy your Vercel preview; it only validates the repo. **`smoke-postgres`** proves Postgres + migrations in CI—not your Neon branch. You still smoke the **preview URL** before promoting `dev` to `main`.
 
+### Preview smoke checklist (ensure this deployment is safe)
+
+**Goal:** Prove the **specific** Vercel Preview build—not CI’s throwaway Postgres—is healthy and sees your **Neon branch** with the right env.
+
+1. **Use the deployment URL for the commit you care about** — Vercel → **Deployments** → find the row for branch **`dev`** (or your PR) and **Ready** → **Visit** → copy the hostname (e.g. `foo-git-dev-….vercel.app`). Do not reuse an old tab from a previous deployment after you’ve changed env vars or migrations.
+2. **Confirm migrations ran on the Neon branch** — If you shipped SQL changes, apply them to the **Preview** `DATABASE_URL` target before expecting smoke to pass (`database/README.md`).
+3. **Run API smoke against that URL** (from this repo, Node 18+):
+
+   ```bash
+   SMOKE_BASE_URL=https://<your-preview-host> npm run smoke:api
+   SMOKE_EXPECT_POSTGRES_READY=1 SMOKE_BASE_URL=https://<your-preview-host> npm run smoke:api
+   ```
+
+   Strict mode proves the **hosted** app reports **`postgresConfigured: true`** and returns **401** on **`GET /api/applications/mine`** without a token (same expectations as Jobs Slice staging/prod).
+4. **Quick product pass (optional but high signal)** — Sign in on the preview, post or open a job, apply once, confirm **`applications`** / candidate UI. Catches Preview-only auth or client env issues smoke does not cover.
+5. **Make it a gate** — Don’t merge **`dev` → `main`** until steps 1–3 pass for **that** preview. For teams: add the preview URL + “smoke ✅” to the PR description or use a short **release checklist** in the PR template.
+
+**Automation (optional later):** A small GitHub Action triggered on **deployment_status** (Vercel notifies GitHub when a preview is ready) could run `npm run smoke:api` with `SMOKE_BASE_URL` from the payload; until then, running the commands locally is enough.
+
 ---
 
 ## Required for Postgres-backed jobs
@@ -85,6 +104,8 @@ Avoid pointing **Preview** at the **production** `DATABASE_URL` unless you delib
 ---
 
 ## After deploy: smoke checks
+
+For **Preview (staging)** vs **Production**, use the **exact** deployment URL and follow the **[Preview smoke checklist](#preview-smoke-checklist-ensure-this-deployment-is-safe)** above.
 
 From your machine (with Node 18+):
 
