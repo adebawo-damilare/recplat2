@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyFirebaseIdToken } from "../../../src/server/auth/firebaseAdmin";
+import { isJobsPostgresOnly } from "../../../src/server/config/jobsBackendMode";
 import { hasPostgresConfigured } from "../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../src/server/distributedRateLimit";
 import { getVacancyById, recordApplicationPostgres } from "../../../src/server/jobs";
@@ -17,7 +18,12 @@ export async function POST(request: NextRequest) {
   }
 
   if (!hasPostgresConfigured()) {
-    return NextResponse.json({ code: "POSTGRES_UNAVAILABLE" }, { status: 503 });
+    return NextResponse.json(
+      {
+        code: isJobsPostgresOnly() ? "JOBS_POSTGRES_REQUIRED" : "POSTGRES_UNAVAILABLE",
+      },
+      { status: 503 },
+    );
   }
 
   const authResult = await verifyFirebaseIdToken(request.headers.get("authorization"));

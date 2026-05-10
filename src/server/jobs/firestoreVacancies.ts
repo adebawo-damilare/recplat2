@@ -1,3 +1,8 @@
+/**
+ * Legacy Firestore listing for vacancies when `DATABASE_URL` is unset and
+ * `TALENTBRIDGE_JOBS_POSTGRES_ONLY` is not set. Jobs Slice v1 production uses Postgres only
+ * (`docs/MVP_JOBS_SLICE_V1.md`).
+ */
 import {
   collection,
   documentId,

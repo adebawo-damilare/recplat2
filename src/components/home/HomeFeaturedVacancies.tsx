@@ -66,6 +66,11 @@ export default function HomeFeaturedVacancies({
                   <span className="px-2 py-1 bg-neutral-100 text-neutral-600 rounded text-[10px] font-bold uppercase">
                     Full-time
                   </span>
+                  {job.category?.label ? (
+                    <span className="px-2 py-1 bg-purple-50 text-purple-700 border border-purple-100 rounded text-[10px] font-bold uppercase">
+                      {job.category.label}
+                    </span>
+                  ) : null}
                   <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">{job.salary}</span>
                 </div>
                 <button

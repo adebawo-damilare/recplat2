@@ -1,6 +1,6 @@
 /**
- * Browser helpers: call Next `/api/*` routes first, then fall back to Firestore clients
- * when Postgres or Firebase Admin verification is not configured.
+ * Browser helpers: prefer Next `/api/*` (Postgres-backed).
+ * When `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1` (Jobs Slice v1 production), Firestore fallbacks are disabled.
  */
 
 import {
@@ -14,14 +14,21 @@ import {
   updateVacancy as updateVacancyFirestore,
   type Vacancy,
 } from "./firebase";
+import {
+  isBrowserJobsPostgresOnly,
+  shouldFallbackToFirestoreForJobsApi,
+} from "./talentBridgeApiMode";
+import { categorySummaryFromWriteSlug } from "./vacancyWriteShared";
 
-type VacancyWritePayload = {
+export type VacancyWritePayload = {
   jobTitle: string;
   companyName: string;
   location: string;
   salary: string;
   description: string;
   requirements: string;
+  /** Omitted → leave unset on create, leave unchanged on update (Postgres PATCH). explicit null clears. */
+  categorySlug?: string | null;
 };
 
 async function buildAuthHeaders(): Promise<HeadersInit | null> {
@@ -36,15 +43,24 @@ async function buildAuthHeaders(): Promise<HeadersInit | null> {
 }
 
 function shouldFallback(status: number, payload?: { code?: string }) {
-  if (status === 503) return true;
-  const code = payload?.code;
-  return code === "POSTGRES_UNAVAILABLE" || code === "FIREBASE_ADMIN_UNAVAILABLE";
+  return shouldFallbackToFirestoreForJobsApi(status, payload);
 }
 
-export async function fetchPublicJobsWithFallback(limit = 75, cursor?: string | null) {
+export async function fetchPublicJobsWithFallback(
+  limit = 75,
+  cursor?: string | null,
+  categorySlug?: string | null,
+) {
+  const csRaw = categorySlug?.trim().toLowerCase();
+  const cs =
+    csRaw && csRaw !== "all"
+      ? csRaw
+      : null;
+
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
     if (cursor) qs.set("cursor", cursor);
+    if (cs) qs.set("category", cs);
 
     const res = await fetch(`/api/jobs?${qs.toString()}`, {
       credentials: "same-origin",
@@ -61,11 +77,20 @@ export async function fetchPublicJobsWithFallback(limit = 75, cursor?: string | 
       console.warn("[jobsApi] Unexpected /api/jobs response", res.status);
     }
   } catch (error) {
-    console.warn("[jobsApi] /api/jobs failed, reverting to Firestore", error);
+    console.warn("[jobsApi] /api/jobs failed", error);
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    return [];
   }
 
   const fb = await getVacanciesFirestore();
-  return fb || [];
+  const rows = fb || [];
+  if (!cs) {
+    return rows;
+  }
+
+  return rows.filter((job) => job.category?.slug === cs);
 }
 
 export async function fetchMyVacanciesWithFallback(ownerUid: string) {
@@ -86,12 +111,37 @@ export async function fetchMyVacanciesWithFallback(ownerUid: string) {
     console.warn("[jobsApi] /api/jobs/mine failed", error);
   }
 
+  if (isBrowserJobsPostgresOnly()) {
+    return [];
+  }
+
   const fb = await getVacanciesByUser(ownerUid);
   return fb || [];
 }
 
+function buildVacancyWriteJson(payload: VacancyWritePayload): Record<string, unknown> {
+  const base = {
+    jobTitle: payload.jobTitle,
+    companyName: payload.companyName,
+    location: payload.location,
+    salary: payload.salary,
+    description: payload.description,
+    requirements: payload.requirements,
+  };
+  const out: Record<string, unknown> = { ...base };
+  const rawCat = payload.categorySlug;
+  if (rawCat === null) {
+    out.categorySlug = null;
+  } else if (typeof rawCat === "string" && rawCat.trim()) {
+    out.categorySlug = rawCat.trim().toLowerCase();
+  }
+  return out;
+}
+
 export async function persistVacancyWithFallback(payload: VacancyWritePayload, vacancy?: Vacancy | null) {
   const headers = await buildAuthHeaders();
+
+  const apiBody = buildVacancyWriteJson(payload);
 
   if (headers) {
     try {
@@ -99,7 +149,7 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
         const res = await fetch(`/api/jobs`, {
           method: "POST",
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(apiBody),
         });
         const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
         if (res.ok && raw.job) {
@@ -112,7 +162,7 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
         const res = await fetch(`/api/jobs/${vacancy.id}`, {
           method: "PATCH",
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(apiBody),
         });
         const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
         if (res.ok && raw.job) {
@@ -123,7 +173,10 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
         }
       }
     } catch (error) {
-      console.warn("[jobsApi] Postgres vacancy write failed, using Firestore", error);
+      console.warn("[jobsApi] Vacancy API write failed", error);
+      if (isBrowserJobsPostgresOnly()) {
+        throw new Error("Saving vacancies requires the Postgres-backed API (see docs/MVP_JOBS_SLICE_V1.md).");
+      }
     }
   }
 
@@ -131,15 +184,48 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
     throw new Error("You must be signed in to save a vacancy.");
   }
 
-  if (vacancy?.id) {
-    await updateVacancyFirestore(vacancy.id, payload);
-    return { ...vacancy, ...payload } as Vacancy;
+  if (isBrowserJobsPostgresOnly()) {
+    throw new Error("Vacancy saves require Postgres + API (Jobs Slice v1).");
   }
 
-  await createVacancyFirestore({
-    ...payload,
+  const coreFields = {
+    jobTitle: payload.jobTitle,
+    companyName: payload.companyName,
+    location: payload.location,
+    salary: payload.salary,
+    description: payload.description,
+    requirements: payload.requirements,
+  };
+
+  const categoryPatch: Partial<Pick<Vacancy, "category">> = {};
+  if (payload.categorySlug === null) {
+    categoryPatch.category = null;
+  } else if (typeof payload.categorySlug === "string" && payload.categorySlug.trim()) {
+    const sum = categorySummaryFromWriteSlug(payload.categorySlug.trim());
+    if (sum) {
+      categoryPatch.category = sum;
+    }
+  }
+
+  if (vacancy?.id) {
+    await updateVacancyFirestore(vacancy.id, { ...coreFields, ...categoryPatch });
+    const merged: Vacancy = { ...vacancy, ...coreFields };
+    if ("category" in categoryPatch) {
+      merged.category = categoryPatch.category === null ? undefined : categoryPatch.category;
+    }
+    return merged;
+  }
+
+  const createPayload: Omit<Vacancy, "id" | "status"> = {
+    ...coreFields,
     postedBy: auth.currentUser.uid,
-  });
+  };
+
+  if (categoryPatch.category) {
+    createPayload.category = categoryPatch.category;
+  }
+
+  await createVacancyFirestore(createPayload);
   return null;
 }
 
@@ -162,7 +248,14 @@ export async function closeVacancyWithFallback(id: string) {
       }
     } catch (error) {
       console.warn("[jobsApi] close via API failed", error);
+      if (isBrowserJobsPostgresOnly()) {
+        throw new Error("Closing vacancies requires the Postgres-backed API.");
+      }
     }
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    throw new Error("Closing vacancies requires the Postgres-backed API.");
   }
 
   await deleteVacancyFirestore(id);
@@ -187,11 +280,18 @@ export async function seedSampleVacanciesViaApi(): Promise<Vacancy[]> {
       }
     } catch (error) {
       console.warn("[jobsApi] sample seed API failed", error);
+      if (isBrowserJobsPostgresOnly()) {
+        throw new Error("Sample seed requires Postgres, migrations, and a signed-in user token (POST /api/jobs/seed-sample).");
+      }
     }
   }
 
   if (!auth.currentUser) {
     throw new Error("Sign in required to seed vacancies.");
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    throw new Error("Seeding vacancies requires Postgres (use POST /api/jobs/seed-sample when DATABASE_URL is set).");
   }
 
   await seedVacanciesFirestore(auth.currentUser.uid);
@@ -227,6 +327,11 @@ export async function applyToVacancyWithFallback(vacancyId: string) {
     } catch (error) {
       console.warn("[jobsApi] application API failed", error);
     }
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    alert("Applications require Postgres + API (Jobs Slice v1).");
+    return false;
   }
 
   await applyToJobFirestore(vacancyId, auth.currentUser.uid);

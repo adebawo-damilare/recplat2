@@ -14,20 +14,23 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
+import {
   addDoc,
-  serverTimestamp,
-  query,
-  where,
+  collection,
+  deleteField,
+  doc,
+  getDoc,
   getDocs,
-  Timestamp
-} from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+  getFirestore,
+  query,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+  where,
+} from "firebase/firestore";
+import firebaseConfig from "../../firebase-applet-config.json";
+import { labelForMvpTalentSlug } from "../shared/mvpCategories";
+import { SAMPLE_VACANCY_TEMPLATES } from "../shared/sampleVacancies";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -120,6 +123,11 @@ export interface CandidateProfile {
   updatedAt?: any;
 }
 
+export interface VacancyCategorySummary {
+  slug: string;
+  label: string;
+}
+
 export interface Vacancy {
   id?: string;
   jobTitle: string;
@@ -128,10 +136,12 @@ export interface Vacancy {
   salary: string;
   description: string;
   requirements: string;
-  status: 'open' | 'closed';
+  status: "open" | "closed";
   postedBy: string;
   createdAt?: any;
   updatedAt?: any;
+  /** Talent lane when using category-shaped recruiting (synthesis MVP catalog). */
+  category?: VacancyCategorySummary | null;
 }
 
 export interface Application {
@@ -218,10 +228,14 @@ export const updateVacancy = async (id: string, updates: Partial<Vacancy>) => {
   const path = `vacancies/${id}`;
   try {
     const docRef = doc(db, "vacancies", id);
-    await setDoc(docRef, {
+    const payload: Record<string, unknown> = {
       ...updates,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+      updatedAt: serverTimestamp(),
+    };
+    if ("category" in updates && updates.category === null) {
+      payload.category = deleteField();
+    }
+    await setDoc(docRef, payload, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
@@ -298,47 +312,21 @@ export const getAllCandidates = async () => {
 };
 
 export const seedVacancies = async (userId: string) => {
-  const samples: Omit<Vacancy, 'id' | 'status'>[] = [
-    {
-      jobTitle: "Senior Frontend Engineer",
-      companyName: "TechFlow Systems",
-      location: "Remote (Global)",
-      salary: "$140k - $180k",
-      description: "We are looking for a React expert to lead our dashboard team. You will be responsible for building high-performance UIs and mentoring junior developers.",
-      requirements: "5+ years experience with React, TypeScript, and modern CSS. Strong architectural skills are a must.",
-      postedBy: userId
-    },
-    {
-      jobTitle: "Lead Product Designer",
-      companyName: "CreativePulse",
-      location: "London, UK / Hybrid",
-      salary: "£70k - £90k",
-      description: "Join our boutique design agency and lead projects for top-tier fintech clients. You will own the entire design process from wireframing to high-fidelity prototypes.",
-      requirements: "Portfolio showcasing end-to-end product design. Expert in Figma and Design Systems.",
-      postedBy: userId
-    },
-    {
-      jobTitle: "Backend Infrastructure Developer",
-      companyName: "DataCore",
-      location: "San Francisco, CA",
-      salary: "$160k - $210k",
-      description: "Focus on scalability and reliability for our core data processing engine. You'll work with Go, Kubernetes, and distributed systems at scale.",
-      requirements: "Strong background in Go or C++. Experience with cloud-native infrastructure and microservices.",
-      postedBy: userId
-    },
-    {
-      jobTitle: "AI Research Scientist",
-      companyName: "Nexus Intelligence",
-      location: "Remote",
-      salary: "$180k - $240k",
-      description: "Push the boundaries of what's possible with LLMs. Work on fine-tuning, RAG optimization, and agentic workflows for enterprise customers.",
-      requirements: "MS/PhD in CS/AI or equivalent industry experience. Strong Python and PyTorch skills.",
-      postedBy: userId
-    }
-  ];
-
-  for (const sample of samples) {
-    await postVacancy(sample);
+  for (const template of SAMPLE_VACANCY_TEMPLATES) {
+    const label = labelForMvpTalentSlug(template.categorySlug);
+    await postVacancy({
+      jobTitle: template.jobTitle,
+      companyName: template.companyName,
+      location: template.location,
+      salary: template.salary,
+      description: template.description,
+      requirements: template.requirements,
+      postedBy: userId,
+      category:
+        template.categorySlug && label
+          ? { slug: template.categorySlug, label }
+          : undefined,
+    });
   }
 };
 

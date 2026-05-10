@@ -32,18 +32,29 @@ async function main() {
     process.env.SEED_OWNER_FIREBASE_UID?.trim() || "neon-sample-seed-owner";
 
   const jobs = [];
-  for (const template of SAMPLE_VACANCY_TEMPLATES) {
-    const row = await insertVacancyForOwner({
-      ownerUid,
-      companyName: template.companyName,
-      jobTitle: template.jobTitle,
-      location: template.location,
-      salary: template.salary,
-      description: template.description,
-      requirements: template.requirements,
-    });
-    jobs.push(row.id);
-    console.log("inserted:", row.jobTitle, "→", row.id);
+
+  try {
+    for (const template of SAMPLE_VACANCY_TEMPLATES) {
+      const row = await insertVacancyForOwner({
+        ownerUid,
+        companyName: template.companyName,
+        jobTitle: template.jobTitle,
+        location: template.location,
+        salary: template.salary,
+        description: template.description,
+        requirements: template.requirements,
+        categorySlug: template.categorySlug,
+      });
+      jobs.push(row.id);
+      console.log("inserted:", row.jobTitle, "→", row.id);
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message === "INVALID_CATEGORY_SLUG") {
+      throw new Error(
+        `${e.message}: apply migration database/migrations/0002_categories.sql first (npm run db:apply:categories).`,
+      );
+    }
+    throw e;
   }
 
   console.log(

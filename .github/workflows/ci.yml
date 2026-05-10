@@ -42,3 +42,58 @@ jobs:
         run: npm run test:e2e
         env:
           CI: "true"
+
+  # Real Postgres + Jobs Slice–style server flags: catches JOBS_POSTGRES_REQUIRED / migration drift
+  # that Playwright’s Firestore stub does not exercise.
+  smoke-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 4s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/smoke
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply SQL migrations
+        run: npm run db:apply && npm run db:apply:categories
+
+      - name: Production build
+        run: npm run build
+
+      - name: Start Next.js (Postgres-only jobs path)
+        run: |
+          TALENTBRIDGE_JOBS_POSTGRES_ONLY=1 npm run start &
+          for i in $(seq 1 60); do
+            if curl -sf "http://127.0.0.1:3000/api/health" > /dev/null; then
+              echo "Next.js ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Next.js failed to become ready"
+          exit 1
+
+      - name: Strict API smoke (Postgres + applications/mine)
+        run: SMOKE_BASE_URL=http://127.0.0.1:3000 SMOKE_EXPECT_POSTGRES_READY=1 npm run smoke:api

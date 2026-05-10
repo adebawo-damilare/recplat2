@@ -1,0 +1,83 @@
+# After a successful Vercel deployment, hit the live Preview URL with scripts/smoke-api.mjs.
+# Requires Vercel → Git → repository_dispatch enabled (recommended; see docs/DEPLOYMENT_ENV.md).
+
+name: Preview smoke
+
+on:
+  repository_dispatch:
+    types:
+      - vercel.deployment.success
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Full URL of the deployment (e.g. https://….vercel.app)
+        required: true
+        type: string
+      strict_postgres:
+        description: Set SMOKE_EXPECT_POSTGRES_READY=1 (Jobs Slice staging parity)
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: preview-smoke-${{ github.run_id }}
+
+jobs:
+  api-smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'vercel.deployment.success' &&
+       github.event.client_payload.environment != 'production' &&
+       github.event.client_payload.environment != 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Resolve URL and checkout ref
+        id: ctx
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "url=${{ inputs.preview_url }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            if [ "${{ inputs.strict_postgres }}" = "true" ]; then
+              echo "strict=1" >> "$GITHUB_OUTPUT"
+            else
+              echo "strict=0" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            RAW_URL="${{ github.event.client_payload.url }}"
+            echo "ref=${{ github.event.client_payload.git.sha }}" >> "$GITHUB_OUTPUT"
+            echo "strict=1" >> "$GITHUB_OUTPUT"
+            if [[ "$RAW_URL" != http://* && "$RAW_URL" != https://* ]]; then
+              RAW_URL="https://$RAW_URL"
+            fi
+            echo "url=$RAW_URL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ctx.outputs.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: API smoke against deployment
+        shell: bash
+        env:
+          BASE: ${{ steps.ctx.outputs.url }}
+          STRICT: ${{ steps.ctx.outputs.strict }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE" ] || [ "$BASE" = "" ]; then
+            echo "Missing deployment URL (set Vercel repository_dispatch or pass workflow input)."
+            exit 1
+          fi
+          echo "SMOKE_BASE_URL=$BASE strict=$STRICT"
+          if [ "$STRICT" = "1" ]; then
+            SMOKE_EXPECT_POSTGRES_READY=1 SMOKE_BASE_URL="$BASE" node scripts/smoke-api.mjs
+          else
+            SMOKE_BASE_URL="$BASE" node scripts/smoke-api.mjs
+          fi
