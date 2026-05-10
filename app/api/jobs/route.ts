@@ -70,11 +70,20 @@ export async function GET(request: NextRequest) {
     if (error instanceof Error && error.message === "INVALID_CURSOR") {
       return NextResponse.json({ error: "Invalid cursor." }, { status: 400 });
     }
+    if (error instanceof Error && error.message === "JOBS_POSTGRES_REQUIRED") {
+      return NextResponse.json(
+        {
+          error: "Vacancy listing requires Postgres. Set DATABASE_URL and apply migrations.",
+          code: "JOBS_POSTGRES_REQUIRED",
+        },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json(
       {
         error: "Unable to fetch jobs right now.",
-        hint: "If this is Firestore, ensure composite index on (status asc, createdAt desc).",
+        hint: "Ensure DATABASE_URL is set and migrations are applied (see docs/MVP_JOBS_SLICE_V1.md).",
       },
       { status: 500 },
     );

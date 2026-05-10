@@ -2,6 +2,8 @@
 
 **MVP narrative** (strategy synthesis + how it maps to this repo): **`docs/TALENTBRIDGE_MVP_PLAN.md`**.
 
+**First public / paying milestone (named release):** **Jobs Slice v1** — **`docs/MVP_JOBS_SLICE_V1.md`** (Postgres for vacancies + applications; not Phase C hire loop).
+
 What we took from the nested **`recruit/`** reference vs what we skipped is summarized in **`docs/REFERENCE_PARITY.md`**.
 
 **Candidate backlog** mined from `recruit/docs` (PRD, system design, API outline, contracts, roadmap): **`docs/ROADMAP_FROM_REFERENCE.md`** (paired with **`docs/TALENTBRIDGE_MVP_PLAN.md`** for phase context).
@@ -13,11 +15,11 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - Postgres schema + SQL migration for companies, vacancies, applications, `ai_audit_events` (`database/migrations/0001_initial.sql`).
 - **Category lanes (synthesis wedge):** `categories` table + `vacancies.category_id`, `GET /api/categories`, `GET /api/jobs?category=`, optional `categorySlug` on vacancy writes — see **`docs/CATEGORY_MODEL.md`** and `database/migrations/0002_categories.sql`.
 - Drizzle schema split under `src/server/schema/*` (+ server DB client `src/server/db/postgres.ts`).
-- Dual read path: `GET /api/jobs` and client listing use Postgres when `DATABASE_URL` is set, else Firestore.
+- Dual read path (**local default**): `GET /api/jobs` uses Postgres when `DATABASE_URL` is set, else Firestore — **overridden** when **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (**Jobs Slice v1** prod).
 - Write path for jobs: `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` with Firebase ID token verification (`FIREBASE_SERVICE_ACCOUNT_JSON`).
-- Applications: `POST /api/applications` with the same auth pattern; client falls back to Firestore on 503 / known codes.
+- Applications: `POST /api/applications`, **`GET /api/applications/mine`**. Client Firestore fallbacks for job/app data disabled when **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (`src/lib/talentBridgeApiMode.ts`).
 - AI provider switch + audit hooks (`TALENTBRIDGE_AI_PROVIDER`, `GET /api/ai/health`).
-- Client bridge `src/lib/jobsApi.ts` (API first, resilient fallback).
+- Client bridges `src/lib/jobsApi.ts`, **`src/lib/applicationsApi.ts`**.
 - UI uses `jobsApi` for list / seed / apply / recruiter CRUD (TalentBridge components only).
 
 ## Tooling
@@ -31,6 +33,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 ## MVP documentation
 
 - **`docs/TALENTBRIDGE_MVP_PLAN.md`** — single place for MVP vision, phased delivery, MVP in/out/defer, AI posture, technical shape, and formal doc sequencing (strategy synthesis + **`recruit/docs`** alignment).
+- **`docs/MVP_JOBS_SLICE_V1.md`** — Jobs Slice v1 release: scope, env flags (`TALENTBRIDGE_JOBS_POSTGRES_ONLY`), checklist.
 
 ## Next
 

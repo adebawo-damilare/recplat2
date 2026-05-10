@@ -4,6 +4,8 @@ TalentBridge can use **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`)
 
 **Why `categories` exists:** MVP talent lanes aligned with **`docs/TALENTBRIDGE_MVP_PLAN.md`** §4 and **`docs/CATEGORY_MODEL.md`**.
 
+**Jobs Slice v1:** production deployments should rely on Postgres for vacancies + applications only — see **`docs/MVP_JOBS_SLICE_V1.md`** for env flags.
+
 ## Apply migrations
 
 1. Create a database and copy its connection string into `DATABASE_URL` in `.env.local` (or `.env`); see `.env.example`.

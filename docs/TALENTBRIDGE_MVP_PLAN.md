@@ -98,6 +98,16 @@ Aligned with synthesis: **modular monolith** first—not microservices.
 
 ## 7. MVP scope boundaries
 
+### Jobs Slice v1 (first paying / public milestone)
+
+This is intentionally **narrower** than the full synthesis hire-loop MVP and **narrower than Phase C** (invitations, screening, pipeline).
+
+- **Name it:** **Jobs Slice v1** so stakeholders do not confuse it with the full marketplace loop.  
+- **Shipping guide:** **`docs/MVP_JOBS_SLICE_V1.md`** — Postgres-only job/application data flags, checklist, explicit out-of-scope items.  
+- **Auth:** Firebase sign-in remains for v1; **vacancy + application persistence** targets **Postgres** (see **`TALENTBRIDGE_JOBS_POSTGRES_ONLY`** / **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY`** in that doc).
+
+---
+
 ### In scope for platform MVP (conceptual—“full” MVP from synthesis / PRD)
 
 When we say “hire loop MVP” in strategy docs, we mean roughly:
@@ -165,6 +175,7 @@ TalentBridge **`docs/ROADMAP.md`** stays the **checklist for what we actually me
 | **`docs/SUPPORTING_NOTES.md`** | Short pointers + themes from external strategy (chats, etc.) |
 | **`docs/REFERENCE_PARITY.md`** | What we adopted vs **`recruit/`** |
 | **`docs/ROADMAP_FROM_REFERENCE.md`** | P0/P1 backlog from **`recruit/docs`** |
+| **`docs/MVP_JOBS_SLICE_V1.md`** | First public / paying release (jobs + applies on Postgres; not Phase C) |
 
 ---
 

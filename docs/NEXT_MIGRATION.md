@@ -26,10 +26,11 @@ This project now uses Next.js App Router for:
   - rate limit: sliding window **120 requests / 60s** per client IP (proxied via `x-forwarded-for` / `x-real-ip`)
   - if `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set (see `.env.example`), limits are enforced with **Upstash** (distributed). Otherwise the app uses the **in-memory** limiter for local/dev.
 - `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` — Postgres writes + Firebase ID token (`Authorization: Bearer …`) when Postgres + Admin are configured
-- `POST /api/applications` — Postgres application row when configured
+- `POST /api/applications` — Postgres application row when configured  
+- `GET /api/applications/mine` — candidate’s applications + vacancy payloads (Postgres; Bearer token)
 - `GET /api/ai/health` — reports AI provider wiring
 
-See **`docs/ROADMAP.md`** for dual-backend rollout and tooling (`npm run db:apply`, `npm run db:apply:categories`, `npm run smoke:api`). MVP framing: **`docs/TALENTBRIDGE_MVP_PLAN.md`**.
+See **`docs/ROADMAP.md`** for dual-backend rollout and tooling (`npm run db:apply`, `npm run db:apply:categories`, `npm run smoke:api`). First public milestone: **`docs/MVP_JOBS_SLICE_V1.md`**. MVP framing: **`docs/TALENTBRIDGE_MVP_PLAN.md`**.
 
 For **Vercel / hosting env vars** (Postgres URL, optional Upstash, redeploy + smoke)—**without** auth setup—see **`docs/DEPLOYMENT_ENV.md`**.
 

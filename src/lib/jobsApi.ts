@@ -1,6 +1,6 @@
 /**
- * Browser helpers: call Next `/api/*` routes first, then fall back to Firestore clients
- * when Postgres or Firebase Admin verification is not configured.
+ * Browser helpers: prefer Next `/api/*` (Postgres-backed).
+ * When `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1` (Jobs Slice v1 production), Firestore fallbacks are disabled.
  */
 
 import {
@@ -14,6 +14,10 @@ import {
   updateVacancy as updateVacancyFirestore,
   type Vacancy,
 } from "./firebase";
+import {
+  isBrowserJobsPostgresOnly,
+  shouldFallbackToFirestoreForJobsApi,
+} from "./talentBridgeApiMode";
 import { categorySummaryFromWriteSlug } from "./vacancyWriteShared";
 
 export type VacancyWritePayload = {
@@ -39,9 +43,7 @@ async function buildAuthHeaders(): Promise<HeadersInit | null> {
 }
 
 function shouldFallback(status: number, payload?: { code?: string }) {
-  if (status === 503) return true;
-  const code = payload?.code;
-  return code === "POSTGRES_UNAVAILABLE" || code === "FIREBASE_ADMIN_UNAVAILABLE";
+  return shouldFallbackToFirestoreForJobsApi(status, payload);
 }
 
 export async function fetchPublicJobsWithFallback(
@@ -75,7 +77,11 @@ export async function fetchPublicJobsWithFallback(
       console.warn("[jobsApi] Unexpected /api/jobs response", res.status);
     }
   } catch (error) {
-    console.warn("[jobsApi] /api/jobs failed, reverting to Firestore", error);
+    console.warn("[jobsApi] /api/jobs failed", error);
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    return [];
   }
 
   const fb = await getVacanciesFirestore();
@@ -103,6 +109,10 @@ export async function fetchMyVacanciesWithFallback(ownerUid: string) {
     }
   } catch (error) {
     console.warn("[jobsApi] /api/jobs/mine failed", error);
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    return [];
   }
 
   const fb = await getVacanciesByUser(ownerUid);
@@ -163,12 +173,19 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
         }
       }
     } catch (error) {
-      console.warn("[jobsApi] Postgres vacancy write failed, using Firestore", error);
+      console.warn("[jobsApi] Vacancy API write failed", error);
+      if (isBrowserJobsPostgresOnly()) {
+        throw new Error("Saving vacancies requires the Postgres-backed API (see docs/MVP_JOBS_SLICE_V1.md).");
+      }
     }
   }
 
   if (!auth.currentUser) {
     throw new Error("You must be signed in to save a vacancy.");
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    throw new Error("Vacancy saves require Postgres + API (Jobs Slice v1).");
   }
 
   const coreFields = {
@@ -231,7 +248,14 @@ export async function closeVacancyWithFallback(id: string) {
       }
     } catch (error) {
       console.warn("[jobsApi] close via API failed", error);
+      if (isBrowserJobsPostgresOnly()) {
+        throw new Error("Closing vacancies requires the Postgres-backed API.");
+      }
     }
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    throw new Error("Closing vacancies requires the Postgres-backed API.");
   }
 
   await deleteVacancyFirestore(id);
@@ -256,11 +280,18 @@ export async function seedSampleVacanciesViaApi(): Promise<Vacancy[]> {
       }
     } catch (error) {
       console.warn("[jobsApi] sample seed API failed", error);
+      if (isBrowserJobsPostgresOnly()) {
+        throw new Error("Sample seed requires Postgres, migrations, and a signed-in user token (POST /api/jobs/seed-sample).");
+      }
     }
   }
 
   if (!auth.currentUser) {
     throw new Error("Sign in required to seed vacancies.");
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    throw new Error("Seeding vacancies requires Postgres (use POST /api/jobs/seed-sample when DATABASE_URL is set).");
   }
 
   await seedVacanciesFirestore(auth.currentUser.uid);
@@ -296,6 +327,11 @@ export async function applyToVacancyWithFallback(vacancyId: string) {
     } catch (error) {
       console.warn("[jobsApi] application API failed", error);
     }
+  }
+
+  if (isBrowserJobsPostgresOnly()) {
+    alert("Applications require Postgres + API (Jobs Slice v1).");
+    return false;
   }
 
   await applyToJobFirestore(vacancyId, auth.currentUser.uid);

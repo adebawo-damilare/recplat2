@@ -9,6 +9,7 @@ Product strategy from **outside conversations** (email, other AI chats, meetings
 | Source | Role |
 |--------|------|
 | **`docs/TALENTBRIDGE_MVP_PLAN.md`** | **MVP narrative**: positioning, workspaces, MVP in/out/defer, AI-as-copilot, phased delivery, formal doc ordering—**this file** is where prior synthesis now lives. Does **not** replace **`ROADMAP.md`** for day-to-day execution. |
+| **`docs/MVP_JOBS_SLICE_V1.md`** | **First public milestone** (named **Jobs Slice v1**): Postgres for vacancies + applications, env flags, release checklist. |
 | **`docs/ROADMAP.md`** | **Single place to decide what TalentBridge builds next.** When you agree with something in the MVP plan or a new strategy note, **promote it here** as a numbered “Next” item or Done bullet. |
 | **`docs/ROADMAP_FROM_REFERENCE.md`** | **Idea backlog** aligned with **`recruit/docs/`** PRD/outline. Overlaps synthesis (templates, few categories, modular monolith, search/workers deferred). Dedupe consciously. |
 | **`docs/REFERENCE_PARITY.md`** | **Scope tracker** versus the nested **`recruit/`** codebase. Update when you resurrect something we previously marked “not implemented.” |

@@ -1,6 +1,4 @@
-/**
- * Shared Postgres + Firestore sample vacancies (keeps backends aligned).
- */
+/** Shared seed templates for Postgres (`db:seed:samples`, API seed). Jobs Slice v1 targets Postgres APIs only. */
 
 export interface SampleVacancySeed {
   jobTitle: string;

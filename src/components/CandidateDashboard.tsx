@@ -20,9 +20,22 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { auth, getCandidateProfile, getApplicationsByUser, type CandidateProfile, type Application } from '../lib/firebase';
+import { auth, getCandidateProfile, type CandidateProfile, type Application } from '../lib/firebase';
+import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
 import ProfileCard from './ProfileCard';
 import CandidateForm from './CandidateForm';
+
+function formatAppliedDate(appliedAt: unknown): string {
+  if (!appliedAt) return "—";
+  if (typeof appliedAt === "string") {
+    return new Date(appliedAt).toLocaleDateString();
+  }
+  const sec = appliedAt as { seconds?: number };
+  if (typeof sec.seconds === "number") {
+    return new Date(sec.seconds * 1000).toLocaleDateString();
+  }
+  return "—";
+}
 
 interface CandidateDashboardProps {
   onViewPortfolio: (candidate: CandidateProfile) => void;
@@ -40,7 +53,7 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
     try {
       const [profileData, appsData] = await Promise.all([
         getCandidateProfile(auth.currentUser.uid),
-        getApplicationsByUser(auth.currentUser.uid)
+        fetchMyApplicationsWithFallback(auth.currentUser.uid),
       ]);
       setProfile(profileData);
       setApplications(appsData || []);
@@ -152,7 +165,7 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
                         <div className="flex items-center gap-4 text-xs text-neutral-500 font-medium">
                           <span className="flex items-center gap-1"><Code className="w-3 h-3"/> {app.vacancy?.companyName}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {app.vacancy?.location}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Applied {new Date(app.appliedAt.seconds * 1000).toLocaleDateString()}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Applied {formatAppliedDate(app.appliedAt)}</span>
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-900 transition-colors" />

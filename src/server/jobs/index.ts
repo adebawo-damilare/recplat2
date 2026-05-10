@@ -1,3 +1,4 @@
+import { isJobsPostgresOnly } from "../config/jobsBackendMode";
 import { hasPostgresConfigured } from "../db/postgres";
 import type { PaginatedVacanciesResult } from "./firestoreVacancies";
 import { fetchOpenVacanciesPageFromFirestore } from "./firestoreVacancies";
@@ -28,6 +29,13 @@ export async function fetchOpenVacanciesPage(
 ): Promise<PaginatedVacanciesResult> {
   if (process.env.TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS === "1") {
     return { jobs: [], nextCursor: null };
+  }
+
+  if (isJobsPostgresOnly()) {
+    if (!hasPostgresConfigured()) {
+      throw new Error("JOBS_POSTGRES_REQUIRED");
+    }
+    return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug);
   }
 
   if (hasPostgresConfigured()) {

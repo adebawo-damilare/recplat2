@@ -17,7 +17,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 | Auth (server) | “API resolves the user on the server” | Firebase **ID token** + **Firebase Admin** verify (not cookie + scrypt + DB sessions) |
 | AI | Provider switch + server-side audit | `TALENTBRIDGE_AI_PROVIDER`, `src/server/ai/*`, `ai_audit_events` |
 | Ops | DB apply, smoke | `npm run db:apply`, `npm run smoke:api`, `npm run db:seed:samples` |
-| Reads | Optional legacy store | When `DATABASE_URL` unset, Firestore listing still used for jobs list path in parts of the stack |
+| Reads | Optional legacy Firestore fallback | Jobs Slice v1 **production** sets **`TALENTBRIDGE_JOBS_POSTGRES_ONLY`** + **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY`** so vacancies/applications skip Firestore (**`docs/MVP_JOBS_SLICE_V1.md`**) |
 | UI | N/A | **We do not copy reference UI** — only TalentBridge components |
 | CI | N/A (added for this repo) | `.github/workflows/ci.yml` — see `docs/CICD.md` |
 
@@ -57,6 +57,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 - `docs/ROADMAP.md` — forward-looking backlog  
 - `docs/TALENTBRIDGE_MVP_PLAN.md` — MVP scope, phases, and synthesis-aligned boundaries  
 - `docs/CATEGORY_MODEL.md` — how MVP category lanes ship in TalentBridge  
+- `docs/MVP_JOBS_SLICE_V1.md` — Jobs Slice v1 milestone (Postgres-only job data flags)  
 - `docs/ROADMAP_FROM_REFERENCE.md` — **feature ideas** extracted from `recruit/docs` for future phases  
 - `docs/CICD.md` — branch workflow + CI  
 - `docs/DEPLOYMENT_ENV.md` — Vercel env (Postgres / Redis), no auth secrets  

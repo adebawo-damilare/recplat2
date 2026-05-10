@@ -22,7 +22,9 @@ Firebase / auth credentials are intentionally **not** covered here—configure t
 |------------------|---------|
 | `DATABASE_URL`   | Connection string to Neon (or Supabase Postgres, RDS, etc.). Prefer the provider’s **pooler** URL for serverless if they document one for Vercel. Include TLS options your host recommends (often `sslmode=require`). |
 
-TalentBridge reads `DATABASE_URL` at runtime: when set, vacancy reads/writes use SQL; ensure the schema has been applied (`npm run db:apply` **and** when using category lanes, **`npm run db:apply:categories`** — see **`database/README.md`**). Product context: **`docs/TALENTBRIDGE_MVP_PLAN.md`**, **`docs/CATEGORY_MODEL.md`**.
+TalentBridge reads `DATABASE_URL` at runtime: when set, vacancy reads/writes use SQL; ensure the schema has been applied (`npm run db:apply` **and** when using category lanes, **`npm run db:apply:categories`** — see **`database/README.md`**).
+
+**Jobs Slice v1 (production):** also set **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** and **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, then redeploy so vacancy/application data never falls back to Firestore — **`docs/MVP_JOBS_SLICE_V1.md`**.
 
 ---
 
