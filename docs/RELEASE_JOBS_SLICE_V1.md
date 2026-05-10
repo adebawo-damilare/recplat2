@@ -44,12 +44,16 @@ Vercel will build **Production** from **`main`** if Git integration is enabled.
 
 Apply SQL **against the same Postgres** as **Production** `DATABASE_URL` (usually your Neon **primary**, not a branch).
 
-**Safest:** from a trusted machine, with the prod URL only in your shell env (never commit):
+**Template + safety guide:** copy **`release-production.credentials.template`** → **`.env.release`**, fill values, then **`docs/RELEASE_CREDENTIAL_FILLING.md`**.
+
+**Safest:** from a trusted machine (never commit **`DATABASE_URL`**):
 
 ```bash
-DATABASE_URL="postgresql://..." npm run db:apply
-DATABASE_URL="postgresql://..." npm run db:apply:categories
+npm run release:prod:db:apply
+npm run release:prod:db:apply:categories
 ```
+
+(or the older one-liners with `DATABASE_URL="postgresql://..." npm run db:apply` …)
 
 Or use `psql` / Neon SQL editor with `database/migrations/0001_initial.sql` then `0002_categories.sql` in order.
 
@@ -59,14 +63,12 @@ Or use `psql` / Neon SQL editor with `database/migrations/0001_initial.sql` then
 
 ## 4. Automated smoke (production URL)
 
-Replace with your **canonical production** origin (custom domain or `https://….vercel.app`):
+Put **`SMOKE_BASE_URL`** (and optional **`VERCEL_AUTOMATION_BYPASS_SECRET`**) in **`.env.release`** — see **`release-production.credentials.template`** and **`docs/RELEASE_CREDENTIAL_FILLING.md`** (what is safe to paste to an assistant vs run only locally).
 
 ```bash
-SMOKE_BASE_URL=https://<prod-host> npm run smoke:api
-SMOKE_EXPECT_POSTGRES_READY=1 SMOKE_BASE_URL=https://<prod-host> npm run smoke:api
+npm run release:prod:smoke
+SMOKE_EXPECT_POSTGRES_READY=1 npm run release:prod:smoke
 ```
-
-If **Deployment Protection** blocks curl/fetch, set **`VERCEL_AUTOMATION_BYPASS_SECRET`** locally (same secret as in `docs/DEPLOYMENT_ENV.md`) for **`scripts/smoke-api.mjs`**.
 
 **Expect:** strict run succeeds, including **401** on **`GET /api/applications/mine`** without a token and **`postgresConfigured: true`** on **`/api/ai/health`**.
 
@@ -98,6 +100,8 @@ Complete at least once on **production**:
 
 ## Related docs
 
+- `docs/RELEASE_CREDENTIAL_FILLING.md` — **`.env.release`** template, safe vs secret fields, commands  
+- `release-production.credentials.template` — copy → **`.env.release`** (gitignored)  
 - `docs/MVP_JOBS_SLICE_V1.md` — scope and env flags  
 - `docs/DEPLOYMENT_ENV.md` — Preview vs Production, smoke automation  
 - `database/README.md` — migrations detail  
