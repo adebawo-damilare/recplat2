@@ -4,6 +4,8 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 **Candidate backlog** mined from `recruit/docs` (PRD, system design, API outline, contracts, roadmap): **`docs/ROADMAP_FROM_REFERENCE.md`**.
 
+**External strategy transcripts** (e.g. sessions with another AI): see **`docs/SUPPORTING_NOTES.md`** → promote agreed items **here** (`ROADMAP.md`) when you want them executed.
+
 ## Done (slices)
 
 - Postgres schema + SQL migration for companies, vacancies, applications, `ai_audit_events` (`database/migrations/0001_initial.sql`).
