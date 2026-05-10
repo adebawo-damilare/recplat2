@@ -2,7 +2,7 @@
 
 **MVP narrative** (strategy synthesis + how it maps to this repo): **`docs/TALENTBRIDGE_MVP_PLAN.md`**.
 
-**First public / paying milestone (named release):** **Jobs Slice v1** — **`docs/MVP_JOBS_SLICE_V1.md`** (Postgres for vacancies + applications; not Phase C hire loop).
+**First public / paying milestone (named release):** **Jobs Slice v1** — **`docs/MVP_JOBS_SLICE_V1.md`** (Postgres for vacancies + applications; not Phase C hire loop). **Production go-live steps:** **`docs/RELEASE_JOBS_SLICE_V1.md`**.
 
 What we took from the nested **`recruit/`** reference vs what we skipped is summarized in **`docs/REFERENCE_PARITY.md`**.
 
@@ -33,15 +33,17 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 ## MVP documentation
 
 - **`docs/TALENTBRIDGE_MVP_PLAN.md`** — single place for MVP vision, phased delivery, MVP in/out/defer, AI posture, technical shape, and formal doc sequencing (strategy synthesis + **`recruit/docs`** alignment).
-- **`docs/MVP_JOBS_SLICE_V1.md`** — Jobs Slice v1 release: scope, env flags (`TALENTBRIDGE_JOBS_POSTGRES_ONLY`), checklist.
+- **`docs/MVP_JOBS_SLICE_V1.md`** — Jobs Slice v1 release: scope, env flags (`TALENTBRIDGE_JOBS_POSTGRES_ONLY`), checklist.  
+- **`docs/RELEASE_JOBS_SLICE_V1.md`** — ordered **prod** runbook (merge `dev` → `main`, prod migrations, smoke, manual gate).
 
 ## Next
 
-1. Promote **`recruit/docs/`** structural items (**`category_fields`, candidate profiles, invitations/screening, pipeline**) per **`docs/TALENTBRIDGE_MVP_PLAN.md`** phases B–D when prioritized (see **`docs/ROADMAP_FROM_REFERENCE.md`** P0).
-2. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
-3. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
-4. Search index / workers deferred until discovery scale phase (**`TALENTBRIDGE_MVP_PLAN.md`** §6).
-5. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
+1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is already verified (then pick backbone track A/B/C/D from prior planning).  
+2. Promote **`recruit/docs/`** structural items (**`category_fields`, candidate profiles, invitations/screening, pipeline**) per **`docs/TALENTBRIDGE_MVP_PLAN.md`** phases B–D when prioritized (see **`docs/ROADMAP_FROM_REFERENCE.md`** P0).
+3. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
+4. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
+5. Search index / workers deferred until discovery scale phase (**`TALENTBRIDGE_MVP_PLAN.md`** §6).
+6. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
 
 ## E2E note
 
