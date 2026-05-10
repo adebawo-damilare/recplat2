@@ -41,6 +41,8 @@ Adjust your Vercel **Production Branch** (**Project → Settings → Git**) to *
 
 Ongoing work should land on **`dev`** first, then merge to **`main`** via **pull request** (so protected rules and CI still apply).
 
+**Staging on Vercel (single project):** Configure **Preview** env vars (including a **Neon branch** `DATABASE_URL`) so pushes to **`dev`** get preview deployments against an isolated DB; **Production** env stays on prod Neon. Full steps: **`docs/DEPLOYMENT_ENV.md`** → *Recommended model: `dev` = staging previews*.
+
 Scope and MVP framing (for prioritizing what merges): **`docs/TALENTBRIDGE_MVP_PLAN.md`** and **`docs/ROADMAP.md`**.
 
 - **Default local branch for new work:** `git checkout dev` (then `git pull` before starting a feature).

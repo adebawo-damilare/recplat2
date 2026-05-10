@@ -16,6 +16,30 @@ Firebase / auth credentials are intentionally **not** covered here—configure t
 
 ---
 
+## Recommended model: `dev` = staging previews, `main` = production (one Vercel project + Neon)
+
+Use a **single Vercel project**, **Git Production Branch = `main`**, and **two Neon databases** (production + a **Neon branch** or child database for staging):
+
+| Git / Vercel | Deployment type | Env scope in Vercel | `DATABASE_URL` |
+|--------------|-------------------|---------------------|----------------|
+| **`main`** | Production (your prod domain or production `*.vercel.app`) | **Production** | Neon **primary** (production) connection string |
+| **`dev`** (and any other non-`main` branch) | **Preview** (unique preview URL per deployment) | **Preview** | Neon **branch** (or dedicated staging DB)—**isolated from production** |
+
+**Flow**
+
+1. In Neon: create a **[branch](https://neon.tech/docs/guides/branching)** from your prod database (or maintain a separate staging root; either way isolates data from prod).
+2. Copy the branch’s connection string into Vercel → **Environment Variables** → **`DATABASE_URL`** → enable **Preview** only (leave **Production** pointing at prod).
+3. Duplicate **Jobs Slice–style** flags for **Preview** as well if staging should mirror prod behaviour: **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** and **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (build-time for the client flag—Preview deployments need them on the Preview scope).
+4. Apply migrations to the **Neon branch** whenever you change schema (`npm run db:apply` / `db:apply:categories` using that branch’s URL from your machine—or your provider’s SQL console).
+5. Push or merge to **`dev`** → Vercel builds a **Preview** → open the preview URL → run **`npm run smoke:api`** / strict smoke against that URL.
+6. When satisfied, merge **`dev` → `main`** (via PR, with CI green) → Vercel deploys **Production** with the **Production** `DATABASE_URL`.
+
+**Caveat:** Vercel attaches **one set of Preview-scoped variables** to **every** Preview deployment. So a PR from `feature/foo` uses the **same** staging `DATABASE_URL` as `dev`—which is usually what you want for a single shared staging DB; if you ever need per-branch DBs, you need a separate mechanism (e.g. another project or custom pipeline).
+
+**CI note:** GitHub Actions does **not** deploy your Vercel preview; it only validates the repo. **`smoke-postgres`** proves Postgres + migrations in CI—not your Neon branch. You still smoke the **preview URL** before promoting `dev` to `main`.
+
+---
+
 ## Required for Postgres-backed jobs
 
 | Variable         | Purpose |
@@ -51,14 +75,12 @@ Adjust only what your codebase actually reads; check `.env.example` for optional
 
 ---
 
-## Staging vs production databases
+## Staging vs production databases (short)
 
-Recommended patterns:
+- **Preferred (this repo’s doc):** single project, **Production** vs **Preview** env vars—see [Recommended model](#recommended-model-dev--staging-previews-main--production-one-vercel-project--neon) above.
+- **Alternative:** two Vercel projects (staging app + prod app), each with its own DB URL.
 
-- **Same Vercel project:** set different `DATABASE_URL` values under **Production** vs **Preview** so PRs hit a Neon **branch** / staging DB.
-- **Two Vercel projects:** staging app + prod app, each with its own Neon database and URLs.
-
-Avoid sharing one production DB with unrestricted preview deployments unless you intend to.
+Avoid pointing **Preview** at the **production** `DATABASE_URL` unless you deliberately accept preview traffic writing to prod.
 
 ---
 

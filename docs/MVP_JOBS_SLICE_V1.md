@@ -70,5 +70,5 @@ Omit `TALENTBRIDGE_JOBS_POSTGRES_ONLY` and `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGR
 
 - `docs/TALENTBRIDGE_MVP_PLAN.md` — full roadmap; Jobs Slice v1 ≈ hardened **Phase A**  
 - `docs/ROADMAP.md` — execution backlog  
-- `docs/DEPLOYMENT_ENV.md` — Vercel variables  
+- `docs/DEPLOYMENT_ENV.md` — Vercel variables (Preview = staging Neon branch, Production = prod DB)  
 - `docs/CATEGORY_MODEL.md` — talent lanes  
