@@ -54,6 +54,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 ## Related docs
 
 - `docs/ROADMAP.md` — forward-looking backlog  
+- `docs/ROADMAP_FROM_REFERENCE.md` — **feature ideas** extracted from `recruit/docs` for future phases  
 - `docs/CICD.md` — branch workflow + CI  
 - `docs/DEPLOYMENT_ENV.md` — Vercel env (Postgres / Redis), no auth secrets  
 - `database/README.md` — schema apply + seed  
