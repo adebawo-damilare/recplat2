@@ -68,11 +68,14 @@ From your machine (with Node 18+):
 
 ```bash
 SMOKE_BASE_URL=https://your-deployment.vercel.app npm run smoke:api
+
+# Tighter Jobs Slice rehearsal (Postgres wired; unauthenticated mine must be 401):
+SMOKE_EXPECT_POSTGRES_READY=1 SMOKE_BASE_URL=https://your-deployment.vercel.app npm run smoke:api
 ```
 
 Default `SMOKE_BASE_URL` targets `http://localhost:3000` if omitted.
 
-This hits `GET /api/health`, `GET /api/jobs`, and `GET /api/ai/health`. Ensure `DATABASE_URL` is correct on Vercel if you expect Postgres-backed listings.
+This hits **`GET /api/health`**, **`GET /api/categories`**, **`GET /api/jobs`**, **`GET /api/ai/health`**, and **`GET /api/applications/mine`** (no token). Strict mode (**`SMOKE_EXPECT_POSTGRES_READY=1`**) also requires **`postgresConfigured: true`** on **`/api/ai/health`**.
 
 ---
 

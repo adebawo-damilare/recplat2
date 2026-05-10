@@ -49,7 +49,7 @@ Also required for authenticated API writes:
 1. **Merge** via `dev` → PR → `main` with CI green (`docs/CICD.md`).  
 2. **Prod env:** `DATABASE_URL`, Firebase Admin JSON, **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (redeploy after adding `NEXT_PUBLIC_*`).  
 3. **Migrations** applied against production DB (`database/README.md`).  
-4. **Smoke:** `SMOKE_BASE_URL=https://<your-host> npm run smoke:api`  
+4. **Smoke:** `SMOKE_BASE_URL=https://<your-host> npm run smoke:api`; for a tighter check that Postgres backs jobs + mine, **`SMOKE_EXPECT_POSTGRES_READY=1`** (server must expose `DATABASE_URL`; expect **401** on `/api/applications/mine` without a token).
 5. **Sanity:** post a vacancy, browse, apply, confirm row in **`applications`** and list on candidate dashboard when signed in.
 
 ---

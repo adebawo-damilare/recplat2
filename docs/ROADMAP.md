@@ -27,7 +27,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - `npm run db:apply` — apply default SQL migration (`0001_initial`) via `DATABASE_URL`
 - `npm run db:apply:categories` — apply `0002_categories.sql` after `0001`
 - `npm run db:seed:samples` — insert demo vacancies into Postgres (see `database/README.md`)
-- `npm run smoke:api` — smoke `/api/health`, `/api/categories`, `/api/jobs`, `/api/ai/health` (set `SMOKE_BASE_URL` if not local)
+- `npm run smoke:api` — smoke `/api/health`, `/api/categories`, `/api/jobs`, `/api/ai/health`, **`GET /api/applications/mine`** (unauthenticated); optional **`SMOKE_EXPECT_POSTGRES_READY=1`** for staging/prod rehearsals (requires `DATABASE_URL` on server + `postgresConfigured: true`; **401** on mine). Same strict mode runs in **`CI` → job `smoke-postgres`**.
 - GitHub **`CI`** workflow (`.github/workflows/ci.yml`): lint → `npm run build` → Playwright; see **`docs/CICD.md`**.
 
 ## MVP documentation
