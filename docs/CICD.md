@@ -20,6 +20,11 @@ On every **pull request** and **push** to **`main`**, **`master`**, or **`dev`**
 
 You can rerun the workflow manually from GitHub (**Actions → CI → Run workflow**).
 
+Workflow: **`.github/workflows/preview-smoke.yml`** (**Preview smoke**)
+
+- Triggers on Vercel **`vercel.deployment.success`** (**`repository_dispatch`**) for non-production environments, or **Actions → Run workflow** with a URL.
+- Runs **`scripts/smoke-api.mjs`** (**strict** Postgres checks) against the live preview URL—see **`docs/DEPLOYMENT_ENV.md`** (Preview smoke checklist + Vercel settings).
+
 ---
 
 ## How this protects production

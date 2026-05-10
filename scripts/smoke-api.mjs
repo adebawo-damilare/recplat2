@@ -8,16 +8,30 @@
  * Strict Jobs Slice rehearsal (requires DATABASE_URL + server started with Postgres;
  * rejects Firestore/offline Postgres for jobs and applications/mine):
  *   SMOKE_EXPECT_POSTGRES_READY=1 SMOKE_BASE_URL=http://127.0.0.1:3000 npm run smoke:api
+ *
+ * Vercel Deployment Protection bypass (optional — same secret as automation bypass docs):
+ *   VERCEL_AUTOMATION_BYPASS_SECRET=... npm run smoke:api
  */
 /** Default localhost (not 127.0.0.1): Node fetch on some Windows setups hangs on IPv4 loopback.) */
 const base = (process.env.SMOKE_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const strictPostgres = process.env.SMOKE_EXPECT_POSTGRES_READY === "1";
 
+function vercelProtectionBypassHeaders() {
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
+  if (!secret) return {};
+  return { "x-vercel-protection-bypass": secret };
+}
+
 async function fetchJson(method, path, init = {}) {
+  const { headers: initHeaders, ...restInit } = init;
   const res = await fetch(`${base}${path}`, {
     cache: "no-store",
     method,
-    ...init,
+    ...restInit,
+    headers: {
+      ...vercelProtectionBypassHeaders(),
+      ...initHeaders,
+    },
   });
   const text = await res.text();
   let body = null;

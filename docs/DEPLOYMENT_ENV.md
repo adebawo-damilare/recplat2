@@ -55,7 +55,15 @@ Use a **single Vercel project**, **Git Production Branch = `main`**, and **two N
 4. **Quick product pass (optional but high signal)** — Sign in on the preview, post or open a job, apply once, confirm **`applications`** / candidate UI. Catches Preview-only auth or client env issues smoke does not cover.
 5. **Make it a gate** — Don’t merge **`dev` → `main`** until steps 1–3 pass for **that** preview. For teams: add the preview URL + “smoke ✅” to the PR description or use a short **release checklist** in the PR template.
 
-**Automation (optional later):** A small GitHub Action triggered on **deployment_status** (Vercel notifies GitHub when a preview is ready) could run `npm run smoke:api` with `SMOKE_BASE_URL` from the payload; until then, running the commands locally is enough.
+**Automation:** Workflow **`.github/workflows/preview-smoke.yml`** runs **`scripts/smoke-api.mjs`** against the deployment URL when Vercel sends **`repository_dispatch`** **`vercel.deployment.success`** (recommended integration; see [Vercel → Git → repository dispatch](https://vercel.com/docs/git/vercel-for-github#repository-dispatch-events)). Preview / non-`production` deployments use **`SMOKE_EXPECT_POSTGRES_READY=1`**; **Production** deployments skip this job so prod isn’t probed on every merge (run smoke manually against prod if you want parity).
+
+**Vercel setup**
+
+1. GitHub app / Git integration must be allowed to trigger **`repository_dispatch`** (Vercel’s current default path for deployment events). If you previously disabled related events, re-enable per [Vercel GitHub docs](https://vercel.com/docs/git/vercel-for-github#repository-dispatch-events).
+
+2. **[Deployment Protection](https://vercel.com/docs/deployment-protection)** on previews blocks GitHub’s runners unless you use **[Protection bypass for automation](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)**: generate a bypass secret in the Vercel project, store the **same value** in GitHub → **repository secrets** → **`VERCEL_AUTOMATION_BYPASS_SECRET`**. The **Preview smoke** workflow and **`scripts/smoke-api.mjs`** send **`x-vercel-protection-bypass`** automatically when that env var is set. Without it (and with protection enabled), smoke will see **401/403**.
+
+**Manual fallback:** **Actions → Preview smoke → Run workflow** with the preview URL, or run the same `npm run smoke:api` commands locally as above.
 
 ---
 
