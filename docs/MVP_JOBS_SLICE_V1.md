@@ -46,6 +46,10 @@ Also required for authenticated API writes:
 
 ## Release checklist
 
+Step-by-step order (merge, prod env, migrations, smoke, manual path): **`docs/RELEASE_JOBS_SLICE_V1.md`**.
+
+Summary:
+
 1. **Merge** via `dev` → PR → `main` with CI green (`docs/CICD.md`).  
 2. **Prod env:** `DATABASE_URL`, Firebase Admin JSON, **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (redeploy after adding `NEXT_PUBLIC_*`).  
 3. **Migrations** applied against production DB (`database/README.md`).  
@@ -68,6 +72,7 @@ Omit `TALENTBRIDGE_JOBS_POSTGRES_ONLY` and `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGR
 
 ## Related docs
 
+- `docs/RELEASE_JOBS_SLICE_V1.md` — **ordered production release runbook** (use for “release first”)  
 - `docs/TALENTBRIDGE_MVP_PLAN.md` — full roadmap; Jobs Slice v1 ≈ hardened **Phase A**  
 - `docs/ROADMAP.md` — execution backlog  
 - `docs/DEPLOYMENT_ENV.md` — Vercel variables (Preview = staging Neon branch, Production = prod DB)  
