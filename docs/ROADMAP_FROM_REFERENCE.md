@@ -1,5 +1,9 @@
 # Roadmap candidates from reference docs (`recruit/docs`)
 
+How this backlog maps to **live TalentBridge MVP phases** (synthesis + execution): **`docs/TALENTBRIDGE_MVP_PLAN.md`** (especially §7–§8). **`docs/ROADMAP.md`** stays the merged “what ships next” list.
+
+---
+
 Scanned reference documentation:
 
 | Document | Focus |

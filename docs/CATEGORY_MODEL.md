@@ -1,6 +1,6 @@
 # Category model (TalentBridge)
 
-This document captures how we applied the **“categories as templates”** idea from the strategy synthesis (`docs/SUPPORTING_NOTES.md`, transcript archive) **without** rewriting the existing jobs stack.
+This document captures how we applied the **“categories as templates”** idea from the strategy synthesis (`docs/SUPPORTING_NOTES.md`, transcript archive; see **`docs/TALENTBRIDGE_MVP_PLAN.md`** §4) **without** rewriting the existing jobs stack.
 
 ## Goals
 
@@ -28,4 +28,4 @@ This document captures how we applied the **“categories as templates”** idea
 
 ## Next steps (not built here)
 
-Per synthesis + `docs/ROADMAP_FROM_REFERENCE.md`: **`category_fields`**, **`category_screening_questions`**, denormalized **search docs**, **`candidate_profiles`**, invitations/screenings — promote into **`docs/ROADMAP.md`** when prioritized.
+Per synthesis + **`docs/TALENTBRIDGE_MVP_PLAN.md`** + **`docs/ROADMAP_FROM_REFERENCE.md`**: **`category_fields`**, **`category_screening_questions`**, denormalized **search docs**, **`candidate_profiles`**, invitations/screenings — promote into **`docs/ROADMAP.md`** when prioritized.

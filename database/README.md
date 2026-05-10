@@ -1,6 +1,8 @@
 # Database (Postgres)
 
-TalentBridge can use **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`) for vacancies, companies, applications, and AI audit metadata. When `DATABASE_URL` is unset, the app keeps using **Firestore** for job data.
+TalentBridge can use **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`) for vacancies, companies, applications, categories, and AI audit metadata. When `DATABASE_URL` is unset, the app keeps using **Firestore** for job data.
+
+**Why `categories` exists:** MVP talent lanes aligned with **`docs/TALENTBRIDGE_MVP_PLAN.md`** §4 and **`docs/CATEGORY_MODEL.md`**.
 
 ## Apply migrations
 

@@ -2,7 +2,7 @@
 
 The nested **`recruit/`** tree is a **pattern reference only** (not a second product UI). This document tracks what we **adopted** in TalentBridge (`recruit2`) versus what the reference implements in full, so expectations stay clear as we add features.
 
-**Last reviewed:** 2026-05-09 (categories slice; update this line when the table changes materially).
+**Last reviewed:** 2026-05-10 (categories + **`docs/TALENTBRIDGE_MVP_PLAN.md`**; update this line when the table changes materially).
 
 ---
 
@@ -55,6 +55,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 ## Related docs
 
 - `docs/ROADMAP.md` — forward-looking backlog  
+- `docs/TALENTBRIDGE_MVP_PLAN.md` — MVP scope, phases, and synthesis-aligned boundaries  
 - `docs/CATEGORY_MODEL.md` — how MVP category lanes ship in TalentBridge  
 - `docs/ROADMAP_FROM_REFERENCE.md` — **feature ideas** extracted from `recruit/docs` for future phases  
 - `docs/CICD.md` — branch workflow + CI  

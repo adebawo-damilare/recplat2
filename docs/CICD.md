@@ -38,6 +38,8 @@ Adjust your Vercel **Production Branch** (**Project → Settings → Git**) to *
 
 Ongoing work should land on **`dev`** first, then merge to **`main`** via **pull request** (so protected rules and CI still apply).
 
+Scope and MVP framing (for prioritizing what merges): **`docs/TALENTBRIDGE_MVP_PLAN.md`** and **`docs/ROADMAP.md`**.
+
 - **Default local branch for new work:** `git checkout dev` (then `git pull` before starting a feature).
 - **Feature work:** open a PR **into `dev`**, or commit on `dev` and open a PR **from `dev` to `main`** when ready to release.
 - **CI** (`.github/workflows/ci.yml`) runs on **pushes and PRs** to **`dev`** and **`main`** so both branches stay green.

@@ -1,10 +1,12 @@
 # TalentBridge roadmap (data & API)
 
+**MVP narrative** (strategy synthesis + how it maps to this repo): **`docs/TALENTBRIDGE_MVP_PLAN.md`**.
+
 What we took from the nested **`recruit/`** reference vs what we skipped is summarized in **`docs/REFERENCE_PARITY.md`**.
 
-**Candidate backlog** mined from `recruit/docs` (PRD, system design, API outline, contracts, roadmap): **`docs/ROADMAP_FROM_REFERENCE.md`**.
+**Candidate backlog** mined from `recruit/docs` (PRD, system design, API outline, contracts, roadmap): **`docs/ROADMAP_FROM_REFERENCE.md`** (paired with **`docs/TALENTBRIDGE_MVP_PLAN.md`** for phase context).
 
-**External strategy transcripts** (e.g. sessions with another AI): see **`docs/SUPPORTING_NOTES.md`** → promote agreed items **here** (`ROADMAP.md`) when you want them executed.
+**External strategy transcripts** (e.g. sessions with another AI): **`docs/SUPPORTING_NOTES.md`** — themes roll up into **`docs/TALENTBRIDGE_MVP_PLAN.md`**; promote agreed work **here** (`ROADMAP.md`) when you want it executed.
 
 ## Done (slices)
 
@@ -24,13 +26,19 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - `npm run db:apply:categories` — apply `0002_categories.sql` after `0001`
 - `npm run db:seed:samples` — insert demo vacancies into Postgres (see `database/README.md`)
 - `npm run smoke:api` — smoke `/api/health`, `/api/categories`, `/api/jobs`, `/api/ai/health` (set `SMOKE_BASE_URL` if not local)
-- GitHub **`CI`** workflow (`.github/workflows/ci.yml`): lint → `npm run build` → Playwright; see **`docs/CICD.md`**
+- GitHub **`CI`** workflow (`.github/workflows/ci.yml`): lint → `npm run build` → Playwright; see **`docs/CICD.md`**.
+
+## MVP documentation
+
+- **`docs/TALENTBRIDGE_MVP_PLAN.md`** — single place for MVP vision, phased delivery, MVP in/out/defer, AI posture, technical shape, and formal doc sequencing (strategy synthesis + **`recruit/docs`** alignment).
 
 ## Next
 
-1. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
-2. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
-3. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
+1. Promote **`recruit/docs/`** structural items (**`category_fields`, candidate profiles, invitations/screening, pipeline**) per **`docs/TALENTBRIDGE_MVP_PLAN.md`** phases B–D when prioritized (see **`docs/ROADMAP_FROM_REFERENCE.md`** P0).
+2. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
+3. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
+4. Search index / workers deferred until discovery scale phase (**`TALENTBRIDGE_MVP_PLAN.md`** §6).
+5. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
 
 ## E2E note
 
