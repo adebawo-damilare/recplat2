@@ -1,6 +1,6 @@
 # TalentBridge MVP plan (product + execution)
 
-This is the **product-facing MVP narrative** for the main app in this repo, aligned with the strategy synthesis in **`docs/SUPPORTING_NOTES.md`** and the verbatim archive **`docs/interraction with another ai.txt`**. Deep requirements and screens for the broader platform live in **`recruit/docs/`** (reference only); **execution order** stays in **`docs/ROADMAP.md`**.
+This is the **product-facing MVP narrative** for the main app in this repo, aligned with the strategy themes summarized in **`docs/SUPPORTING_NOTES.md`**. Deep requirements and screens for the broader platform live in **`recruit/docs/`** (reference only); **execution order** stays in **`docs/ROADMAP.md`**.
 
 ---
 
@@ -162,7 +162,7 @@ TalentBridge **`docs/ROADMAP.md`** stays the **checklist for what we actually me
 |-----|---------|
 | **`docs/ROADMAP.md`** | Execution backlog (Done / Next) |
 | **`docs/CATEGORY_MODEL.md`** | Shipped lane model on vacancies |
-| **`docs/SUPPORTING_NOTES.md`** | Archive + hygiene for external strategy transcripts |
+| **`docs/SUPPORTING_NOTES.md`** | Short pointers + themes from external strategy (chats, etc.) |
 | **`docs/REFERENCE_PARITY.md`** | What we adopted vs **`recruit/`** |
 | **`docs/ROADMAP_FROM_REFERENCE.md`** | P0/P1 backlog from **`recruit/docs`** |
 

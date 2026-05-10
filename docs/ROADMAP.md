@@ -6,7 +6,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 **Candidate backlog** mined from `recruit/docs` (PRD, system design, API outline, contracts, roadmap): **`docs/ROADMAP_FROM_REFERENCE.md`** (paired with **`docs/TALENTBRIDGE_MVP_PLAN.md`** for phase context).
 
-**External strategy transcripts** (e.g. sessions with another AI): **`docs/SUPPORTING_NOTES.md`** — themes roll up into **`docs/TALENTBRIDGE_MVP_PLAN.md`**; promote agreed work **here** (`ROADMAP.md`) when you want it executed.
+**External strategy** (meetings, other tools): capture themes in **`docs/SUPPORTING_NOTES.md`** and **`docs/TALENTBRIDGE_MVP_PLAN.md`**; promote agreed work **here** (`ROADMAP.md`) when you want it executed.
 
 ## Done (slices)
 

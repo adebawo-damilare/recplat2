@@ -1,21 +1,20 @@
 # Supporting notes (external strategy sessions)
 
-Some product strategy was captured outside this repo’s canonical docs—for example **`docs/interraction with another ai.txt`** (verbatim export from another AI session).
+Product strategy from **outside conversations** (email, other AI chats, meetings) should be **summarized here** or in **`docs/TALENTBRIDGE_MVP_PLAN.md`**—not left only in long raw exports in-repo (they go stale and duplicate the MVP plan).
 
-**Consolidated product intent (including synthesis themes + MVP framing):** **`docs/TALENTBRIDGE_MVP_PLAN.md`**. The transcript stays **verbatim** and **non-authoritative** until items are promoted to **`docs/ROADMAP.md`**.
+**Consolidated product intent (themes + MVP framing):** **`docs/TALENTBRIDGE_MVP_PLAN.md`**. Until promoted to **`docs/ROADMAP.md`**, treat strategy notes as **non-authoritative** for shipping.
 
 ## How to use it
 
 | Source | Role |
 |--------|------|
-| **`docs/interraction with another ai.txt`** | Raw **archive**. Category-platform thinking: architecture diagrams, MVP ordering, modules (auth, category templates, profiles, screening, search, messaging, pipeline, admin, analytics), phased doc order (product map → MVP spec → PRD → system design → DB/API), Go-to-market ideas, expanded feature tables. |
-| **`docs/TALENTBRIDGE_MVP_PLAN.md`** | **MVP narrative** distilled from synthesis + **`recruit/`** references: positioning, workspaces, MVP in/out/defer, AI-as-copilot, phased delivery, formal doc ordering. Does **not** replace **`ROADMAP.md`** for day-to-day execution. |
-| **`docs/ROADMAP.md`** | **Single place to decide what TalentBridge builds next.** When you agree with something in the transcript or MVP plan, **promote it here** as a numbered “Next” item or Done bullet. |
+| **`docs/TALENTBRIDGE_MVP_PLAN.md`** | **MVP narrative**: positioning, workspaces, MVP in/out/defer, AI-as-copilot, phased delivery, formal doc ordering—**this file** is where prior synthesis now lives. Does **not** replace **`ROADMAP.md`** for day-to-day execution. |
+| **`docs/ROADMAP.md`** | **Single place to decide what TalentBridge builds next.** When you agree with something in the MVP plan or a new strategy note, **promote it here** as a numbered “Next” item or Done bullet. |
 | **`docs/ROADMAP_FROM_REFERENCE.md`** | **Idea backlog** aligned with **`recruit/docs/`** PRD/outline. Overlaps synthesis (templates, few categories, modular monolith, search/workers deferred). Dedupe consciously. |
 | **`docs/REFERENCE_PARITY.md`** | **Scope tracker** versus the nested **`recruit/`** codebase. Update when you resurrect something we previously marked “not implemented.” |
 | **`docs/CATEGORY_MODEL.md`** | **Implemented slice** applying “categories as templates”: MVP lanes on **`vacancies`**, **`GET /api/categories`**, `GET /api/jobs?category=`. |
 
-## Themes from the archived session (shortcut)
+## Themes (shortcut—was captured from an external strategy session)
 
 Summarized **non-authoritative**—the same ideas are threaded into **`docs/TALENTBRIDGE_MVP_PLAN.md`**; confirm execution in **`docs/ROADMAP.md`**:
 
@@ -28,6 +27,5 @@ Summarized **non-authoritative**—the same ideas are threaded into **`docs/TALE
 
 ## Maintainer hygiene
 
-- Prefer **short deltas** in `ROADMAP.md` over copying the full `.txt` into new markdown files.
-- Prefer updating **`docs/TALENTBRIDGE_MVP_PLAN.md`** when synthesis-level strategy changes, then link from here instead of lengthening this file.
-- If the transcript grows stale, add a note at the top of this file (**“Archived as of DATE; see TALENTBRIDGE_MVP_PLAN + ROADMAP for current intent”**).
+- Prefer **short deltas** in **`ROADMAP.md`** over pasting long chat exports into **`docs/`**.
+- When strategy changes materially, update **`docs/TALENTBRIDGE_MVP_PLAN.md`** first; add a dated one-line note here only if you need a paper trail.

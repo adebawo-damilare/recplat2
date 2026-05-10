@@ -1,6 +1,6 @@
 # Category model (TalentBridge)
 
-This document captures how we applied the **“categories as templates”** idea from the strategy synthesis (`docs/SUPPORTING_NOTES.md`, transcript archive; see **`docs/TALENTBRIDGE_MVP_PLAN.md`** §4) **without** rewriting the existing jobs stack.
+This document captures how we applied the **“categories as templates”** idea from the strategy synthesis (`docs/SUPPORTING_NOTES.md`, **`docs/TALENTBRIDGE_MVP_PLAN.md`** §4) **without** rewriting the existing jobs stack.
 
 ## Goals
 
