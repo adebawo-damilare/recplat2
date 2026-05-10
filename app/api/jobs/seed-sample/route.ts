@@ -31,17 +31,31 @@ export async function POST(request: NextRequest) {
   }
 
   const created = [];
-  for (const template of SAMPLE_VACANCY_TEMPLATES) {
-    const vacancy = await insertVacancyForOwner({
-      ownerUid: authResult.uid,
-      companyName: template.companyName,
-      jobTitle: template.jobTitle,
-      location: template.location,
-      salary: template.salary,
-      description: template.description,
-      requirements: template.requirements,
-    });
-    created.push(vacancy);
+  try {
+    for (const template of SAMPLE_VACANCY_TEMPLATES) {
+      const vacancy = await insertVacancyForOwner({
+        ownerUid: authResult.uid,
+        companyName: template.companyName,
+        jobTitle: template.jobTitle,
+        location: template.location,
+        salary: template.salary,
+        description: template.description,
+        requirements: template.requirements,
+        categorySlug: template.categorySlug,
+      });
+      created.push(vacancy);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_CATEGORY_SLUG") {
+      return NextResponse.json(
+        {
+          error: "Sample categories missing. Apply database migration 0002_categories.sql.",
+          hint: 'Run: node scripts/db-apply.mjs database/migrations/0002_categories.sql',
+        },
+        { status: 400 },
+      );
+    }
+    throw error;
   }
 
   await recordAiAudit({

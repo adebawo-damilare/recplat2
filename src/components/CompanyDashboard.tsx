@@ -172,8 +172,13 @@ export default function CompanyDashboard() {
                 className="p-8 hover:bg-neutral-50/50 transition-colors flex flex-col md:flex-row md:items-center gap-6"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h4 className="text-lg font-black text-neutral-900">{v.jobTitle}</h4>
+                    {v.category?.label ? (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-100">
+                        {v.category.label}
+                      </span>
+                    ) : null}
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${
                       v.status === 'open' ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-100 text-neutral-400'
                     }`}>

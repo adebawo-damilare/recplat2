@@ -3,40 +3,44 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Search, MapPin, Briefcase, DollarSign, Filter, ChevronRight, X, Database } from "lucide-react";
-import { auth, type Vacancy } from '../lib/firebase';
+import { Search, MapPin, Briefcase, DollarSign, ChevronRight, X, Database } from "lucide-react";
+import { auth, type Vacancy } from "../lib/firebase";
 import {
   fetchPublicJobsWithFallback,
   applyToVacancyWithFallback,
   seedSampleVacanciesViaApi,
 } from "../lib/jobsApi";
+import { useTalentCategories } from "./jobs/useTalentCategories";
 
 export default function JobBoard() {
+  const lanes = useTalentCategories();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [applying, setApplying] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [laneFilter, setLaneFilter] = useState<string>("all");
   const [selectedJob, setSelectedJob] = useState<Vacancy | null>(null);
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchPublicJobsWithFallback(75);
+      const lane = laneFilter === "all" ? null : laneFilter;
+      const data = await fetchPublicJobsWithFallback(75, null, lane);
       setVacancies(data);
     } catch (error) {
       console.error("Failed to fetch jobs", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [laneFilter]);
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    void fetchJobs();
+  }, [fetchJobs]);
 
   const handleApply = async () => {
     if (!auth.currentUser) {
@@ -100,9 +104,19 @@ export default function JobBoard() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="px-6 py-4 bg-white border border-neutral-200 rounded-2xl flex items-center justify-center gap-2 font-bold hover:bg-neutral-50 transition-colors">
-          <Filter className="w-5 h-5" /> Filters
-        </button>
+        <select
+          aria-label="Filter by talent lane"
+          className="px-6 py-4 bg-white border border-neutral-200 rounded-2xl font-bold text-neutral-800 hover:bg-neutral-50 transition-colors cursor-pointer min-w-[200px]"
+          value={laneFilter}
+          onChange={(e) => setLaneFilter(e.target.value)}
+        >
+          <option value="all">All talent lanes</option>
+          {lanes.map((lane) => (
+            <option key={lane.slug} value={lane.slug}>
+              {lane.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -133,7 +147,10 @@ export default function JobBoard() {
                     <p className="text-xs text-neutral-500">{job.companyName}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-3 text-[10px] text-neutral-400 font-bold uppercase tracking-wider flex-wrap">
+                  {job.category?.label ? (
+                    <span className="rounded-md bg-neutral-900/5 px-2 py-0.5 text-neutral-600">{job.category.label}</span>
+                  ) : null}
                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
                   <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> {job.salary}</span>
                 </div>
@@ -170,7 +187,12 @@ export default function JobBoard() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold mb-1">{selectedJob.jobTitle}</h2>
-                    <div className="flex items-center gap-4 text-sm text-neutral-500 font-medium">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-500 font-medium">
+                      {selectedJob.category?.label ? (
+                        <span className="text-xs font-semibold uppercase tracking-wide text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+                          {selectedJob.category.label}
+                        </span>
+                      ) : null}
                       <span className="flex items-center gap-1.5"><Briefcase className="w-4 h-4 text-blue-600" /> {selectedJob.companyName}</span>
                       <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-blue-600" /> {selectedJob.location}</span>
                     </div>

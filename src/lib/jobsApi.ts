@@ -14,14 +14,17 @@ import {
   updateVacancy as updateVacancyFirestore,
   type Vacancy,
 } from "./firebase";
+import { categorySummaryFromWriteSlug } from "./vacancyWriteShared";
 
-type VacancyWritePayload = {
+export type VacancyWritePayload = {
   jobTitle: string;
   companyName: string;
   location: string;
   salary: string;
   description: string;
   requirements: string;
+  /** Omitted → leave unset on create, leave unchanged on update (Postgres PATCH). explicit null clears. */
+  categorySlug?: string | null;
 };
 
 async function buildAuthHeaders(): Promise<HeadersInit | null> {
@@ -41,10 +44,21 @@ function shouldFallback(status: number, payload?: { code?: string }) {
   return code === "POSTGRES_UNAVAILABLE" || code === "FIREBASE_ADMIN_UNAVAILABLE";
 }
 
-export async function fetchPublicJobsWithFallback(limit = 75, cursor?: string | null) {
+export async function fetchPublicJobsWithFallback(
+  limit = 75,
+  cursor?: string | null,
+  categorySlug?: string | null,
+) {
+  const csRaw = categorySlug?.trim().toLowerCase();
+  const cs =
+    csRaw && csRaw !== "all"
+      ? csRaw
+      : null;
+
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
     if (cursor) qs.set("cursor", cursor);
+    if (cs) qs.set("category", cs);
 
     const res = await fetch(`/api/jobs?${qs.toString()}`, {
       credentials: "same-origin",
@@ -65,7 +79,12 @@ export async function fetchPublicJobsWithFallback(limit = 75, cursor?: string | 
   }
 
   const fb = await getVacanciesFirestore();
-  return fb || [];
+  const rows = fb || [];
+  if (!cs) {
+    return rows;
+  }
+
+  return rows.filter((job) => job.category?.slug === cs);
 }
 
 export async function fetchMyVacanciesWithFallback(ownerUid: string) {
@@ -90,8 +109,29 @@ export async function fetchMyVacanciesWithFallback(ownerUid: string) {
   return fb || [];
 }
 
+function buildVacancyWriteJson(payload: VacancyWritePayload): Record<string, unknown> {
+  const base = {
+    jobTitle: payload.jobTitle,
+    companyName: payload.companyName,
+    location: payload.location,
+    salary: payload.salary,
+    description: payload.description,
+    requirements: payload.requirements,
+  };
+  const out: Record<string, unknown> = { ...base };
+  const rawCat = payload.categorySlug;
+  if (rawCat === null) {
+    out.categorySlug = null;
+  } else if (typeof rawCat === "string" && rawCat.trim()) {
+    out.categorySlug = rawCat.trim().toLowerCase();
+  }
+  return out;
+}
+
 export async function persistVacancyWithFallback(payload: VacancyWritePayload, vacancy?: Vacancy | null) {
   const headers = await buildAuthHeaders();
+
+  const apiBody = buildVacancyWriteJson(payload);
 
   if (headers) {
     try {
@@ -99,7 +139,7 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
         const res = await fetch(`/api/jobs`, {
           method: "POST",
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(apiBody),
         });
         const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
         if (res.ok && raw.job) {
@@ -112,7 +152,7 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
         const res = await fetch(`/api/jobs/${vacancy.id}`, {
           method: "PATCH",
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(apiBody),
         });
         const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
         if (res.ok && raw.job) {
@@ -131,15 +171,44 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
     throw new Error("You must be signed in to save a vacancy.");
   }
 
-  if (vacancy?.id) {
-    await updateVacancyFirestore(vacancy.id, payload);
-    return { ...vacancy, ...payload } as Vacancy;
+  const coreFields = {
+    jobTitle: payload.jobTitle,
+    companyName: payload.companyName,
+    location: payload.location,
+    salary: payload.salary,
+    description: payload.description,
+    requirements: payload.requirements,
+  };
+
+  const categoryPatch: Partial<Pick<Vacancy, "category">> = {};
+  if (payload.categorySlug === null) {
+    categoryPatch.category = null;
+  } else if (typeof payload.categorySlug === "string" && payload.categorySlug.trim()) {
+    const sum = categorySummaryFromWriteSlug(payload.categorySlug.trim());
+    if (sum) {
+      categoryPatch.category = sum;
+    }
   }
 
-  await createVacancyFirestore({
-    ...payload,
+  if (vacancy?.id) {
+    await updateVacancyFirestore(vacancy.id, { ...coreFields, ...categoryPatch });
+    const merged: Vacancy = { ...vacancy, ...coreFields };
+    if ("category" in categoryPatch) {
+      merged.category = categoryPatch.category === null ? undefined : categoryPatch.category;
+    }
+    return merged;
+  }
+
+  const createPayload: Omit<Vacancy, "id" | "status"> = {
+    ...coreFields,
     postedBy: auth.currentUser.uid,
-  });
+  };
+
+  if (categoryPatch.category) {
+    createPayload.category = categoryPatch.category;
+  }
+
+  await createVacancyFirestore(createPayload);
   return null;
 }
 

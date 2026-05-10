@@ -2,7 +2,7 @@
 
 The nested **`recruit/`** tree is a **pattern reference only** (not a second product UI). This document tracks what we **adopted** in TalentBridge (`recruit2`) versus what the reference implements in full, so expectations stay clear as we add features.
 
-**Last reviewed:** 2026-05-09 (update this line when the table changes materially).
+**Last reviewed:** 2026-05-09 (categories slice; update this line when the table changes materially).
 
 ---
 
@@ -11,8 +11,9 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 | Area | Reference idea | In TalentBridge |
 |------|----------------|-----------------|
 | Data | Postgres as source of truth, Neon-style URL | `DATABASE_URL`, `drizzle-orm` + `postgres` pool, `database/migrations/*.sql` |
-| Schema | Relational companies + roles | `companies`, `vacancies`, `applications`, `ai_audit_events` (not the full recruit ERD) |
-| API | Many small `route.ts` handlers | `app/api/jobs/*`, `app/api/applications`, `app/api/ai/health`, etc. |
+| Schema | Relational companies + roles | `companies`, **`categories`**, `vacancies` (+ optional `category_id` FK), `applications`, `ai_audit_events` (not the full recruit ERD) |
+| Categories | MVP talent lanes (“templates” wedge before `category_fields`) | **`GET /api/categories`**, `src/server/categories/*`, `src/shared/mvpCategories.ts`, migration `database/migrations/0002_categories.sql` |
+| API | Many small `route.ts` handlers | `app/api/jobs/*`, **`app/api/categories`**, `app/api/applications`, `app/api/ai/health`, etc. |
 | Auth (server) | “API resolves the user on the server” | Firebase **ID token** + **Firebase Admin** verify (not cookie + scrypt + DB sessions) |
 | AI | Provider switch + server-side audit | `TALENTBRIDGE_AI_PROVIDER`, `src/server/ai/*`, `ai_audit_events` |
 | Ops | DB apply, smoke | `npm run db:apply`, `npm run smoke:api`, `npm run db:seed:samples` |
@@ -54,6 +55,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 ## Related docs
 
 - `docs/ROADMAP.md` — forward-looking backlog  
+- `docs/CATEGORY_MODEL.md` — how MVP category lanes ship in TalentBridge  
 - `docs/ROADMAP_FROM_REFERENCE.md` — **feature ideas** extracted from `recruit/docs` for future phases  
 - `docs/CICD.md` — branch workflow + CI  
 - `docs/DEPLOYMENT_ENV.md` — Vercel env (Postgres / Redis), no auth secrets  

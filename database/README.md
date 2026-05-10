@@ -9,12 +9,16 @@ TalentBridge can use **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`)
 
 ```bash
 npm run db:apply
+npm run db:apply:categories
 ```
+
+Categories migration (`0002_categories.sql`) **adds `categories`, seeds marketers/designers/sales, and adds `vacancies.category_id`**. Apply it after `0001_initial.sql`.
 
 Or with `psql`:
 
 ```bash
 psql "$DATABASE_URL" -f database/migrations/0001_initial.sql
+psql "$DATABASE_URL" -f database/migrations/0002_categories.sql
 ```
 
 On Windows PowerShell you can use `psql` from PostgreSQL tools, or run the same statements in the host SQL editor.
@@ -29,7 +33,8 @@ npx drizzle-kit generate
 
 ## Data flow
 
-- **Reads:** `GET /api/jobs` uses Postgres when `DATABASE_URL` is set, otherwise Firestore (`src/server/jobs/firestoreVacancies.ts`).
+- **Reads:** `GET /api/jobs` uses Postgres when `DATABASE_URL` is set, otherwise Firestore (`src/server/jobs/firestoreVacancies.ts`). Optional `?category=marketers|designers|sales` filters server-side on Postgres.
+- **Catalog:** `GET /api/categories` lists MVP lanes from Postgres when configured, otherwise falls back to `src/shared/mvpCategories.ts`.
 - **Writes:** `POST` / `PATCH /api/jobs/[id]` require a Firebase ID token and write to Postgres when configured.
 - **Applications:** `POST /api/applications` records interest in Postgres when configured; otherwise the client falls back to Firestore `applyToJob`.
 

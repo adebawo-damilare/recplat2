@@ -1,29 +1,24 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { Vacancy } from "../../lib/firebase";
-import { getDrizzleDb } from "../db/postgres";
-import { applications, companies, vacancies } from "../schema";
-import { decodeVacancyCursor, encodeVacancyCursor } from "./cursor";
-import type { PaginatedVacanciesResult } from "./firestoreVacancies";
 
-function mapRowToVacancy(row: typeof vacancies.$inferSelect): Vacancy {
-  return {
-    id: row.id,
-    jobTitle: row.jobTitle,
-    companyName: row.companyNameDenorm,
-    location: row.location,
-    salary: row.salary,
-    description: row.description,
-    requirements: row.requirements,
-    status: row.status as Vacancy["status"],
-    postedBy: row.postedByFirebaseUid,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
+import type { Vacancy } from "../../lib/firebase";
+import type { PaginatedVacanciesResult } from "./firestoreVacancies";
+import { resolveActiveCategoryIdBySlug } from "../categories/resolveActiveCategoryId";
+import { getDrizzleDb } from "../db/postgres";
+import { applications, categories, companies, vacancies } from "../schema";
+import { decodeVacancyCursor, encodeVacancyCursor } from "./cursor";
+import { mapPostgresVacancyRow } from "./vacancyMapper";
+
+function catSummaryFromJoined(
+  slug: string | null,
+  label: string | null,
+): { slug: string; label: string } | null {
+  return slug && label ? { slug, label } : null;
 }
 
 export async function fetchOpenVacanciesPageFromPostgres(
   rawLimit: number,
   cursor?: string | null,
+  categorySlug?: string | null,
 ): Promise<PaginatedVacanciesResult> {
   const pageSize = Math.max(1, Math.min(rawLimit, 50));
   const db = getDrizzleDb();
@@ -40,26 +35,39 @@ export async function fetchOpenVacanciesPageFromPostgres(
       sql`(${vacancies.createdAt}, ${vacancies.id}) < (${d}::timestamptz, ${cursorPayload.id})`,
     );
   }
+
+  const slugFilter = categorySlug?.trim().toLowerCase();
+  if (slugFilter) {
+    conditions.push(eq(categories.slug, slugFilter));
+  }
+
   const nextWhere = and(...conditions)!;
 
   const rows = await db
-    .select()
+    .select({
+      v: vacancies,
+      catSlug: categories.slug,
+      catLabel: categories.label,
+    })
     .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
     .where(nextWhere)
     .orderBy(desc(vacancies.createdAt), desc(vacancies.id))
     .limit(pageSize + 1);
 
   const hasMore = rows.length > pageSize;
   const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
-  const jobs = pageRows.map(mapRowToVacancy);
+  const jobs = pageRows.map((r) =>
+    mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)),
+  );
 
   const last = pageRows[pageRows.length - 1];
   let nextCursor: string | null = null;
 
   if (hasMore && last) {
     nextCursor = encodeVacancyCursor({
-      createdAtMs: last.createdAt.getTime(),
-      id: last.id,
+      createdAtMs: last.v.createdAt.getTime(),
+      id: last.v.id,
     });
   }
 
@@ -101,16 +109,26 @@ export async function insertVacancyForOwner(input: {
   salary: string;
   description: string;
   requirements: string;
+  categorySlug?: string | null;
 }) {
   const db = getDrizzleDb();
   const company = await ensureCompanyForOwner(input.ownerUid, input.companyName);
   const id = crypto.randomUUID();
+
+  let categoryId: string | null = null;
+  if (input.categorySlug?.trim()) {
+    categoryId = await resolveActiveCategoryIdBySlug(input.categorySlug);
+    if (!categoryId) {
+      throw new Error("INVALID_CATEGORY_SLUG");
+    }
+  }
 
   const [row] = await db
     .insert(vacancies)
     .values({
       id,
       companyId: company.id,
+      categoryId,
       companyNameDenorm: input.companyName,
       jobTitle: input.jobTitle,
       location: input.location,
@@ -122,8 +140,12 @@ export async function insertVacancyForOwner(input: {
     })
     .returning();
 
-  return mapRowToVacancy(row);
+  return mapJoinedRowByVacancyId(row.id);
 }
+
+export type UpdateVacancyForOwnerResult =
+  | { ok: true; vacancy: Vacancy }
+  | { ok: false; reason: "NOT_FOUND_OR_FORBIDDEN" | "INVALID_CATEGORY_SLUG" };
 
 export async function updateVacancyForOwner(
   vacancyId: string,
@@ -136,8 +158,9 @@ export async function updateVacancyForOwner(
     description: string;
     requirements: string;
     status: "open" | "closed";
+    categorySlug: string | null;
   }>,
-) {
+): Promise<UpdateVacancyForOwnerResult> {
   const db = getDrizzleDb();
   const existing = await db.select().from(vacancies).where(eq(vacancies.id, vacancyId)).limit(1);
   const row = existing[0];
@@ -154,11 +177,25 @@ export async function updateVacancyForOwner(
     companyNameDenorm = patch.companyName;
   }
 
+  let nextCategoryId = row.categoryId;
+  if ("categorySlug" in patch) {
+    if (patch.categorySlug === null || patch.categorySlug === "") {
+      nextCategoryId = null;
+    } else {
+      const resolved = await resolveActiveCategoryIdBySlug(patch.categorySlug);
+      if (!resolved) {
+        return { ok: false as const, reason: "INVALID_CATEGORY_SLUG" as const };
+      }
+      nextCategoryId = resolved;
+    }
+  }
+
   const [updated] = await db
     .update(vacancies)
     .set({
       companyId,
       companyNameDenorm,
+      categoryId: nextCategoryId,
       jobTitle: patch.jobTitle ?? row.jobTitle,
       location: patch.location ?? row.location,
       salary: patch.salary ?? row.salary,
@@ -170,23 +207,61 @@ export async function updateVacancyForOwner(
     .where(eq(vacancies.id, vacancyId))
     .returning();
 
-  return { ok: true as const, vacancy: mapRowToVacancy(updated) };
+  const vacancy = await mapJoinedRowByVacancyId(updated.id);
+  return { ok: true as const, vacancy };
+}
+
+async function mapJoinedRowByVacancyId(id: string): Promise<Vacancy> {
+  const db = getDrizzleDb();
+  const rows = await db
+    .select({
+      v: vacancies,
+      catSlug: categories.slug,
+      catLabel: categories.label,
+    })
+    .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .where(eq(vacancies.id, id))
+    .limit(1);
+
+  const r = rows[0];
+  if (!r) {
+    throw new Error("VACANCY_ROW_MISSING_AFTER_WRITE");
+  }
+  return mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel));
 }
 
 export async function listVacanciesForOwner(ownerUid: string) {
   const db = getDrizzleDb();
   const rows = await db
-    .select()
+    .select({
+      v: vacancies,
+      catSlug: categories.slug,
+      catLabel: categories.label,
+    })
     .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
     .where(eq(vacancies.postedByFirebaseUid, ownerUid))
     .orderBy(desc(vacancies.updatedAt));
-  return rows.map(mapRowToVacancy);
+
+  return rows.map((r) => mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)));
 }
 
 export async function getVacancyById(id: string): Promise<Vacancy | null> {
   const db = getDrizzleDb();
-  const rows = await db.select().from(vacancies).where(eq(vacancies.id, id)).limit(1);
-  return rows[0] ? mapRowToVacancy(rows[0]) : null;
+  const rows = await db
+    .select({
+      v: vacancies,
+      catSlug: categories.slug,
+      catLabel: categories.label,
+    })
+    .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .where(eq(vacancies.id, id))
+    .limit(1);
+
+  const r = rows[0];
+  return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
 }
 
 export async function recordApplicationPostgres(vacancyId: string, candidateUid: string) {

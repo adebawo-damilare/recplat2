@@ -26,6 +26,10 @@ async function check(label, path, { expectJson = true } = {}) {
 
 try {
   await check("health", "/api/health");
+  const cats = await check("categories", "/api/categories");
+  if (!Array.isArray(cats.categories)) {
+    throw new Error("GET /api/categories: expected { categories: array }");
+  }
   const jobs = await check("jobs", "/api/jobs?limit=1");
   if (!Array.isArray(jobs.jobs)) {
     throw new Error("GET /api/jobs: expected { jobs: array }");

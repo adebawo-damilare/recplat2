@@ -9,7 +9,8 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 ## Done (slices)
 
 - Postgres schema + SQL migration for companies, vacancies, applications, `ai_audit_events` (`database/migrations/0001_initial.sql`).
-- Drizzle schema + server DB client (`src/server/schema`, `src/server/db/postgres.ts`).
+- **Category lanes (synthesis wedge):** `categories` table + `vacancies.category_id`, `GET /api/categories`, `GET /api/jobs?category=`, optional `categorySlug` on vacancy writes — see **`docs/CATEGORY_MODEL.md`** and `database/migrations/0002_categories.sql`.
+- Drizzle schema split under `src/server/schema/*` (+ server DB client `src/server/db/postgres.ts`).
 - Dual read path: `GET /api/jobs` and client listing use Postgres when `DATABASE_URL` is set, else Firestore.
 - Write path for jobs: `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` with Firebase ID token verification (`FIREBASE_SERVICE_ACCOUNT_JSON`).
 - Applications: `POST /api/applications` with the same auth pattern; client falls back to Firestore on 503 / known codes.
@@ -19,9 +20,10 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 ## Tooling
 
-- `npm run db:apply` — apply SQL migrations via `DATABASE_URL`
+- `npm run db:apply` — apply default SQL migration (`0001_initial`) via `DATABASE_URL`
+- `npm run db:apply:categories` — apply `0002_categories.sql` after `0001`
 - `npm run db:seed:samples` — insert demo vacancies into Postgres (see `database/README.md`)
-- `npm run smoke:api` — smoke `GET /api/health`, `GET /api/jobs`, `GET /api/ai/health` (set `SMOKE_BASE_URL` if not local)
+- `npm run smoke:api` — smoke `/api/health`, `/api/categories`, `/api/jobs`, `/api/ai/health` (set `SMOKE_BASE_URL` if not local)
 - GitHub **`CI`** workflow (`.github/workflows/ci.yml`): lint → `npm run build` → Playwright; see **`docs/CICD.md`**
 
 ## Next

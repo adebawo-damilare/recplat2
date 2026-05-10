@@ -10,6 +10,7 @@ Some product strategy was captured outside this repo’s canonical docs—for ex
 | **`docs/ROADMAP.md`** | **Single place to decide what TalentBridge builds next.** When you agree with something in the transcript, **promote it here** as a numbered “Next” item or Done bullet. |
 | **`docs/ROADMAP_FROM_REFERENCE.md`** | **Idea backlog** aligned with **`recruit/docs/`** PRD/outline. Useful overlap with the transcript (categories-as-templates, 2–3 categories at launch, modular monolith, search index, workers). Dedupe consciously when both mention the same feature. |
 | **`docs/REFERENCE_PARITY.md`** | **Scope tracker** versus the nested **`recruit/`** codebase. Update when you resurrect something we previously marked “not implemented.” |
+| **`docs/CATEGORY_MODEL.md`** | **Implemented slice** applying “categories as templates”: MVP lanes, DB FK on vacancies, `/api/categories`, job filters (`GET /api/jobs?category=`). |
 
 ## Themes from the archived session (shortcut)
 

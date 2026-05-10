@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { motion } from "motion/react";
 import { X, Briefcase, MapPin, DollarSign, FileText, CheckCircle, Building2 } from "lucide-react";
 import { auth, type Vacancy } from '../lib/firebase';
-import { persistVacancyWithFallback } from '../lib/jobsApi';
+import { persistVacancyWithFallback } from "../lib/jobsApi";
+import { VacancyCategoryField } from "./vacancies/VacancyCategoryField";
 
 interface VacancyFormProps {
   vacancy?: Vacancy;
@@ -18,12 +19,13 @@ interface VacancyFormProps {
 export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    jobTitle: vacancy?.jobTitle || '',
-    companyName: vacancy?.companyName || '',
-    location: vacancy?.location || '',
-    salary: vacancy?.salary || '',
-    description: vacancy?.description || '',
-    requirements: vacancy?.requirements || '',
+    jobTitle: vacancy?.jobTitle || "",
+    companyName: vacancy?.companyName || "",
+    location: vacancy?.location || "",
+    salary: vacancy?.salary || "",
+    description: vacancy?.description || "",
+    requirements: vacancy?.requirements || "",
+    categorySlug: vacancy?.category?.slug ?? "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +34,27 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
 
     setLoading(true);
     try {
-      await persistVacancyWithFallback(formData, vacancy);
+      const trimmedLane = formData.categorySlug.trim();
+      const categorySlug = vacancy
+        ? trimmedLane === ""
+          ? null
+          : trimmedLane.toLowerCase()
+        : trimmedLane === ""
+          ? undefined
+          : trimmedLane.toLowerCase();
+
+      await persistVacancyWithFallback(
+        {
+          jobTitle: formData.jobTitle,
+          companyName: formData.companyName,
+          location: formData.location,
+          salary: formData.salary,
+          description: formData.description,
+          requirements: formData.requirements,
+          categorySlug,
+        },
+        vacancy,
+      );
       onSuccess();
     } catch (error) {
       console.error("Error saving vacancy", error);
@@ -58,6 +80,10 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
 
       <form onSubmit={handleSubmit} className="p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <VacancyCategoryField
+            value={formData.categorySlug}
+            onChange={(slug) => setFormData({ ...formData, categorySlug: slug })}
+          />
           <div className="space-y-2">
             <label className="text-sm font-bold flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-blue-600" /> Job Title
