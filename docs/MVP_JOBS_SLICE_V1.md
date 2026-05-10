@@ -42,6 +42,8 @@ Also required for authenticated API writes:
 
 **Note:** Candidate **profile** data may still use Firestore in the UI until migrated; Jobs Slice v1 standardizes **vacancies + applications** on Postgres.
 
+If vacancies still appear **only in Firestore** (browser sees Firestore `Listen` traffic): the **client bundle** was built without **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, or **`POST /api/jobs`** is failing (check **Network**). Set both postgres-only env vars on **Vercel → Production**, **redeploy**, and open DevTools—the client now logs **`[jobsApi] Creating vacancy in Firestore`** when it falls back.
+
 ---
 
 ## Release checklist

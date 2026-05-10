@@ -208,6 +208,9 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
   }
 
   if (vacancy?.id) {
+    console.warn(
+      "[jobsApi] Updating vacancy in Firestore—POST/PATCH /api/jobs did not succeed or dual-write fallback is enabled. For Neon-only prod: set NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1 on Vercel, redeploy, and fix API errors (see Network tab).",
+    );
     await updateVacancyFirestore(vacancy.id, { ...coreFields, ...categoryPatch });
     const merged: Vacancy = { ...vacancy, ...coreFields };
     if ("category" in categoryPatch) {
@@ -225,6 +228,9 @@ export async function persistVacancyWithFallback(payload: VacancyWritePayload, v
     createPayload.category = categoryPatch.category;
   }
 
+  console.warn(
+    "[jobsApi] Creating vacancy in Firestore—POST /api/jobs did not return success or Jobs Slice postgres-only mode is off. For Neon prod: set NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1 (Production) and redeploy; confirm POST /api/jobs is 200 in DevTools.",
+  );
   await createVacancyFirestore(createPayload);
   return null;
 }
