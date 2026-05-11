@@ -30,6 +30,10 @@ export default function CompanyDashboard() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
+  const [roleEmail, setRoleEmail] = useState("");
+  const [roleValue, setRoleValue] = useState<"candidate" | "recruiter">("recruiter");
+  const [roleSaving, setRoleSaving] = useState(false);
+  const [roleResult, setRoleResult] = useState<string | null>(null);
 
   const fetchDataForUser = useCallback(async () => {
     if (!user) {
@@ -68,6 +72,40 @@ export default function CompanyDashboard() {
   };
 
   const activeCount = vacancies.filter(v => v.status === 'open').length;
+
+  const handleRoleUpdate = async () => {
+    if (!roleEmail.trim()) return;
+    setRoleSaving(true);
+    setRoleResult(null);
+    try {
+      const res = await fetch("/api/admin/users/role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: roleEmail.trim(), role: roleValue }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        changed?: boolean;
+        user?: { email: string; role: string };
+      };
+      if (!res.ok) {
+        setRoleResult(body.error || "Unable to update role.");
+        return;
+      }
+      if (body.changed) {
+        setRoleResult(`Updated ${body.user?.email ?? roleEmail} to ${body.user?.role ?? roleValue}.`);
+      } else {
+        setRoleResult(`No change needed for ${body.user?.email ?? roleEmail}.`);
+      }
+      setRoleEmail("");
+    } catch (error) {
+      console.error("Role update failed", error);
+      setRoleResult("Unable to update role right now.");
+    } finally {
+      setRoleSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6 sm:p-12">
@@ -224,6 +262,40 @@ export default function CompanyDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Role Management (allowlisted recruiters only) */}
+      <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">
+        <h3 className="font-black text-neutral-900 mb-2">Role Management</h3>
+        <p className="text-sm text-neutral-500 mb-5">
+          Promote or demote a user account by email. This action is restricted to allowlisted recruiter admins.
+        </p>
+        <div className="flex flex-col md:flex-row gap-3">
+          <input
+            type="email"
+            value={roleEmail}
+            onChange={(e) => setRoleEmail(e.target.value)}
+            placeholder="user@example.com"
+            className="flex-1 px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+          <select
+            value={roleValue}
+            onChange={(e) => setRoleValue(e.target.value as "candidate" | "recruiter")}
+            className="px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none"
+          >
+            <option value="recruiter">Recruiter</option>
+            <option value="candidate">Candidate</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void handleRoleUpdate()}
+            disabled={roleSaving || !roleEmail.trim()}
+            className="px-5 py-3 rounded-xl bg-neutral-900 text-white font-bold disabled:opacity-50"
+          >
+            {roleSaving ? "Updating..." : "Update Role"}
+          </button>
+        </div>
+        {roleResult ? <p className="text-sm mt-3 text-neutral-600">{roleResult}</p> : null}
       </div>
 
       <AnimatePresence>
