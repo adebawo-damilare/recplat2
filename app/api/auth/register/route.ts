@@ -6,8 +6,10 @@ import { SESSION_MAX_AGE_SECONDS, signTalentBridgeSessionToken, isAuthSecretConf
 import { getDrizzleDb, hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { candidateProfiles, users } from "../../../../src/server/schema";
 
-function normalizeRole(raw: unknown): "candidate" | "recruiter" {
-  return raw === "recruiter" ? "recruiter" : "candidate";
+function parseRole(raw: unknown): { ok: true; role: "candidate" | "recruiter" } | { ok: false } {
+  if (raw === undefined || raw === "candidate") return { ok: true, role: "candidate" };
+  if (raw === "recruiter") return { ok: true, role: "recruiter" };
+  return { ok: false };
 }
 
 export async function POST(request: Request) {
@@ -28,13 +30,17 @@ export async function POST(request: Request) {
   const b = body as { email?: unknown; password?: unknown; role?: unknown };
   const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   const password = typeof b.password === "string" ? b.password : "";
-  const role = normalizeRole(b.role);
   if (!email || !email.includes("@") || password.length < 8) {
     return NextResponse.json(
       { error: "Valid email and a password of at least 8 characters are required." },
       { status: 400 },
     );
   }
+  const parsedRole = parseRole(b.role);
+  if (!parsedRole.ok) {
+    return NextResponse.json({ error: "role must be either 'candidate' or 'recruiter'." }, { status: 400 });
+  }
+  const role = parsedRole.role;
 
   const db = getDrizzleDb();
   const passwordHash = await hashPassword(password);
