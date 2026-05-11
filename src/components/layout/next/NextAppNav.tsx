@@ -37,22 +37,25 @@ export default function NextAppNav() {
             <div className="flex items-center gap-3">
               {!loading && user ? (
                 <div className="flex items-center gap-4">
-                  <Link
-                    href="/dashboard/company"
-                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-                      pathname === "/dashboard/company" ? "bg-neutral-900 text-white shadow-lg" : "text-neutral-500 hover:bg-neutral-100"
-                    }`}
-                  >
-                    Recruiter Panel
-                  </Link>
-                  <Link
-                    href="/dashboard/profile"
-                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-                      pathname === "/dashboard/profile" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-neutral-500 hover:bg-neutral-100"
-                    }`}
-                  >
-                    My Profile
-                  </Link>
+                  {user.role === "recruiter" ? (
+                    <Link
+                      href="/dashboard/company"
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                        pathname === "/dashboard/company" ? "bg-neutral-900 text-white shadow-lg" : "text-neutral-500 hover:bg-neutral-100"
+                      }`}
+                    >
+                      Recruiter Panel
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/dashboard/profile"
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                        pathname === "/dashboard/profile" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-neutral-500 hover:bg-neutral-100"
+                      }`}
+                    >
+                      My Profile
+                    </Link>
+                  )}
                   <div className="flex items-center gap-2 px-3 py-1 bg-neutral-100 rounded-full">
                     <UserIcon className="w-4 h-4 text-neutral-500" />
                     <span className="text-xs font-bold truncate max-w-[100px]">{user.email}</span>

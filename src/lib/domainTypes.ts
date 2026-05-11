@@ -48,4 +48,5 @@ export interface Application {
 export type TalentBridgeUser = {
   id: string;
   email: string;
+  role: "candidate" | "recruiter";
 };

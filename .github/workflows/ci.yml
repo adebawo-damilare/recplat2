@@ -78,7 +78,7 @@ jobs:
       - run: npm ci
 
       - name: Apply SQL migrations
-        run: npm run db:apply && npm run db:apply:categories && npm run db:apply:users
+        run: npm run db:apply && npm run db:apply:categories && npm run db:apply:users && npm run db:apply:roles
 
       - name: Production build
         run: npm run build

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireTalentBridgeSession } from "../../../../src/server/auth/requireSession";
+import { requireRole } from "../../../../src/server/auth/requireRole";
 import { hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateLimit";
 import { getCandidateProfileByUserId, upsertCandidateProfileForUser } from "../../../../src/server/candidates/postgresCandidates";
@@ -22,6 +23,8 @@ export async function GET(request: NextRequest) {
 
   const auth = await requireTalentBridgeSession(request);
   if (auth.ok === false) return auth.response;
+  const roleCheck = requireRole(auth.user, "candidate");
+  if (roleCheck.ok === false) return roleCheck.response;
 
   const profile = await getCandidateProfileByUserId(auth.user.userId);
   if (!profile) {
@@ -47,6 +50,8 @@ export async function PATCH(request: NextRequest) {
 
   const auth = await requireTalentBridgeSession(request);
   if (auth.ok === false) return auth.response;
+  const roleCheck = requireRole(auth.user, "candidate");
+  if (roleCheck.ok === false) return roleCheck.response;
 
   let body: unknown;
   try {

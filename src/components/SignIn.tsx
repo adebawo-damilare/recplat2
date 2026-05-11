@@ -18,6 +18,7 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailMode, setEmailMode] = useState<"signin" | "signup">("signin");
+  const [signupRole, setSignupRole] = useState<"candidate" | "recruiter">("candidate");
   const [error, setError] = useState<string | null>(null);
 
   const handleEmailAction = async (e: React.FormEvent) => {
@@ -32,7 +33,11 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          ...(emailMode === "signup" ? { role: signupRole } : {}),
+        }),
       });
 
       const raw = (await res.json().catch(() => ({}))) as { error?: string };
@@ -120,6 +125,36 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
                   />
                 </div>
               </div>
+
+              {emailMode === "signup" && (
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">Account Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSignupRole("candidate")}
+                      className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                        signupRole === "candidate"
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+                      }`}
+                    >
+                      Candidate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSignupRole("recruiter")}
+                      className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                        signupRole === "recruiter"
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+                      }`}
+                    >
+                      Recruiter
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"

@@ -53,6 +53,10 @@ export default function App() {
       setView(AppView.SIGN_IN);
       return;
     }
+    if (user.role !== "recruiter") {
+      setView(AppView.MY_PROFILE);
+      return;
+    }
     setSeeding(true);
     try {
       await seedSampleVacanciesViaApi();
@@ -88,6 +92,10 @@ export default function App() {
         newView === AppView.MY_PROFILE)
     ) {
       setView(AppView.SIGN_IN);
+    } else if (user && user.role !== "recruiter" && newView === AppView.COMPANY_DASHBOARD) {
+      setView(AppView.MY_PROFILE);
+    } else if (user && user.role !== "candidate" && (newView === AppView.MY_PROFILE || newView === AppView.JOIN_CANDIDATE)) {
+      setView(AppView.COMPANY_DASHBOARD);
     } else {
       setView(newView);
       window.scrollTo(0, 0);
