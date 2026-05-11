@@ -41,6 +41,7 @@ const password = "ProdCheck!23456";
 let candidateCookie = "";
 let recruiterCookie = "";
 let createdVacancyId = "";
+let pipelineApplicationId = "";
 
 try {
   // 1) Public checks
@@ -200,6 +201,71 @@ try {
     else fail("GET /api/applications/mine (authenticated)", `${res.status} found=${found} ${JSON.stringify(body)}`);
   }
 
+  // 5b) Application pipeline: recruiter board, PATCH status, candidate sees update
+  {
+    const { res, body } = await fetchJson("/api/applications/board", {
+      method: "GET",
+      headers: { cookie: recruiterCookie },
+    });
+    const rows = Array.isArray(body?.applications) ? body.applications : [];
+    const row = rows.find((a) => a.vacancyId === createdVacancyId);
+    pipelineApplicationId = row?.id || "";
+    if (res.status === 200 && pipelineApplicationId && row?.status === "applied") {
+      ok("GET /api/applications/board", `id=${pipelineApplicationId}`);
+    } else {
+      fail("GET /api/applications/board", `${res.status} rows=${rows.length} id=${pipelineApplicationId} ${JSON.stringify(body)}`);
+    }
+  }
+  {
+    if (pipelineApplicationId) {
+      const { res, body } = await fetchJson(`/api/applications/${pipelineApplicationId}`, {
+        method: "PATCH",
+        headers: { cookie: recruiterCookie },
+        body: JSON.stringify({ status: "viewed" }),
+      });
+      if (res.status === 200 && body?.status === "viewed") ok("PATCH /api/applications/[id]", "status=viewed");
+      else fail("PATCH /api/applications/[id]", `${res.status} ${JSON.stringify(body)}`);
+    } else {
+      fail("PATCH /api/applications/[id]", "skipped: no application id from board");
+    }
+  }
+  {
+    const { res, body } = await fetchJson("/api/applications/mine", {
+      method: "GET",
+      headers: { cookie: candidateCookie },
+    });
+    const app = Array.isArray(body?.applications)
+      ? body.applications.find((a) => a.vacancyId === createdVacancyId)
+      : null;
+    if (res.status === 200 && app?.status === "viewed") {
+      ok("GET /api/applications/mine (after pipeline status)", app.status);
+    } else {
+      fail("GET /api/applications/mine (after pipeline status)", `${res.status} ${JSON.stringify(app)}`);
+    }
+  }
+  {
+    const { res, body } = await fetchJson(
+      `/api/applications/board?vacancyId=${encodeURIComponent(createdVacancyId)}`,
+      { method: "GET", headers: { cookie: recruiterCookie } },
+    );
+    const rows = Array.isArray(body?.applications) ? body.applications : [];
+    const okFilter =
+      res.status === 200 && rows.length >= 1 && rows.every((r) => r.vacancyId === createdVacancyId);
+    if (okFilter) ok("GET /api/applications/board?vacancyId=…", `count=${rows.length}`);
+    else fail("GET /api/applications/board?vacancyId=…", `${res.status} ${JSON.stringify(body)}`);
+  }
+  {
+    const { res, body } = await fetchJson("/api/applications/board", {
+      method: "GET",
+      headers: { cookie: candidateCookie },
+    });
+    if (res.status === 403 && body?.code === "FORBIDDEN_ROLE") {
+      ok("GET /api/applications/board (candidate forbidden)", "403 role guard");
+    } else {
+      fail("GET /api/applications/board (candidate forbidden)", `${res.status} ${JSON.stringify(body)}`);
+    }
+  }
+
   // 6b) Role mismatch checks
   {
     const { res, body } = await fetchJson("/api/jobs", {
@@ -255,9 +321,14 @@ try {
     else fail("DB vacancies check", "vacancy not found");
   }
   {
-    const apps = await sql`select id, vacancy_id, candidate_user_id from applications where vacancy_id=${createdVacancyId} limit 1`;
-    if (apps.length === 1) ok("DB applications check", apps[0].id);
-    else fail("DB applications check", "application not found");
+    const apps = await sql`
+      select id, vacancy_id, candidate_user_id, status
+      from applications
+      where vacancy_id=${createdVacancyId}
+      limit 1
+    `;
+    if (apps.length === 1 && apps[0].status === "viewed") ok("DB applications check", `${apps[0].id} status=viewed`);
+    else fail("DB applications check", apps.length ? `status=${apps[0]?.status}` : "application not found");
   }
   {
     const profiles = await sql`
