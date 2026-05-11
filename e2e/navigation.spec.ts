@@ -15,9 +15,10 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page.getByTestId("app-nav").getByRole("link", { name: "Find Jobs" })).toBeVisible();
   });
 
-  test("talent route renders talent board", async ({ page }) => {
+  test("talent route shows sign-in when logged out (board after auth)", async ({ page }) => {
     await page.goto("/talent", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Find Elite Candidates" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByText(/stored securely in Postgres/i)).toBeVisible();
     await expect(page.getByTestId("nav-find-candidates")).toBeVisible();
   });
 
