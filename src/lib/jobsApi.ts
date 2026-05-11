@@ -173,31 +173,6 @@ export async function closeVacancyWithFallback(id: string) {
   throw new Error("Unable to close vacancy.");
 }
 
-export async function seedSampleVacanciesViaApi(): Promise<Vacancy[]> {
-  const signedIn = await ensureSignedIn();
-  if (!signedIn) {
-    throw new Error("Sign in required to seed vacancies.");
-  }
-
-  try {
-    const res = await fetch(`/api/jobs/seed-sample`, {
-      method: "POST",
-      credentials: "same-origin",
-    });
-    const raw = (await res.json().catch(() => ({}))) as { jobs?: Vacancy[]; code?: string };
-    if (res.ok) {
-      return raw.jobs ?? [];
-    }
-    if (!shouldFallback(res.status, raw)) {
-      throw new Error(`Unable to seed via API (${res.status})`);
-    }
-  } catch (error) {
-    console.warn("[jobsApi] sample seed API failed", error);
-  }
-
-  throw new Error("Sample seed requires Postgres, migrations, and a signed-in session (POST /api/jobs/seed-sample).");
-}
-
 export async function applyToVacancyWithFallback(vacancyId: string): Promise<boolean> {
   const signedIn = await ensureSignedIn();
   if (!signedIn) {

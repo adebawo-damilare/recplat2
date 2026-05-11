@@ -61,3 +61,13 @@ npm run db:seed:samples
 Optional: set `SEED_OWNER_USER_ID` to a Postgres `users.id` UUID so jobs appear under recruiter “mine” / dashboard for that account. Re-running inserts **additional** rows (new ids).
 
 `companies` enforces “one row per owner + normalized name” via a **unique index** on `(owner_user_id, lower(name))`, not an inline `UNIQUE(...)` constraint (PostgreSQL does not allow function calls inside table-level `UNIQUE`).
+
+### Dev-only seeding (no app UI)
+
+The product UI no longer offers “sync sample data” / “seed sample jobs” buttons. Sample data is still available for **non-production** setups via:
+
+- **`POST /api/jobs/seed-sample`** — authenticated request; inserts demo vacancies (see `app/api/jobs/seed-sample/route.ts`).
+- **`POST /api/candidates/seed-samples`** — inserts demo candidate rows when missing (see `app/api/candidates/seed-samples/route.ts`).
+- **`npm run db:seed:samples`** — CLI path that uses `scripts/seed-neon-sample.ts` with `DATABASE_URL` (and optional `SEED_OWNER_USER_ID`).
+
+Use **`curl`**, local scripts, or CI fixtures against a dev/staging database. Prefer **not** exposing these endpoints in production unless you intentionally lock them down (they are not linked from the public app).

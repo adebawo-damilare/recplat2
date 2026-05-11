@@ -5,10 +5,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Search, User, Database, X } from "lucide-react";
+import { Search, User, X } from "lucide-react";
 import type { CandidateProfile } from "../lib/domainTypes";
-import { fetchAllCandidatesPublic, seedSampleCandidatesViaApi } from "../lib/candidatesApi";
-import { refreshTalentBridgeSession } from "../lib/authBrowser";
+import { fetchAllCandidatesPublic } from "../lib/candidatesApi";
 import ProfileCard from "./ProfileCard";
 
 interface TalentBoardProps {
@@ -18,7 +17,6 @@ interface TalentBoardProps {
 export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
 
@@ -38,34 +36,6 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
     void fetchCandidates();
   }, []);
 
-  const handleSeed = async () => {
-    const u = await refreshTalentBridgeSession();
-    if (!u) {
-      alert("Please sign in to sync sample candidates.");
-      return;
-    }
-
-    setSeeding(true);
-    try {
-      const summary = await seedSampleCandidatesViaApi();
-      if (!summary) {
-        alert("Unable to seed sample candidates.");
-        return;
-      }
-      const updated = await fetchAllCandidatesPublic();
-      setCandidates(updated);
-      if (selectedCandidate) {
-        const fresh = updated.find((c) => c.userId === selectedCandidate.userId);
-        if (fresh) setSelectedCandidate(fresh);
-      }
-    } catch (error) {
-      console.error("Failed to seed candidates", error);
-      alert("Failed to seed candidates.");
-    } finally {
-      setSeeding(false);
-    }
-  };
-
   const filteredCandidates = candidates.filter(
     (c) =>
       c.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,8 +50,8 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
         <p className="text-neutral-600 text-lg">Connect with top professionals ready for their next challenge.</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-10">
-        <div className="flex-1 relative">
+      <div className="max-w-3xl mb-10">
+        <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
           <input
             type="text"
@@ -91,17 +61,6 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {!loading && (
-          <button
-            type="button"
-            onClick={() => void handleSeed()}
-            disabled={seeding}
-            className="px-6 py-4 bg-emerald-500 text-white rounded-2xl flex items-center justify-center gap-2 font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 shadow-lg shadow-emerald-100 active:scale-[0.98]"
-            title="Insert demo candidate rows (requires sign-in)"
-          >
-            <Database className="w-5 h-5" /> {seeding ? "Syncing..." : "Sync Sample Data"}
-          </button>
-        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">

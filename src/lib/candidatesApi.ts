@@ -48,19 +48,3 @@ export async function saveMyCandidateProfile(
   return null;
 }
 
-export async function seedSampleCandidatesViaApi(): Promise<{ created: number; skipped: number } | null> {
-  await refreshTalentBridgeSession();
-  try {
-    const res = await fetch("/api/candidates/seed-samples", {
-      method: "POST",
-      credentials: "same-origin",
-    });
-    const raw = (await res.json().catch(() => ({}))) as { created?: number; skipped?: number };
-    if (res.ok && typeof raw.created === "number" && typeof raw.skipped === "number") {
-      return { created: raw.created, skipped: raw.skipped };
-    }
-  } catch (e) {
-    console.warn("[candidatesApi] seed failed", e);
-  }
-  return null;
-}

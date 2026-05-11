@@ -5,21 +5,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Search, MapPin, Briefcase, DollarSign, ChevronRight, X, Database } from "lucide-react";
+import { Search, MapPin, Briefcase, DollarSign, ChevronRight, X } from "lucide-react";
 import type { Vacancy } from "../lib/domainTypes";
 import { refreshTalentBridgeSession } from "../lib/authBrowser";
-import {
-  fetchPublicJobsWithFallback,
-  applyToVacancyWithFallback,
-  seedSampleVacanciesViaApi,
-} from "../lib/jobsApi";
+import { fetchPublicJobsWithFallback, applyToVacancyWithFallback } from "../lib/jobsApi";
 import { useTalentCategories } from "./jobs/useTalentCategories";
 
 export default function JobBoard() {
   const lanes = useTalentCategories();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
   const [applying, setApplying] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,23 +57,6 @@ export default function JobBoard() {
       console.error("Failed to apply", error);
     } finally {
       setApplying(false);
-    }
-  };
-
-  const handleSeed = async () => {
-    const u = await refreshTalentBridgeSession();
-    if (!u) {
-      alert("Please sign in to seed sample data.");
-      return;
-    }
-    setSeeding(true);
-    try {
-      await seedSampleVacanciesViaApi();
-      await fetchJobs();
-    } catch (error) {
-      console.error("Failed to seed data", error);
-    } finally {
-      setSeeding(false);
     }
   };
 
@@ -161,16 +139,11 @@ export default function JobBoard() {
             ))
           ) : (
             <div className="text-center py-12 px-6 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
-              <p className="text-neutral-500 text-sm font-medium mb-4">No matches found for your search.</p>
-              {vacancies.length === 0 && (
-                <button 
-                  onClick={handleSeed}
-                  disabled={seeding}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
-                >
-                  <Database className="w-3 h-3" /> {seeding ? "Seeding..." : "Seed Sample Data"}
-                </button>
-              )}
+              <p className="text-neutral-500 text-sm font-medium">
+                {vacancies.length === 0
+                  ? "No vacancies are listed yet."
+                  : "No matches found for your search."}
+              </p>
             </div>
           )}
         </div>
