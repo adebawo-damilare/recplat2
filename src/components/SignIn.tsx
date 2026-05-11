@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { LogIn, ArrowRight, ShieldCheck, Mail, Lock } from "lucide-react";
-import { refreshTalentBridgeSession } from "../lib/authBrowser";
+import { notifyTalentBridgeSessionChanged, refreshTalentBridgeSession } from "../lib/authBrowser";
 
 interface SignInProps {
   onSuccess: () => void;
@@ -47,6 +47,7 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
       }
 
       await refreshTalentBridgeSession();
+      notifyTalentBridgeSessionChanged();
       onSuccess();
     } catch (err: unknown) {
       console.error("Email auth failed", err);

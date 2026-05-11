@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { TalentBridgeUser } from "./domainTypes";
-import { logoutTalentBridgeSession, refreshTalentBridgeSession, setTalentBridgeUserSnapshot } from "./authBrowser";
+import {
+  logoutTalentBridgeSession,
+  refreshTalentBridgeSession,
+  setTalentBridgeUserSnapshot,
+  TALENTBRIDGE_SESSION_CHANGED_EVENT,
+} from "./authBrowser";
 
 export function useTalentBridgeUser() {
   const [user, setUser] = useState<TalentBridgeUser | null>(null);
@@ -29,6 +34,14 @@ export function useTalentBridgeUser() {
       cancelled = true;
     };
   }, [refresh, pathname]);
+
+  useEffect(() => {
+    const sync = () => {
+      void refresh();
+    };
+    window.addEventListener(TALENTBRIDGE_SESSION_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(TALENTBRIDGE_SESSION_CHANGED_EVENT, sync);
+  }, [refresh]);
 
   const logout = useCallback(async () => {
     await logoutTalentBridgeSession();
