@@ -2,6 +2,8 @@
 
 Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 
+**Automation:** `scripts/run-prod-checklist.mjs` (via `npx dotenv-cli -e .env.release -- node scripts/run-prod-checklist.mjs`) hits the same API and DB checks, including **application pipeline** (`GET /api/applications/board`, `PATCH /api/applications/[id]`, candidate `status` after update, `vacancyId` filter, candidate forbidden on board).
+
 ## 1) Public health checks
 
 - [ ] `GET /api/health` returns `200` and `ok: true`
