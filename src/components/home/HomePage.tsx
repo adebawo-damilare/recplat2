@@ -13,17 +13,13 @@ import HomeFeaturedVacancies from "./HomeFeaturedVacancies";
 interface HomePageProps {
   vacancies: Vacancy[];
   loading: boolean;
-  seeding: boolean;
   onNavigate: (view: AppView) => void;
-  onSeedSampleJobs: () => void;
 }
 
 export default function HomePage({
   vacancies,
   loading,
-  seeding,
   onNavigate,
-  onSeedSampleJobs,
 }: HomePageProps) {
   return (
     <motion.div
@@ -35,13 +31,7 @@ export default function HomePage({
     >
       <HomeHero onNavigate={onNavigate} />
       <HomeAudience onNavigate={onNavigate} />
-      <HomeFeaturedVacancies
-        vacancies={vacancies}
-        loading={loading}
-        seeding={seeding}
-        onNavigate={onNavigate}
-        onSeedSampleJobs={onSeedSampleJobs}
-      />
+      <HomeFeaturedVacancies vacancies={vacancies} loading={loading} onNavigate={onNavigate} />
     </motion.div>
   );
 }

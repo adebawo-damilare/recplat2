@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import HomePage from "../../src/components/home/HomePage";
 import { AppView } from "../../src/appView";
 import type { Vacancy } from "../../src/lib/domainTypes";
-import { fetchPublicJobsWithFallback, seedSampleVacanciesViaApi } from "../../src/lib/jobsApi";
+import { fetchPublicJobsWithFallback } from "../../src/lib/jobsApi";
 import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 
 export default function HomeClientPage() {
@@ -13,7 +13,6 @@ export default function HomeClientPage() {
   const { user } = useTalentBridgeUser();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
 
   const fetchVacancies = async () => {
     setLoading(true);
@@ -30,23 +29,6 @@ export default function HomeClientPage() {
   useEffect(() => {
     void fetchVacancies();
   }, []);
-
-  const handleSeed = async () => {
-    if (!user) {
-      router.push("/sign-in");
-      return;
-    }
-
-    setSeeding(true);
-    try {
-      await seedSampleVacanciesViaApi();
-      await fetchVacancies();
-    } catch (error) {
-      console.error("Seeding failed", error);
-    } finally {
-      setSeeding(false);
-    }
-  };
 
   const routeForView = (newView: AppView) => {
     if (
@@ -77,13 +59,7 @@ export default function HomeClientPage() {
 
   return (
     <div className="pt-0">
-      <HomePage
-        vacancies={vacancies}
-        loading={loading}
-        seeding={seeding}
-        onNavigate={(v) => router.push(routeForView(v))}
-        onSeedSampleJobs={handleSeed}
-      />
+      <HomePage vacancies={vacancies} loading={loading} onNavigate={(v) => router.push(routeForView(v))} />
     </div>
   );
 }

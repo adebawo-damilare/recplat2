@@ -4,24 +4,19 @@
  */
 
 import { motion } from "motion/react";
-import { Database } from "lucide-react";
 import type { Vacancy } from "../../lib/domainTypes";
 import { AppView } from "../../appView";
 
 interface HomeFeaturedVacanciesProps {
   vacancies: Vacancy[];
   loading: boolean;
-  seeding: boolean;
   onNavigate: (view: AppView) => void;
-  onSeedSampleJobs: () => void;
 }
 
 export default function HomeFeaturedVacancies({
   vacancies,
   loading,
-  seeding,
   onNavigate,
-  onSeedSampleJobs,
 }: HomeFeaturedVacanciesProps) {
   return (
     <section className="py-24 bg-neutral-50 overflow-hidden relative" data-testid="home-featured-jobs">
@@ -83,14 +78,13 @@ export default function HomeFeaturedVacancies({
             ))
           ) : (
             <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-neutral-200">
-              <p className="text-neutral-500 font-medium mb-4">No active vacancies at the moment. Be the first to post!</p>
+              <p className="text-neutral-500 font-medium mb-6">No active vacancies at the moment.</p>
               <button
                 type="button"
-                onClick={onSeedSampleJobs}
-                disabled={seeding}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-100"
+                onClick={() => onNavigate(AppView.FIND_JOBS)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
               >
-                <Database className="w-4 h-4" /> {seeding ? "Seeding..." : "Seed Sample Jobs"}
+                Browse all jobs
               </button>
             </div>
           )}

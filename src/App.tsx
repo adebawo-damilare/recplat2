@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "motion/react";
 import type { Vacancy, CandidateProfile, TalentBridgeUser } from "./lib/domainTypes";
 import { refreshTalentBridgeSession, logoutTalentBridgeSession } from "./lib/authBrowser";
-import { fetchPublicJobsWithFallback, seedSampleVacanciesViaApi } from "./lib/jobsApi";
+import { fetchPublicJobsWithFallback } from "./lib/jobsApi";
 import CandidateForm from "./components/CandidateForm";
 import JobBoard from "./components/JobBoard";
 import TalentBoard from "./components/TalentBoard";
@@ -25,7 +25,6 @@ export default function App() {
   const [user, setUser] = useState<TalentBridgeUser | null>(null);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
   const [portfolioCandidate, setPortfolioCandidate] = useState<CandidateProfile | null>(null);
 
   const fetchVacancies = async () => {
@@ -47,26 +46,6 @@ export default function App() {
   useEffect(() => {
     void fetchVacancies();
   }, []);
-
-  const handleSeed = async () => {
-    if (!user) {
-      setView(AppView.SIGN_IN);
-      return;
-    }
-    if (user.role !== "recruiter") {
-      setView(AppView.MY_PROFILE);
-      return;
-    }
-    setSeeding(true);
-    try {
-      await seedSampleVacanciesViaApi();
-      await fetchVacancies();
-    } catch (error) {
-      console.error("Seeding failed", error);
-    } finally {
-      setSeeding(false);
-    }
-  };
 
   const handleAuthAction = async () => {
     if (user) {
@@ -108,13 +87,7 @@ export default function App() {
 
       <AnimatePresence mode="wait">
         {view === AppView.HOME && (
-          <HomePage
-            vacancies={vacancies}
-            loading={loading}
-            seeding={seeding}
-            onNavigate={navigateTo}
-            onSeedSampleJobs={handleSeed}
-          />
+          <HomePage vacancies={vacancies} loading={loading} onNavigate={navigateTo} />
         )}
 
         {view === AppView.JOIN_CANDIDATE && (
