@@ -37,12 +37,22 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 - [ ] In incognito/unauthenticated context, call `GET /api/applications/mine`
 - [ ] Expect `401` (not `503 AUTH_UNAVAILABLE`)
 
+## 5b) Role admin controls (if enabled)
+
+- [ ] Confirm env vars are set for this deployment when role admin is intended:
+  - `TALENTBRIDGE_ENABLE_ROLE_ADMIN=1`
+  - `TALENTBRIDGE_ROLE_ADMIN_EMAILS=<comma-separated recruiter admin emails>`
+- [ ] As an allowlisted recruiter, update another user's role from recruiter dashboard role panel
+- [ ] Confirm disallowed actor (non-allowlisted recruiter or candidate) receives `403 FORBIDDEN_ROLE_ADMIN`
+- [ ] Confirm self-role change attempt is blocked
+
 ## 6) Postgres spot checks (Neon SQL editor)
 
 - [ ] `select id, email, created_at from users order by created_at desc limit 5;`
 - [ ] `select id, job_title, posted_by_user_id, status from vacancies order by created_at desc limit 5;`
 - [ ] `select id, vacancy_id, candidate_user_id, created_at from applications order by created_at desc limit 10;`
 - [ ] `select user_id, full_name, email_snapshot, updated_at from candidate_profiles order by updated_at desc limit 5;`
+- [ ] `select actor_user_id, event_type, payload_json, created_at from ai_audit_events where event_type='user.role_changed' order by created_at desc limit 5;`
 
 ## 7) Post-release log watch (10-30 minutes)
 

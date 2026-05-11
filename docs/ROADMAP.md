@@ -18,6 +18,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - Postgres job path: `GET /api/jobs`, `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine`.
 - Postgres applications path: `POST /api/applications`, **`GET /api/applications/mine`**.
 - Postgres auth path: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`; protected routes use signed session verification.
+- Role separation + server-side authorization (`candidate` vs `recruiter`) and allowlisted recruiter role-management endpoint (`/api/admin/users/role`) with audit logging.
 - AI provider switch + audit hooks (`TALENTBRIDGE_AI_PROVIDER`, `GET /api/ai/health`).
 - Client bridges `src/lib/jobsApi.ts`, **`src/lib/applicationsApi.ts`**.
 - UI uses `jobsApi` for list / seed / apply / recruiter CRUD (TalentBridge components only).
