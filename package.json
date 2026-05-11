@@ -18,6 +18,7 @@
     "db:apply:roles": "node scripts/db-apply.mjs database/migrations/0004_user_roles.sql",
     "db:seed:samples": "tsx scripts/seed-neon-sample.ts",
     "smoke:api": "node scripts/smoke-api.mjs",
+    "test:role-guards": "node scripts/test-role-guards.mjs",
     "release:prod:db:apply": "dotenv -e .env.release -- npm run db:apply",
     "release:prod:db:apply:categories": "dotenv -e .env.release -- npm run db:apply:categories",
     "release:prod:db:apply:users": "dotenv -e .env.release -- npm run db:apply:users",

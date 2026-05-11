@@ -98,3 +98,6 @@ jobs:
 
       - name: Strict API smoke (Postgres + applications/mine)
         run: SMOKE_BASE_URL=http://127.0.0.1:3000 SMOKE_EXPECT_POSTGRES_READY=1 npm run smoke:api
+
+      - name: Role guard regression checks
+        run: ROLE_TEST_BASE_URL=http://127.0.0.1:3000 npm run test:role-guards
