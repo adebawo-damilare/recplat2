@@ -16,7 +16,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - **Category lanes (synthesis wedge):** `categories` table + `vacancies.category_id`, `GET /api/categories`, `GET /api/jobs?category=`, optional `categorySlug` on vacancy writes — see **`docs/CATEGORY_MODEL.md`** and `database/migrations/0002_categories.sql`.
 - Drizzle schema split under `src/server/schema/*` (+ server DB client `src/server/db/postgres.ts`).
 - Postgres job path: `GET /api/jobs`, `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine`.
-- Postgres applications path: `POST /api/applications`, **`GET /api/applications/mine`**.
+- Postgres applications path: `POST /api/applications`, **`GET /api/applications/mine`**, recruiter pipeline **`GET /api/applications/board`**, **`PATCH /api/applications/[id]`** (`applications.status`).
 - Postgres auth path: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`; protected routes use signed session verification.
 - Role separation + server-side authorization (`candidate` vs `recruiter`) and allowlisted recruiter role-management endpoint (`/api/admin/users/role`) with audit logging.
 - AI provider switch + audit hooks (`TALENTBRIDGE_AI_PROVIDER`, `GET /api/ai/health`).

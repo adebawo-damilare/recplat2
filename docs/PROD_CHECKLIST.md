@@ -24,6 +24,11 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 - [ ] Edit vacancy (title/salary/category), save, and verify changes on `/jobs`
 - [ ] Close vacancy and confirm status transition behavior
 
+### Application pipeline
+
+- [ ] After a candidate applies, **Application pipeline** lists the row with stage **applied**
+- [ ] Change stage (e.g. to **viewed** / **interviewing**) and confirm the candidate sees the updated stage on `/dashboard/profile`
+
 ## 4) Candidate profile + apply
 
 - [ ] Open `/dashboard/profile`

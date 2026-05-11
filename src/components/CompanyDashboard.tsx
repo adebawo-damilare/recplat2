@@ -17,12 +17,20 @@ import {
   Clock,
   ChevronRight,
   Search,
-  LayoutDashboard
+  LayoutDashboard,
+  ListOrdered,
 } from "lucide-react";
-import type { Vacancy } from "../lib/domainTypes";
+import type { Application, Vacancy } from "../lib/domainTypes";
 import { fetchMyVacanciesWithFallback, closeVacancyWithFallback } from "../lib/jobsApi";
+import {
+  fetchRecruiterApplicationBoard,
+  patchApplicationStatus,
+  type RecruiterBoardApplication,
+} from "../lib/recruiterApplicationsApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import VacancyForm from './VacancyForm';
+
+const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
 export default function CompanyDashboard() {
   const { user } = useTalentBridgeUser();
@@ -34,6 +42,9 @@ export default function CompanyDashboard() {
   const [roleValue, setRoleValue] = useState<"candidate" | "recruiter">("recruiter");
   const [roleSaving, setRoleSaving] = useState(false);
   const [roleResult, setRoleResult] = useState<string | null>(null);
+  const [pipelineRows, setPipelineRows] = useState<RecruiterBoardApplication[]>([]);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [pipelineVacancyFilter, setPipelineVacancyFilter] = useState("");
 
   const fetchDataForUser = useCallback(async () => {
     if (!user) {
@@ -56,11 +67,34 @@ export default function CompanyDashboard() {
     void fetchDataForUser();
   }, [fetchDataForUser]);
 
+  const fetchPipelineBoard = useCallback(async () => {
+    if (!user || user.role !== "recruiter") {
+      setPipelineRows([]);
+      return;
+    }
+    setPipelineLoading(true);
+    try {
+      const filter = pipelineVacancyFilter.trim() || undefined;
+      const data = await fetchRecruiterApplicationBoard(filter);
+      setPipelineRows(data);
+    } catch (e) {
+      console.error("Pipeline board load failed", e);
+      setPipelineRows([]);
+    } finally {
+      setPipelineLoading(false);
+    }
+  }, [user, pipelineVacancyFilter]);
+
+  useEffect(() => {
+    void fetchPipelineBoard();
+  }, [fetchPipelineBoard]);
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to close this vacancy?")) return;
     try {
       await closeVacancyWithFallback(id);
       await fetchDataForUser();
+      await fetchPipelineBoard();
     } catch (error) {
       console.error("Error deleting vacancy", error);
     }
@@ -72,6 +106,18 @@ export default function CompanyDashboard() {
   };
 
   const activeCount = vacancies.filter(v => v.status === 'open').length;
+
+  const handlePipelineStatusChange = async (
+    applicationId: string,
+    previous: Application["status"],
+    next: Application["status"],
+  ) => {
+    const ok = await patchApplicationStatus(applicationId, next);
+    await fetchPipelineBoard();
+    if (!ok) {
+      console.warn("[pipeline] status update failed", { applicationId, previous, next });
+    }
+  };
 
   const handleRoleUpdate = async () => {
     if (!roleEmail.trim()) return;
@@ -164,6 +210,106 @@ export default function CompanyDashboard() {
           </div>
           <div className="text-4xl font-black text-neutral-900">42</div>
         </div>
+      </div>
+
+      {/* Application pipeline */}
+      <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-violet-100 rounded-xl">
+              <ListOrdered className="w-5 h-5 text-violet-600" />
+            </div>
+            <div>
+              <h3 className="font-black text-neutral-900">Application pipeline</h3>
+              <p className="text-sm text-neutral-500">Track candidates who applied to your listings and move them through stages.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={pipelineVacancyFilter}
+              onChange={(e) => setPipelineVacancyFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-sm font-semibold outline-none"
+            >
+              <option value="">All jobs</option>
+              {vacancies
+                .filter((v) => v.id)
+                .map((v) => (
+                  <option key={v.id} value={v.id!}>
+                    {v.jobTitle}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void fetchPipelineBoard()}
+              className="px-3 py-2 rounded-xl border border-neutral-200 text-sm font-bold text-neutral-600 hover:bg-neutral-50"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {pipelineLoading ? (
+          <div className="space-y-3 animate-pulse">
+            <div className="h-10 bg-neutral-100 rounded-xl" />
+            <div className="h-10 bg-neutral-100 rounded-xl" />
+            <div className="h-10 bg-neutral-100 rounded-xl" />
+          </div>
+        ) : pipelineRows.length === 0 ? (
+          <p className="text-sm text-neutral-500 py-6 text-center">No applications yet for this filter.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
+                  <th className="pb-3 pr-4">Candidate</th>
+                  <th className="pb-3 pr-4">Job</th>
+                  <th className="pb-3 pr-4">Applied</th>
+                  <th className="pb-3">Stage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-50">
+                {pipelineRows.map((row) => (
+                  <tr key={row.id} className="hover:bg-neutral-50/80">
+                    <td className="py-3 pr-4 align-top">
+                      <div className="font-bold text-neutral-900">{row.candidate.fullName}</div>
+                      <div className="text-xs text-neutral-500 truncate max-w-[200px]">{row.candidate.email}</div>
+                      {row.candidate.headline ? (
+                        <div className="text-xs text-neutral-400 mt-0.5 line-clamp-2">{row.candidate.headline}</div>
+                      ) : null}
+                    </td>
+                    <td className="py-3 pr-4 align-top">
+                      <div className="font-semibold text-neutral-800">{row.vacancy.jobTitle}</div>
+                      <div className="text-xs text-neutral-500">{row.vacancy.companyName}</div>
+                    </td>
+                    <td className="py-3 pr-4 align-top text-neutral-600 whitespace-nowrap">
+                      {new Date(row.appliedAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 align-top">
+                      <select
+                        value={row.status}
+                        onChange={(e) =>
+                          void handlePipelineStatusChange(
+                            row.id,
+                            row.status,
+                            e.target.value as Application["status"],
+                          )
+                        }
+                        className="px-2 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-bold uppercase tracking-tight"
+                      >
+                        {PIPELINE_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Vacancies List */}
@@ -317,6 +463,7 @@ export default function CompanyDashboard() {
                 onSuccess={() => {
                   setShowForm(false);
                   void fetchDataForUser();
+                  void fetchPipelineBoard();
                 }}
                 onCancel={() => setShowForm(false)}
               />

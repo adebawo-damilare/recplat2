@@ -278,6 +278,6 @@ export async function recordApplicationPostgres(vacancyId: string, candidateUser
 
   await db
     .insert(applications)
-    .values({ vacancyId, candidateUserId })
+    .values({ vacancyId, candidateUserId, status: "applied" })
     .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
 }
