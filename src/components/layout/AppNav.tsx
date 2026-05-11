@@ -64,28 +64,31 @@ export default function AppNav({ currentView, user, onNavigate, onAuthAction }: 
             <div className="flex items-center gap-3">
               {user ? (
                 <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => onNavigate(AppView.COMPANY_DASHBOARD)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-                      currentView === AppView.COMPANY_DASHBOARD
-                        ? "bg-neutral-900 text-white shadow-lg"
-                        : "text-neutral-500 hover:bg-neutral-100"
-                    }`}
-                  >
-                    Recruiter Panel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate(AppView.MY_PROFILE)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-                      currentView === AppView.MY_PROFILE
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-100"
-                        : "text-neutral-500 hover:bg-neutral-100"
-                    }`}
-                  >
-                    My Profile
-                  </button>
+                  {user.role === "recruiter" ? (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(AppView.COMPANY_DASHBOARD)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                        currentView === AppView.COMPANY_DASHBOARD
+                          ? "bg-neutral-900 text-white shadow-lg"
+                          : "text-neutral-500 hover:bg-neutral-100"
+                      }`}
+                    >
+                      Recruiter Panel
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(AppView.MY_PROFILE)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                        currentView === AppView.MY_PROFILE
+                          ? "bg-blue-600 text-white shadow-lg shadow-blue-100"
+                          : "text-neutral-500 hover:bg-neutral-100"
+                      }`}
+                    >
+                      My Profile
+                    </button>
+                  )}
                   <div className="flex items-center gap-2 px-3 py-1 bg-neutral-100 rounded-full">
                     <UserIcon className="w-4 h-4 text-neutral-500" />
                     <span className="text-xs font-bold truncate max-w-[100px]">{user.email}</span>

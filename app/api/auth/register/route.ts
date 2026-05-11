@@ -6,6 +6,10 @@ import { SESSION_MAX_AGE_SECONDS, signTalentBridgeSessionToken, isAuthSecretConf
 import { getDrizzleDb, hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { candidateProfiles, users } from "../../../../src/server/schema";
 
+function normalizeRole(raw: unknown): "candidate" | "recruiter" {
+  return raw === "recruiter" ? "recruiter" : "candidate";
+}
+
 export async function POST(request: Request) {
   if (!isAuthSecretConfigured()) {
     return NextResponse.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 });
@@ -21,9 +25,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const b = body as { email?: unknown; password?: unknown };
+  const b = body as { email?: unknown; password?: unknown; role?: unknown };
   const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   const password = typeof b.password === "string" ? b.password : "";
+  const role = normalizeRole(b.role);
   if (!email || !email.includes("@") || password.length < 8) {
     return NextResponse.json(
       { error: "Valid email and a password of at least 8 characters are required." },
@@ -36,7 +41,10 @@ export async function POST(request: Request) {
 
   let userId: string;
   try {
-    const [inserted] = await db.insert(users).values({ email, passwordHash }).returning({ id: users.id });
+    const [inserted] = await db
+      .insert(users)
+      .values({ email, passwordHash, role })
+      .returning({ id: users.id });
     userId = inserted.id;
     await db.insert(candidateProfiles).values({
       userId,
@@ -60,7 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 });
   }
 
-  const res = NextResponse.json({ user: { id: userId, email } });
+  const res = NextResponse.json({ user: { id: userId, email, role } });
   res.headers.append("Set-Cookie", buildSessionSetCookie(token, SESSION_MAX_AGE_SECONDS));
   return res;
 }

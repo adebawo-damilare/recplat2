@@ -101,6 +101,66 @@ async function checkApplicationsMineUnauthenticated() {
   throw new Error(`GET /api/applications/mine -> ${res.status}: ${text.slice(0, 200)}`);
 }
 
+async function registerWithRole(role) {
+  const email = `smoke-${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
+  const password = "SmokeCheck!23456";
+  const { res, body, text } = await fetchJson("POST", "/api/auth/register", {
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password, role }),
+  });
+  if (!res.ok) {
+    throw new Error(`POST /api/auth/register (${role}) -> ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const cookie = (res.headers.get("set-cookie") || "").split(";")[0];
+  if (!cookie) {
+    throw new Error(`POST /api/auth/register (${role}) missing session cookie`);
+  }
+  if (body?.user?.role !== role) {
+    throw new Error(`POST /api/auth/register (${role}) expected role=${role}`);
+  }
+  return { cookie };
+}
+
+async function checkRoleGuards() {
+  const recruiter = await registerWithRole("recruiter");
+  const candidate = await registerWithRole("candidate");
+
+  const createPayload = {
+    jobTitle: "Smoke Role Test Vacancy",
+    companyName: "Smoke Co",
+    location: "Remote",
+    salary: "$120k",
+    description: "Role smoke test",
+    requirements: "None",
+    categorySlug: "designers",
+  };
+
+  const recruiterCreate = await fetchJson("POST", "/api/jobs", {
+    headers: { cookie: recruiter.cookie, "content-type": "application/json" },
+    body: JSON.stringify(createPayload),
+  });
+  if (!recruiterCreate.res.ok || !recruiterCreate.body?.job?.id) {
+    throw new Error(`role check: recruiter POST /api/jobs failed -> ${recruiterCreate.res.status}`);
+  }
+
+  const vacancyId = recruiterCreate.body.job.id;
+  const candidateCreate = await fetchJson("POST", "/api/jobs", {
+    headers: { cookie: candidate.cookie, "content-type": "application/json" },
+    body: JSON.stringify(createPayload),
+  });
+  if (candidateCreate.res.status !== 403 || candidateCreate.body?.code !== "FORBIDDEN_ROLE") {
+    throw new Error("role check: candidate POST /api/jobs should be 403 FORBIDDEN_ROLE");
+  }
+
+  const recruiterApply = await fetchJson("POST", "/api/applications", {
+    headers: { cookie: recruiter.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ vacancyId }),
+  });
+  if (recruiterApply.res.status !== 403 || recruiterApply.body?.code !== "FORBIDDEN_ROLE") {
+    throw new Error("role check: recruiter POST /api/applications should be 403 FORBIDDEN_ROLE");
+  }
+}
+
 try {
   await check("health", "/api/health");
 
@@ -126,6 +186,7 @@ try {
   }
 
   await checkApplicationsMineUnauthenticated();
+  await checkRoleGuards();
 
   console.log("smoke-api: ok", base, strictPostgres ? "(strict Postgres)" : "");
 } catch (e) {

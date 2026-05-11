@@ -45,7 +45,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 });
   }
 
-  const res = NextResponse.json({ user: { id: u.id, email: u.email } });
+  const role: "candidate" | "recruiter" = u.role === "recruiter" ? "recruiter" : "candidate";
+  const res = NextResponse.json({ user: { id: u.id, email: u.email, role } });
   res.headers.append("Set-Cookie", buildSessionSetCookie(token, SESSION_MAX_AGE_SECONDS));
   return res;
 }

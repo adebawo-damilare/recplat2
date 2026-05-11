@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTalentBridgeSession } from "../../../src/server/auth/requireSession";
+import { requireRole } from "../../../src/server/auth/requireRole";
 import { isJobsPostgresOnly } from "../../../src/server/config/jobsBackendMode";
 import { hasPostgresConfigured } from "../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../src/server/distributedRateLimit";
@@ -28,6 +29,8 @@ export async function POST(request: NextRequest) {
 
   const authResult = await requireTalentBridgeSession(request);
   if (authResult.ok === false) return authResult.response;
+  const roleCheck = requireRole(authResult.user, "candidate");
+  if (roleCheck.ok === false) return roleCheck.response;
 
   const body = await request.json();
   const vacancyId = typeof body.vacancyId === "string" ? body.vacancyId.trim() : "";

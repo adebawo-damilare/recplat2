@@ -14,6 +14,7 @@ export default function ProfileClientPage() {
 
   useEffect(() => {
     if (!loading && !user) router.replace("/sign-in");
+    if (!loading && user?.role !== "candidate") router.replace("/dashboard/company");
   }, [loading, user, router]);
 
   return (
