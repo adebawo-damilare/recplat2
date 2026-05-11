@@ -410,39 +410,40 @@ export default function CompanyDashboard() {
         </div>
       </div>
 
-      {/* Role Management (allowlisted recruiters only) */}
-      <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">
-        <h3 className="font-black text-neutral-900 mb-2">Role Management</h3>
-        <p className="text-sm text-neutral-500 mb-5">
-          Promote or demote a user account by email. This action is restricted to allowlisted recruiter admins.
-        </p>
-        <div className="flex flex-col md:flex-row gap-3">
-          <input
-            type="email"
-            value={roleEmail}
-            onChange={(e) => setRoleEmail(e.target.value)}
-            placeholder="user@example.com"
-            className="flex-1 px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none focus:ring-2 focus:ring-blue-500/20"
-          />
-          <select
-            value={roleValue}
-            onChange={(e) => setRoleValue(e.target.value as "candidate" | "recruiter")}
-            className="px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none"
-          >
-            <option value="recruiter">Recruiter</option>
-            <option value="candidate">Candidate</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => void handleRoleUpdate()}
-            disabled={roleSaving || !roleEmail.trim()}
-            className="px-5 py-3 rounded-xl bg-neutral-900 text-white font-bold disabled:opacity-50"
-          >
-            {roleSaving ? "Updating..." : "Update Role"}
-          </button>
+      {user?.canManageUserRoles ? (
+        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">
+          <h3 className="font-black text-neutral-900 mb-2">Role Management</h3>
+          <p className="text-sm text-neutral-500 mb-5">
+            Promote or demote a user account by email. This action is restricted to allowlisted recruiter admins.
+          </p>
+          <div className="flex flex-col md:flex-row gap-3">
+            <input
+              type="email"
+              value={roleEmail}
+              onChange={(e) => setRoleEmail(e.target.value)}
+              placeholder="user@example.com"
+              className="flex-1 px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+            <select
+              value={roleValue}
+              onChange={(e) => setRoleValue(e.target.value as "candidate" | "recruiter")}
+              className="px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none"
+            >
+              <option value="recruiter">Recruiter</option>
+              <option value="candidate">Candidate</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => void handleRoleUpdate()}
+              disabled={roleSaving || !roleEmail.trim()}
+              className="px-5 py-3 rounded-xl bg-neutral-900 text-white font-bold disabled:opacity-50"
+            >
+              {roleSaving ? "Updating..." : "Update Role"}
+            </button>
+          </div>
+          {roleResult ? <p className="text-sm mt-3 text-neutral-600">{roleResult}</p> : null}
         </div>
-        {roleResult ? <p className="text-sm mt-3 text-neutral-600">{roleResult}</p> : null}
-      </div>
+      ) : null}
 
       <AnimatePresence>
         {showForm && (
