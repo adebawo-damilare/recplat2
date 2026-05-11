@@ -23,6 +23,7 @@ export async function fetchOpenVacanciesPage(
   limit: number,
   cursor?: string | null,
   categorySlug?: string | null,
+  searchText?: string | null,
 ): Promise<PaginatedVacanciesResult> {
   if (process.env.TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS === "1") {
     return { jobs: [], nextCursor: null };
@@ -31,5 +32,5 @@ export async function fetchOpenVacanciesPage(
   if (!hasPostgresConfigured()) {
     throw new Error("JOBS_POSTGRES_REQUIRED");
   }
-  return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug);
+  return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug, searchText);
 }

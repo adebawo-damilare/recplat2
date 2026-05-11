@@ -25,11 +25,12 @@ function shouldFallback(status: number, payload?: { code?: string }) {
   return shouldFallbackToFirestoreForJobsApi(status, payload);
 }
 
-export async function fetchPublicJobsWithFallback(
-  limit = 75,
+export async function fetchPublicJobsPage(
+  limit = 10,
   cursor?: string | null,
   categorySlug?: string | null,
-) {
+  q?: string | null,
+): Promise<{ jobs: Vacancy[]; nextCursor: string | null }> {
   const csRaw = categorySlug?.trim().toLowerCase();
   const cs = csRaw && csRaw !== "all" ? csRaw : null;
 
@@ -37,16 +38,24 @@ export async function fetchPublicJobsWithFallback(
     const qs = new URLSearchParams({ limit: String(limit) });
     if (cursor) qs.set("cursor", cursor);
     if (cs) qs.set("category", cs);
+    if (q?.trim()) qs.set("q", q.trim().slice(0, 200));
 
     const res = await fetch(`/api/jobs?${qs.toString()}`, {
       credentials: "same-origin",
       cache: "no-store",
     });
 
-    const raw = (await res.json().catch(() => ({}))) as { jobs?: Vacancy[]; code?: string };
+    const raw = (await res.json().catch(() => ({}))) as {
+      jobs?: Vacancy[];
+      code?: string;
+      pagination?: { nextCursor?: string | null };
+    };
 
     if (res.ok) {
-      return raw.jobs ?? [];
+      return {
+        jobs: raw.jobs ?? [],
+        nextCursor: raw.pagination?.nextCursor ?? null,
+      };
     }
 
     if (!shouldFallback(res.status, raw)) {
@@ -56,7 +65,16 @@ export async function fetchPublicJobsWithFallback(
     console.warn("[jobsApi] /api/jobs failed", error);
   }
 
-  return [];
+  return { jobs: [], nextCursor: null };
+}
+
+export async function fetchPublicJobsWithFallback(
+  limit = 75,
+  cursor?: string | null,
+  categorySlug?: string | null,
+) {
+  const { jobs } = await fetchPublicJobsPage(limit, cursor, categorySlug, undefined);
+  return jobs;
 }
 
 export async function fetchMyVacanciesWithFallback(): Promise<Vacancy[]> {
