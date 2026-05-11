@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 
 import { requireTalentBridgeSession } from "../../../../../src/server/auth/requireSession";
 import { requireRole } from "../../../../../src/server/auth/requireRole";
+import { canManageRolesForEmail } from "../../../../../src/server/auth/roleAdminAllowlist";
 import { getDrizzleDb, hasPostgresConfigured } from "../../../../../src/server/db/postgres";
 import { users } from "../../../../../src/server/schema";
 import { recordAiAudit } from "../../../../../src/server/ai/audit";
@@ -10,16 +11,6 @@ import { recordAiAudit } from "../../../../../src/server/ai/audit";
 function parseRequestedRole(raw: unknown): "candidate" | "recruiter" | null {
   if (raw === "candidate" || raw === "recruiter") return raw;
   return null;
-}
-
-function canManageRolesForEmail(actorEmail: string): boolean {
-  if (process.env.TALENTBRIDGE_ENABLE_ROLE_ADMIN !== "1") return false;
-  const configured = (process.env.TALENTBRIDGE_ROLE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
-  if (configured.length === 0) return false;
-  return configured.includes(actorEmail.toLowerCase());
 }
 
 export async function POST(request: NextRequest) {

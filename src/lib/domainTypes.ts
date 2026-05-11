@@ -49,4 +49,6 @@ export type TalentBridgeUser = {
   id: string;
   email: string;
   role: "candidate" | "recruiter";
+  /** From `GET /api/auth/session` when role admin is enabled and email is allowlisted. */
+  canManageUserRoles?: boolean;
 };
