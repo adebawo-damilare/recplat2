@@ -74,8 +74,7 @@ async function run() {
     throw new Error(`POST /api/applications failed -> ${applyRes.res.status}`);
   }
 
-  const boardRes = await fetchJson("/api/applications/board", {
-    method: "GET",
+  const boardRes = await fetchJson("GET", "/api/applications/board", {
     headers: { cookie: recruiter.cookie },
   });
   const rows = Array.isArray(boardRes.body?.applications) ? boardRes.body.applications : [];
@@ -85,8 +84,7 @@ async function run() {
   }
   const applicationId = row.id;
 
-  const patchRes = await fetchJson(`/api/applications/${applicationId}`, {
-    method: "PATCH",
+  const patchRes = await fetchJson("PATCH", `/api/applications/${applicationId}`, {
     headers: { cookie: recruiter.cookie, "content-type": "application/json" },
     body: JSON.stringify({ status: "viewed" }),
   });
@@ -94,8 +92,7 @@ async function run() {
     throw new Error(`PATCH /api/applications/[id] failed -> ${patchRes.res.status}`);
   }
 
-  const mineRes = await fetchJson("/api/applications/mine", {
-    method: "GET",
+  const mineRes = await fetchJson("GET", "/api/applications/mine", {
     headers: { cookie: candidate.cookie },
   });
   const app = Array.isArray(mineRes.body?.applications)
@@ -105,17 +102,19 @@ async function run() {
     throw new Error(`GET /api/applications/mine after patch failed -> ${mineRes.res.status}`);
   }
 
-  const filterRes = await fetchJson(`/api/applications/board?vacancyId=${encodeURIComponent(vacancyId)}`, {
-    method: "GET",
-    headers: { cookie: recruiter.cookie },
-  });
+  const filterRes = await fetchJson(
+    "GET",
+    `/api/applications/board?vacancyId=${encodeURIComponent(vacancyId)}`,
+    {
+      headers: { cookie: recruiter.cookie },
+    },
+  );
   const fr = Array.isArray(filterRes.body?.applications) ? filterRes.body.applications : [];
   if (!filterRes.res.ok || fr.length < 1 || !fr.every((r) => r.vacancyId === vacancyId)) {
     throw new Error(`GET /api/applications/board?vacancyId failed -> ${filterRes.res.status}`);
   }
 
-  const candBoard = await fetchJson("/api/applications/board", {
-    method: "GET",
+  const candBoard = await fetchJson("GET", "/api/applications/board", {
     headers: { cookie: candidate.cookie },
   });
   if (candBoard.res.status !== 403 || candBoard.body?.code !== "FORBIDDEN_ROLE") {
