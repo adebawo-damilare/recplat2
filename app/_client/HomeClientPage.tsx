@@ -4,18 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import HomePage from "../../src/components/home/HomePage";
 import { AppView } from "../../src/appView";
-import { auth, signIn, type Vacancy } from "../../src/lib/firebase";
+import type { Vacancy } from "../../src/lib/domainTypes";
 import { fetchPublicJobsWithFallback, seedSampleVacanciesViaApi } from "../../src/lib/jobsApi";
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 
 export default function HomeClientPage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useTalentBridgeUser();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-
-  useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   const fetchVacancies = async () => {
     setLoading(true);
@@ -30,16 +28,14 @@ export default function HomeClientPage() {
   };
 
   useEffect(() => {
-    fetchVacancies();
+    void fetchVacancies();
   }, []);
 
   const handleSeed = async () => {
     if (!user) {
-      const u = await signIn();
-      if (!u) return;
+      router.push("/sign-in");
+      return;
     }
-
-    if (!auth.currentUser) return;
 
     setSeeding(true);
     try {
@@ -53,7 +49,10 @@ export default function HomeClientPage() {
   };
 
   const routeForView = (newView: AppView) => {
-    if (!user && [AppView.JOIN_CANDIDATE, AppView.COMPANY_DASHBOARD, AppView.MY_PROFILE].includes(newView)) {
+    if (
+      !user &&
+      [AppView.JOIN_CANDIDATE, AppView.COMPANY_DASHBOARD, AppView.MY_PROFILE].includes(newView)
+    ) {
       return "/sign-in";
     }
 

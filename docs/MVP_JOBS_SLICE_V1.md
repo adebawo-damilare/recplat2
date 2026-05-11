@@ -15,34 +15,33 @@
 - Candidate apply → **`applications`** row in Postgres  
 - Candidate “my applications” via **`GET /api/applications/mine`** (Postgres) when `DATABASE_URL` is set  
 - MVP talent lanes (**marketers** / **designers** / **sales**) on vacancies — `docs/CATEGORY_MODEL.md`  
-- Firebase **Authentication** (sign-in) for now — identity is still Firebase; **job + application rows** are Postgres  
+- Postgres-native authentication (JWT session cookie) with users stored in Postgres  
 
 ## Scope (out for this milestone)
 
-- Firestore as the source of truth for vacancies or applications in **production**  
 - Phase C marketplace loop (invites, screening, pipeline)  
-- Replacing Firebase Auth (see `docs/ROADMAP.md` — Supabase or other later)  
+- Replacing this simple auth model with a more advanced provider/SSO stack (future roadmap item)  
 
 ---
 
 ## Production configuration (Postgres-only job data)
 
-Set **both** so the server never reads vacancy data from Firestore and the browser does not fall back to Firestore for jobs/applications:
+Set **both** to keep production running in strict Postgres mode for jobs/applications:
 
 | Variable | Where | Purpose |
 |----------|--------|---------|
 | `DATABASE_URL` | Server (e.g. Vercel) | Postgres connection |
 | `TALENTBRIDGE_JOBS_POSTGRES_ONLY=1` | Server | `GET /api/jobs` and related server paths require Postgres |
-| `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1` | Server **build-time** | Client skips Firestore fallbacks in `src/lib/jobsApi.ts` and `applicationsApi.ts` |
+| `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1` | Server **build-time** | Client treats job/application API failures as hard failures (no legacy fallback) |
 
 Also required for authenticated API writes:
 
-- `FIREBASE_SERVICE_ACCOUNT_JSON` (or path-based equivalent) — see `.env.example`  
-- Apply migrations: `npm run db:apply` then `npm run db:apply:categories`
+- `TALENTBRIDGE_AUTH_SECRET` (>=32 chars) — see `.env.example`  
+- Apply migrations: `npm run db:apply`, `npm run db:apply:categories`, `npm run db:apply:users`
 
-**Note:** Candidate **profile** data may still use Firestore in the UI until migrated; Jobs Slice v1 standardizes **vacancies + applications** on Postgres.
+**Note:** Candidate profile data is now served by Postgres-backed routes (`/api/candidates/*`).
 
-If vacancies still appear **only in Firestore** (browser sees Firestore `Listen` traffic): the **client bundle** was built without **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, or **`POST /api/jobs`** is failing (check **Network**). Set both postgres-only env vars on **Vercel → Production**, **redeploy**, and open DevTools—the client now logs **`[jobsApi] Creating vacancy in Firestore`** when it falls back.
+If vacancy writes fail, check `/api/jobs` response codes in Network and confirm `DATABASE_URL` + `TALENTBRIDGE_AUTH_SECRET` are set in the deployment environment.
 
 ---
 
@@ -53,7 +52,7 @@ Step-by-step order (merge, prod env, migrations, smoke, manual path): **`docs/RE
 Summary:
 
 1. **Merge** via `dev` → PR → `main` with CI green (`docs/CICD.md`).  
-2. **Prod env:** `DATABASE_URL`, Firebase Admin JSON, **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (redeploy after adding `NEXT_PUBLIC_*`).  
+2. **Prod env:** `DATABASE_URL`, `TALENTBRIDGE_AUTH_SECRET`, **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (redeploy after adding `NEXT_PUBLIC_*`).  
 3. **Migrations** applied against production DB (`database/README.md`).  
 4. **Smoke:** `SMOKE_BASE_URL=https://<your-host> npm run smoke:api`; for a tighter check that Postgres backs jobs + mine, **`SMOKE_EXPECT_POSTGRES_READY=1`** (server must expose `DATABASE_URL`; expect **401** on `/api/applications/mine` without a token).
 5. **Sanity:** post a vacancy, browse, apply, confirm row in **`applications`** and list on candidate dashboard when signed in.
@@ -62,7 +61,7 @@ Summary:
 
 ## Local development (optional dual mode)
 
-Omit `TALENTBRIDGE_JOBS_POSTGRES_ONLY` and `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY` to keep **legacy** Firestore fallbacks when `DATABASE_URL` is missing (useful for quick UI work).
+Keep `DATABASE_URL` set in all active environments for consistent behavior.
 
 ---
 

@@ -6,7 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "motion/react";
 import { User, Plus, ArrowLeft, Loader2 } from "lucide-react";
-import { getCandidateProfile, auth, type CandidateProfile } from '../lib/firebase';
+import type { CandidateProfile } from "../lib/domainTypes";
+import { fetchMyCandidateProfile } from "../lib/candidatesApi";
+import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import ProfileCard from './ProfileCard';
 
 interface MyProfileProps {
@@ -16,19 +18,19 @@ interface MyProfileProps {
 }
 
 export default function MyProfile({ onEdit, onBack, onViewPortfolio }: MyProfileProps) {
+  const { user } = useTalentBridgeUser();
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const user = auth.currentUser;
       if (!user) {
         setLoading(false);
         return;
       }
 
       try {
-        const data = await getCandidateProfile(user.uid);
+        const data = await fetchMyCandidateProfile();
         setProfile(data || null);
       } catch (error) {
         console.error("Error fetching my profile", error);
@@ -37,8 +39,8 @@ export default function MyProfile({ onEdit, onBack, onViewPortfolio }: MyProfile
       }
     };
 
-    fetchProfile();
-  }, []);
+    void fetchProfile();
+  }, [user]);
 
   if (loading) {
     return (
@@ -49,7 +51,7 @@ export default function MyProfile({ onEdit, onBack, onViewPortfolio }: MyProfile
     );
   }
 
-  if (!profile) {
+  if (!profile?.fullName?.trim()) {
     return (
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}

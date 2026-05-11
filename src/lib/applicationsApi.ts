@@ -1,21 +1,10 @@
 /**
- * Candidate application list: prefer Postgres-backed `/api/applications/mine`.
+ * Candidate application list via `/api/applications/mine`.
  */
 
-import type { Application } from "./firebase";
-import { auth } from "./firebase";
-import { getApplicationsByUser } from "./firebase";
-import { shouldFallbackToFirestoreForJobsApi, isBrowserJobsPostgresOnly } from "./talentBridgeApiMode";
-
-async function authHeaders(): Promise<HeadersInit | null> {
-  const user = auth.currentUser;
-  if (!user) return null;
-  try {
-    return { Authorization: `Bearer ${await user.getIdToken()}` };
-  } catch {
-    return null;
-  }
-}
+import type { Application } from "./domainTypes";
+import { refreshTalentBridgeSession } from "./authBrowser";
+import { shouldFallbackToFirestoreForJobsApi } from "./talentBridgeApiMode";
 
 /** Maps ISO appliedAt strings from API back to shapes the UI expects. */
 function normalizeApplications(payload: unknown): Application[] {
@@ -37,27 +26,22 @@ function normalizeApplications(payload: unknown): Application[] {
   }));
 }
 
-export async function fetchMyApplicationsWithFallback(candidateUid: string): Promise<Application[]> {
-  const headers = await authHeaders();
+export async function fetchMyApplicationsWithFallback(): Promise<Application[]> {
+  const u = await refreshTalentBridgeSession();
+  if (!u) return [];
 
   try {
-    if (headers) {
-      const res = await fetch("/api/applications/mine", { headers, credentials: "same-origin" });
-      const raw = (await res.json().catch(() => ({}))) as { applications?: unknown; code?: string };
-      if (res.ok && raw.applications) {
-        return normalizeApplications(raw.applications);
-      }
-      if (!shouldFallbackToFirestoreForJobsApi(res.status, raw)) {
-        console.warn("[applicationsApi] unexpected /api/applications/mine", res.status);
-      }
+    const res = await fetch("/api/applications/mine", { credentials: "same-origin" });
+    const raw = (await res.json().catch(() => ({}))) as { applications?: unknown; code?: string };
+    if (res.ok && raw.applications) {
+      return normalizeApplications(raw.applications);
+    }
+    if (!shouldFallbackToFirestoreForJobsApi(res.status, raw)) {
+      console.warn("[applicationsApi] unexpected /api/applications/mine", res.status);
     }
   } catch (e) {
     console.warn("[applicationsApi] /api/applications/mine failed", e);
   }
 
-  if (isBrowserJobsPostgresOnly()) {
-    return [];
-  }
-
-  return (await getApplicationsByUser(candidateUid)) ?? [];
+  return [];
 }

@@ -6,7 +6,8 @@
 import React, { useState } from 'react';
 import { motion } from "motion/react";
 import { User, Mail, Briefcase, FileText, Code, Clock, Save, ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
-import { saveCandidateProfile, getCandidateProfile, auth } from '../lib/firebase';
+import { fetchMyCandidateProfile, saveMyCandidateProfile } from "../lib/candidatesApi";
+import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 
 interface CandidateFormProps {
   onSuccess: () => void;
@@ -14,39 +15,41 @@ interface CandidateFormProps {
 }
 
 export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProps) {
+  const { user } = useTalentBridgeUser();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: auth.currentUser?.email || '',
-    headline: '',
-    summary: '',
-    skills: '',
-    experience: '',
-    portfolioUrl: '',
-    portfolioContent: ''
+    fullName: "",
+    email: "",
+    headline: "",
+    summary: "",
+    skills: "",
+    experience: "",
+    portfolioUrl: "",
+    portfolioContent: "",
   });
 
   React.useEffect(() => {
     const loadProfile = async () => {
-      const user = auth.currentUser;
       if (!user) {
         setInitialLoading(false);
         return;
       }
       try {
-        const profile = await getCandidateProfile(user.uid);
+        const profile = await fetchMyCandidateProfile();
         if (profile) {
           setFormData({
-            fullName: profile.fullName || '',
-            email: profile.email || '',
-            headline: profile.headline || '',
-            summary: profile.summary || '',
-            skills: profile.skills || '',
-            experience: profile.experience || '',
-            portfolioUrl: profile.portfolioUrl || '',
-            portfolioContent: profile.portfolioContent || ''
+            fullName: profile.fullName || "",
+            email: profile.email || user.email || "",
+            headline: profile.headline || "",
+            summary: profile.summary || "",
+            skills: profile.skills || "",
+            experience: profile.experience || "",
+            portfolioUrl: profile.portfolioUrl || "",
+            portfolioContent: profile.portfolioContent || "",
           });
+        } else {
+          setFormData((prev) => ({ ...prev, email: user.email || "" }));
         }
       } catch (error) {
         console.error("Error loading profile", error);
@@ -54,21 +57,29 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
         setInitialLoading(false);
       }
     };
-    loadProfile();
-  }, []);
+    void loadProfile();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
-    
+    if (!user) return;
+
     setLoading(true);
     try {
-      await saveCandidateProfile({
-        ...formData,
+      const saved = await saveMyCandidateProfile({
+        fullName: formData.fullName,
+        email: formData.email,
+        headline: formData.headline,
+        summary: formData.summary,
+        skills: formData.skills,
+        experience: formData.experience,
         portfolioUrl: formData.portfolioUrl || null,
         portfolioContent: formData.portfolioContent || null,
-        userId: auth.currentUser.uid
       });
+      if (!saved) {
+        alert("Failed to save profile. Check that you are signed in.");
+        return;
+      }
       onSuccess();
     } catch (error) {
       alert("Failed to save profile. Please see console for details.");

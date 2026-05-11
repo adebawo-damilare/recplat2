@@ -1,4 +1,4 @@
-import type { Vacancy } from "./firebase";
+import type { Vacancy } from "./domainTypes";
 import { labelForMvpTalentSlug } from "../shared/mvpCategories";
 
 /** Normalizes a write-time category slug into the shape stored/read on Vacancy. */

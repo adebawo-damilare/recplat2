@@ -6,7 +6,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search, MapPin, Briefcase, DollarSign, ChevronRight, X, Database } from "lucide-react";
-import { auth, type Vacancy } from "../lib/firebase";
+import type { Vacancy } from "../lib/domainTypes";
+import { refreshTalentBridgeSession } from "../lib/authBrowser";
 import {
   fetchPublicJobsWithFallback,
   applyToVacancyWithFallback,
@@ -43,7 +44,8 @@ export default function JobBoard() {
   }, [fetchJobs]);
 
   const handleApply = async () => {
-    if (!auth.currentUser) {
+    const u = await refreshTalentBridgeSession();
+    if (!u) {
       alert("Please sign in to apply for jobs.");
       return;
     }
@@ -64,7 +66,8 @@ export default function JobBoard() {
   };
 
   const handleSeed = async () => {
-    if (!auth.currentUser) {
+    const u = await refreshTalentBridgeSession();
+    if (!u) {
       alert("Please sign in to seed sample data.");
       return;
     }

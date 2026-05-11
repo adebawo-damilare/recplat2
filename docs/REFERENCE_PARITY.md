@@ -14,10 +14,10 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 | Schema | Relational companies + roles | `companies`, **`categories`**, `vacancies` (+ optional `category_id` FK), `applications`, `ai_audit_events` (not the full recruit ERD) |
 | Categories | MVP talent lanes (“templates” wedge before `category_fields`) | **`GET /api/categories`**, `src/server/categories/*`, `src/shared/mvpCategories.ts`, migration `database/migrations/0002_categories.sql` |
 | API | Many small `route.ts` handlers | `app/api/jobs/*`, **`app/api/categories`**, `app/api/applications`, `app/api/ai/health`, etc. |
-| Auth (server) | “API resolves the user on the server” | Firebase **ID token** + **Firebase Admin** verify (not cookie + scrypt + DB sessions) |
+| Auth (server) | “API resolves the user on the server” | Postgres users + bcrypt password hash + signed HTTP-only session cookie |
 | AI | Provider switch + server-side audit | `TALENTBRIDGE_AI_PROVIDER`, `src/server/ai/*`, `ai_audit_events` |
 | Ops | DB apply, smoke | `npm run db:apply`, `npm run smoke:api`, `npm run db:seed:samples` |
-| Reads | Optional legacy Firestore fallback | Jobs Slice v1 **production** sets **`TALENTBRIDGE_JOBS_POSTGRES_ONLY`** + **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY`** so vacancies/applications skip Firestore (**`docs/MVP_JOBS_SLICE_V1.md`**) |
+| Reads | Postgres API-backed listings and applications | Jobs Slice v1 **production** sets **`TALENTBRIDGE_JOBS_POSTGRES_ONLY`** + **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY`** for strict behavior (**`docs/MVP_JOBS_SLICE_V1.md`**) |
 | UI | N/A | **We do not copy reference UI** — only TalentBridge components |
 | CI | N/A (added for this repo) | `.github/workflows/ci.yml` — see `docs/CICD.md` |
 
@@ -28,9 +28,9 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 | Reference | Why / current stance |
 |-----------|----------------------|
 | Full ERD: DB sessions, invitations, screening sessions, pipeline tables, moderation, search index, … | **Out of scope** for the first slice; add tables when product needs them (`docs/ROADMAP.md`). |
-| `recruit` cookie + scrypt + `getRequestUser()` | We use **Firebase client auth + Admin token** until a Supabase (or other) auth migration. |
+| `recruit` cookie + scrypt + `getRequestUser()` | Not copied verbatim; this repo uses a JWT session-cookie flow with Postgres-backed users. |
 | JSON file store + `db:backfill` from that world | Not used. |
-| Firestore → Postgres vacancy migration tool | **Removed** — we standardize on `db:seed:samples` and app/API writes. |
+| Legacy migration tooling from non-Postgres stores | **Removed** — we standardize on SQL migrations plus app/API writes. |
 | Reference app’s `smoke-api` / `backfill` scripts verbatim | Replaced with repo-specific `scripts/smoke-api.mjs`, `scripts/db-apply.mjs`, `scripts/seed-neon-sample.ts`. |
 
 ---
@@ -39,7 +39,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 
 | Reference | TalentBridge |
 |-----------|----------------|
-| Dual local JSON vs Postgres | **Postgres** when `DATABASE_URL` set, else **Firestore** for some job reads (see `src/server/jobs/index.ts`). |
+| Dual local JSON vs Postgres | Postgres-only job/application APIs in this repo. |
 | Neon HTTP driver (`@neondatabase/serverless`) | We use **`postgres` + `drizzle-orm/postgres-js`**; still valid for Vercel; can swap to Neon serverless later if needed. |
 
 ---

@@ -77,7 +77,7 @@ Do **not** send **`DATABASE_URL`** or **`VERCEL_AUTOMATION_BYPASS_SECRET`** to a
 
 Paste into your PR or release ticket and tick in the browser:
 
-- [ ] **Recruiter (Firebase)** — signed in on **production**, create/edit vacancy, visible on **`/jobs`** + filters OK.
+- [ ] **Recruiter (email/password)** — signed in on **production**, create/edit vacancy, visible on **`/jobs`** + filters OK.
 - [ ] **Candidate** — signed in, open listing, **Apply** succeeds.
 - [ ] **Postgres** — row in **`applications`** (Neon console / SQL) for prod DB.
 - [ ] **Candidate dashboard** — application appears (covers **`GET /api/applications/mine`** behaviour).

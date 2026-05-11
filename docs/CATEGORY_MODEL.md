@@ -22,7 +22,7 @@ This document captures how we applied the **“categories as templates”** idea
 
 ## Client
 
-- **`src/lib/jobsApi.ts`** — passes `category` query param; Firestore fallback filters client-side by `job.category.slug`.
+- **`src/lib/jobsApi.ts`** — passes `category` query param to `/api/jobs`; client behavior is API-only.
 - **`VacancyCategoryField`** — recruiter vacancy form lane selector.
 - **Job board** — lane dropdown + badges on listings.
 

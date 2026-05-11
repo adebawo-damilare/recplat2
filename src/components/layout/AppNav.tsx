@@ -4,12 +4,12 @@
  */
 
 import { Briefcase, LogOut, User as UserIcon, Plus } from "lucide-react";
-import type { User } from "firebase/auth";
+import type { TalentBridgeUser } from "../../lib/domainTypes";
 import { AppView } from "../../appView";
 
 interface AppNavProps {
   currentView: AppView;
-  user: User | null;
+  user: TalentBridgeUser | null;
   onNavigate: (view: AppView) => void;
   onAuthAction: () => void | Promise<void>;
 }
@@ -88,7 +88,7 @@ export default function AppNav({ currentView, user, onNavigate, onAuthAction }: 
                   </button>
                   <div className="flex items-center gap-2 px-3 py-1 bg-neutral-100 rounded-full">
                     <UserIcon className="w-4 h-4 text-neutral-500" />
-                    <span className="text-xs font-bold truncate max-w-[100px]">{user.displayName || user.email}</span>
+                    <span className="text-xs font-bold truncate max-w-[100px]">{user.email}</span>
                   </div>
                   <button
                     type="button"

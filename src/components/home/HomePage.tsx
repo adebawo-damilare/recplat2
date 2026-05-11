@@ -4,7 +4,7 @@
  */
 
 import { motion } from "motion/react";
-import type { Vacancy } from "../../lib/firebase";
+import type { Vacancy } from "../../lib/domainTypes";
 import { AppView } from "../../appView";
 import HomeHero from "./HomeHero";
 import HomeAudience from "./HomeAudience";

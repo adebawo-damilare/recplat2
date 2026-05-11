@@ -1,7 +1,5 @@
-import { isJobsPostgresOnly } from "../config/jobsBackendMode";
+import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { hasPostgresConfigured } from "../db/postgres";
-import type { PaginatedVacanciesResult } from "./firestoreVacancies";
-import { fetchOpenVacanciesPageFromFirestore } from "./firestoreVacancies";
 import {
   fetchOpenVacanciesPageFromPostgres,
   getVacancyById,
@@ -13,7 +11,6 @@ import {
 
 export type { PaginatedVacanciesResult };
 export {
-  fetchOpenVacanciesPageFromFirestore,
   fetchOpenVacanciesPageFromPostgres,
   getVacancyById,
   insertVacancyForOwner,
@@ -31,15 +28,8 @@ export async function fetchOpenVacanciesPage(
     return { jobs: [], nextCursor: null };
   }
 
-  if (isJobsPostgresOnly()) {
-    if (!hasPostgresConfigured()) {
-      throw new Error("JOBS_POSTGRES_REQUIRED");
-    }
-    return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug);
+  if (!hasPostgresConfigured()) {
+    throw new Error("JOBS_POSTGRES_REQUIRED");
   }
-
-  if (hasPostgresConfigured()) {
-    return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug);
-  }
-  return fetchOpenVacanciesPageFromFirestore(limit, cursor);
+  return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug);
 }

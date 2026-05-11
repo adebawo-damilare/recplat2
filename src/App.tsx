@@ -3,16 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "motion/react";
-import {
-  auth,
-  signIn,
-  logout,
-  type Vacancy,
-  type CandidateProfile,
-} from "./lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+import type { Vacancy, CandidateProfile, TalentBridgeUser } from "./lib/domainTypes";
+import { refreshTalentBridgeSession, logoutTalentBridgeSession } from "./lib/authBrowser";
 import { fetchPublicJobsWithFallback, seedSampleVacanciesViaApi } from "./lib/jobsApi";
 import CandidateForm from "./components/CandidateForm";
 import JobBoard from "./components/JobBoard";
@@ -28,7 +22,7 @@ import { AppView } from "./appView";
 
 export default function App() {
   const [view, setView] = useState<AppView>(AppView.HOME);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<TalentBridgeUser | null>(null);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
@@ -47,21 +41,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
-    return () => unsubscribe();
+    void refreshTalentBridgeSession().then(setUser);
   }, []);
 
   useEffect(() => {
-    fetchVacancies();
+    void fetchVacancies();
   }, []);
 
   const handleSeed = async () => {
     if (!user) {
-      signIn().then((u) => {
-        if (u) handleSeed();
-      });
+      setView(AppView.SIGN_IN);
       return;
     }
     setSeeding(true);
@@ -77,12 +66,19 @@ export default function App() {
 
   const handleAuthAction = async () => {
     if (user) {
-      await logout();
+      await logoutTalentBridgeSession();
+      setUser(null);
       setView(AppView.HOME);
     } else {
       setView(AppView.SIGN_IN);
     }
   };
+
+  const onSignInSuccess = useCallback(async () => {
+    const u = await refreshTalentBridgeSession();
+    setUser(u);
+    setView(AppView.HOME);
+  }, []);
 
   const navigateTo = (newView: AppView) => {
     if (
@@ -145,7 +141,7 @@ export default function App() {
 
         {view === AppView.SIGN_IN && (
           <div className="pt-24 min-h-screen bg-neutral-50/50">
-            <SignIn onSuccess={() => setView(AppView.HOME)} onCancel={() => setView(AppView.HOME)} />
+            <SignIn onSuccess={onSignInSuccess} onCancel={() => setView(AppView.HOME)} />
           </div>
         )}
 

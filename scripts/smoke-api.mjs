@@ -62,7 +62,7 @@ async function check(label, path, { expectJson = true } = {}) {
 
 /**
  * GET /api/applications/mine without Authorization should not 5xx.
- * With Postgres + auth route order, expect 401 (NO_BEARER) even if Firebase Admin is unset.
+ * With Postgres configured, expect 401 without a session (not 5xx).
  */
 async function checkApplicationsMineUnauthenticated() {
   const { res, body, text } = await fetchJson("GET", "/api/applications/mine");
@@ -74,7 +74,7 @@ async function checkApplicationsMineUnauthenticated() {
   if (res.status === 503) {
     const code = body?.code;
     const allowedRelaxed =
-      code === "POSTGRES_UNAVAILABLE" || code === "JOBS_POSTGRES_REQUIRED" || code === "FIREBASE_ADMIN_UNAVAILABLE";
+      code === "POSTGRES_UNAVAILABLE" || code === "JOBS_POSTGRES_REQUIRED" || code === "AUTH_UNAVAILABLE";
 
     if (strictPostgres) {
       throw new Error(

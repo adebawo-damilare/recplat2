@@ -3,7 +3,7 @@
 import { useState } from "react";
 import TalentBoard from "../../src/components/TalentBoard";
 import PortfolioViewer from "../../src/components/PortfolioViewer";
-import type { CandidateProfile } from "../../src/lib/firebase";
+import type { CandidateProfile } from "../../src/lib/domainTypes";
 
 export default function TalentClientPage() {
   const [portfolioCandidate, setPortfolioCandidate] = useState<CandidateProfile | null>(null);

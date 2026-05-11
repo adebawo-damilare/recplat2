@@ -5,12 +5,12 @@ import { getVacancyById } from "../jobs/postgresVacancies";
 import { applications } from "../schema";
 
 /** Lists a candidate's applications with vacancy rows joined via lookup (Jobs Slice / Postgres path). */
-export async function listApplicationsWithVacanciesForCandidate(candidateFirebaseUid: string) {
+export async function listApplicationsWithVacanciesForCandidate(candidateUserId: string) {
   const db = getDrizzleDb();
   const rows = await db
     .select()
     .from(applications)
-    .where(eq(applications.candidateFirebaseUid, candidateFirebaseUid))
+    .where(eq(applications.candidateUserId, candidateUserId))
     .orderBy(desc(applications.createdAt));
 
   const out: {
@@ -26,7 +26,7 @@ export async function listApplicationsWithVacanciesForCandidate(candidateFirebas
     out.push({
       id: r.id,
       vacancyId: r.vacancyId,
-      candidateId: candidateFirebaseUid,
+      candidateId: candidateUserId,
       appliedAt: r.createdAt,
       vacancy: vacancy ?? null,
     });

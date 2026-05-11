@@ -23,7 +23,7 @@ Set or verify **Production** only (not Preview):
 | `DATABASE_URL` | Neon **production** database (not the branch used for Preview). |
 | `TALENTBRIDGE_JOBS_POSTGRES_ONLY` | `1` |
 | `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY` | `1` (client bundle—**redeploy** after changing). |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON string for Firebase Admin (same pattern as `.env.example`). |
+| `TALENTBRIDGE_AUTH_SECRET` | Session signing secret (>=32 chars). |
 | Optional | Upstash, AI keys, etc., per `.env.example` / `docs/DEPLOYMENT_ENV.md`. |
 
 Then **Redeploy** the latest **Production** deployment if you touched env vars (especially any `NEXT_PUBLIC_*`).
@@ -51,11 +51,12 @@ Apply SQL **against the same Postgres** as **Production** `DATABASE_URL` (usuall
 ```bash
 npm run release:prod:db:apply
 npm run release:prod:db:apply:categories
+npm run release:prod:db:apply:users
 ```
 
 (or the older one-liners with `DATABASE_URL="postgresql://..." npm run db:apply` …)
 
-Or use `psql` / Neon SQL editor with `database/migrations/0001_initial.sql` then `0002_categories.sql` in order.
+Or use `psql` / Neon SQL editor with `database/migrations/0001_initial.sql`, `0002_categories.sql`, then `0003_users_auth.sql` in order.
 
 **Already applied?** If prod DB was created from a Neon backup of staging or migrations were run once, re-running apply scripts is **idempotent** for tables that use `IF NOT EXISTS`—still confirm with your team before repeating on prod.
 
@@ -78,7 +79,7 @@ SMOKE_EXPECT_POSTGRES_READY=1 npm run release:prod:smoke
 
 Complete at least once on **production**:
 
-1. Sign in as **recruiter** (Firebase): create or edit a vacancy; confirm it appears on **`/jobs`** with filters as expected.  
+1. Sign in as **recruiter** (email/password via `/sign-in`): create or edit a vacancy; confirm it appears on **`/jobs`** with filters as expected.  
 2. Sign in as **candidate** (or same user if your roles allow): open a job, **apply**.  
 3. Confirm **`applications`** row in Postgres (Neon console or SQL) and **candidate dashboard** lists the application (`GET /api/applications/mine` path).
 

@@ -1,12 +1,12 @@
 /**
  * Insert SAMPLE_VACANCY_TEMPLATES into Postgres (Neon) via DATABASE_URL.
- * No Firebase migration; no API auth required.
+ * Scripted Postgres inserts; no API auth required.
  *
  * Usage:
  *   npm run db:seed:samples
  *
  * Optional .env.local:
- *   SEED_OWNER_FIREBASE_UID=yourRealFirebaseUid   (so /api/jobs/mine & dashboard match when signed in)
+ *   SEED_OWNER_USER_ID=<uuid> — optional fixed owner id for scripted seeds (normally use a logged-in app's user UUID)
  *
  * Re-running creates additional rows (same templates, new vacancy ids). Delete from SQL if you need a clean slate.
  */
@@ -28,15 +28,15 @@ async function main() {
     throw new Error("DATABASE_URL is required (e.g. in .env.local).");
   }
 
-  const ownerUid =
-    process.env.SEED_OWNER_FIREBASE_UID?.trim() || "neon-sample-seed-owner";
+  const ownerUserId =
+    process.env.SEED_OWNER_USER_ID?.trim() || "neon-sample-seed-owner";
 
   const jobs = [];
 
   try {
     for (const template of SAMPLE_VACANCY_TEMPLATES) {
       const row = await insertVacancyForOwner({
-        ownerUid,
+        ownerUserId,
         companyName: template.companyName,
         jobTitle: template.jobTitle,
         location: template.location,
@@ -58,10 +58,10 @@ async function main() {
   }
 
   console.log(
-    JSON.stringify({ ownerUid, inserted: jobs.length, vacancyIds: jobs }, null, 2),
+    JSON.stringify({ ownerUserId, inserted: jobs.length, vacancyIds: jobs }, null, 2),
   );
   console.log(
-    "\nTip: Set SEED_OWNER_FIREBASE_UID to your Firebase user id so recruiter dashboard listings align with your signed-in user.",
+    "\nTip: Set SEED_OWNER_USER_ID to your Postgres `users.id` UUID so recruiter dashboard listings align when using that identity.",
   );
 }
 

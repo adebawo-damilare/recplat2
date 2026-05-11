@@ -7,12 +7,12 @@ export function isBrowserJobsPostgresOnly(): boolean {
   return process.env.NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY === "1";
 }
 
-/** When Postgres-only mode, never fall back to Firestore for vacancy/application APIs. */
+/** Legacy name — when Postgres-only, API failures should surface without treating them as retryable externally. */
 export function shouldFallbackToFirestoreForJobsApi(status: number, payload?: { code?: string }) {
   if (isBrowserJobsPostgresOnly()) {
     return false;
   }
   if (status === 503) return true;
   const code = payload?.code;
-  return code === "POSTGRES_UNAVAILABLE" || code === "FIREBASE_ADMIN_UNAVAILABLE";
+  return code === "POSTGRES_UNAVAILABLE" || code === "AUTH_UNAVAILABLE";
 }

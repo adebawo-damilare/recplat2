@@ -2,7 +2,7 @@
 
 How to configure **TalentBridge on Vercel** (or similar hosts): server-side secrets, Postgres, optional Redis for rate limiting, then verify with a smoke check.
 
-Firebase / auth credentials are intentionally **not** covered here—configure those separately in the same “Environment Variables” UI when you adopt your chosen auth setup.
+Auth credentials are covered here at the env-name level: set **`TALENTBRIDGE_AUTH_SECRET`** (>=32 chars) in each deployed scope that serves authenticated APIs.
 
 ---
 
@@ -75,7 +75,7 @@ Use a **single Vercel project**, **Git Production Branch = `main`**, and **two N
 
 TalentBridge reads `DATABASE_URL` at runtime: when set, vacancy reads/writes use SQL; ensure the schema has been applied (`npm run db:apply` **and** when using category lanes, **`npm run db:apply:categories`** — see **`database/README.md`**).
 
-**Jobs Slice v1 (production):** also set **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** and **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, then redeploy so vacancy/application data never falls back to Firestore — **`docs/MVP_JOBS_SLICE_V1.md`**.
+**Jobs Slice v1 (production):** also set **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, and **`TALENTBRIDGE_AUTH_SECRET`**, then redeploy.
 
 ---
 

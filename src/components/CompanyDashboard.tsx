@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Briefcase, 
@@ -19,56 +19,44 @@ import {
   Search,
   LayoutDashboard
 } from "lucide-react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, type Vacancy } from '../lib/firebase';
+import type { Vacancy } from "../lib/domainTypes";
 import { fetchMyVacanciesWithFallback, closeVacancyWithFallback } from "../lib/jobsApi";
+import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import VacancyForm from './VacancyForm';
 
 export default function CompanyDashboard() {
+  const { user } = useTalentBridgeUser();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
 
-  const fetchDataForUser = async (uid: string | undefined) => {
-    if (!uid) {
+  const fetchDataForUser = useCallback(async () => {
+    if (!user) {
       setVacancies([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const data = await fetchMyVacanciesWithFallback(uid);
+      const data = await fetchMyVacanciesWithFallback();
       setVacancies(data || []);
     } catch (error) {
       console.error("Error fetching vacancies", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    let cancelled = false;
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (cancelled) return;
-      if (!user) {
-        setVacancies([]);
-        setLoading(false);
-        return;
-      }
-      await fetchDataForUser(user.uid);
-    });
-    return () => {
-      cancelled = true;
-      unsub();
-    };
-  }, []);
+    void fetchDataForUser();
+  }, [fetchDataForUser]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to close this vacancy?")) return;
     try {
       await closeVacancyWithFallback(id);
-      await fetchDataForUser(auth.currentUser?.uid);
+      await fetchDataForUser();
     } catch (error) {
       console.error("Error deleting vacancy", error);
     }
@@ -256,7 +244,7 @@ export default function CompanyDashboard() {
                 vacancy={editingVacancy || undefined}
                 onSuccess={() => {
                   setShowForm(false);
-                  void fetchDataForUser(auth.currentUser?.uid);
+                  void fetchDataForUser();
                 }}
                 onCancel={() => setShowForm(false)}
               />

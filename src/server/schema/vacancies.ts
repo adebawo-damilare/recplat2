@@ -17,13 +17,13 @@ export const vacancies = pgTable(
     description: text("description").notNull(),
     requirements: text("requirements").notNull(),
     status: text("status").notNull().default("open"),
-    postedByFirebaseUid: text("posted_by_firebase_uid").notNull(),
+    postedByUserId: text("posted_by_user_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     openCreatedIdx: index("vacancies_open_created_idx").on(t.status, t.createdAt, t.id),
-    ownerIdx: index("vacancies_owner_idx").on(t.postedByFirebaseUid),
+    ownerIdx: index("vacancies_owner_idx").on(t.postedByUserId),
     // Partial index vacancies_open_category_idx is created in migration 0002_categories.sql only.
   }),
 );

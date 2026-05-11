@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyFirebaseIdToken } from "../../../src/server/auth/firebaseAdmin";
+import { requireTalentBridgeSession } from "../../../src/server/auth/requireSession";
 import { isJobsPostgresOnly } from "../../../src/server/config/jobsBackendMode";
 import { hasPostgresConfigured } from "../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../src/server/distributedRateLimit";
@@ -26,13 +26,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const authResult = await verifyFirebaseIdToken(request.headers.get("authorization"));
-  if (authResult.ok === false) {
-    if (authResult.reason === "ADMIN_UNAVAILABLE") {
-      return NextResponse.json({ code: "FIREBASE_ADMIN_UNAVAILABLE" }, { status: 503 });
-    }
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  }
+  const authResult = await requireTalentBridgeSession(request);
+  if (authResult.ok === false) return authResult.response;
 
   const body = await request.json();
   const vacancyId = typeof body.vacancyId === "string" ? body.vacancyId.trim() : "";
@@ -45,9 +40,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Vacancy is not available." }, { status: 400 });
   }
 
-  await recordApplicationPostgres(vacancyId, authResult.uid);
+  await recordApplicationPostgres(vacancyId, authResult.user.userId);
   await recordAiAudit({
-    actorFirebaseUid: authResult.uid,
+    actorUserId: authResult.user.userId,
     eventType: "application.created",
     payload: { vacancyId },
     provider: "system",

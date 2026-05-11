@@ -6,7 +6,7 @@
 import React from 'react';
 import { motion } from "motion/react";
 import { Mail, User, FileText, Code, ExternalLink, Edit3 } from "lucide-react";
-import { type CandidateProfile } from '../lib/firebase';
+import { type CandidateProfile } from "../lib/domainTypes";
 
 interface ProfileCardProps {
   candidate: CandidateProfile;
