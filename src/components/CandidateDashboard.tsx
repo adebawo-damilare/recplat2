@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   User, 
@@ -20,8 +20,10 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { auth, getCandidateProfile, type CandidateProfile, type Application } from '../lib/firebase';
+import type { CandidateProfile, Application } from "../lib/domainTypes";
 import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
+import { fetchMyCandidateProfile } from "../lib/candidatesApi";
+import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import ProfileCard from './ProfileCard';
 import CandidateForm from './CandidateForm';
 
@@ -42,19 +44,17 @@ interface CandidateDashboardProps {
 }
 
 export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboardProps) {
+  const { user } = useTalentBridgeUser();
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
 
-  const fetchData = async () => {
-    if (!auth.currentUser) return;
+  const fetchData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      const [profileData, appsData] = await Promise.all([
-        getCandidateProfile(auth.currentUser.uid),
-        fetchMyApplicationsWithFallback(auth.currentUser.uid),
-      ]);
+      const [profileData, appsData] = await Promise.all([fetchMyCandidateProfile(), fetchMyApplicationsWithFallback()]);
       setProfile(profileData);
       setApplications(appsData || []);
     } catch (error) {
@@ -62,11 +62,11 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    void fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -80,7 +80,8 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
     );
   }
 
-  const profileCompletion = profile ? 100 : 0; // Simplified for now
+  const hasMeaningfulProfile = Boolean(profile?.fullName?.trim());
+  const profileCompletion = hasMeaningfulProfile ? 100 : 0;
 
   return (
     <div className="max-w-6xl mx-auto p-6 sm:p-12">
@@ -109,7 +110,7 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
         {/* Main Feed */}
         <div className="lg:col-span-2 space-y-8">
           {/* Status Banner */}
-          {!profile && (
+          {!hasMeaningfulProfile && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -185,14 +186,16 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
           </section>
 
           {/* Profile Recommendation */}
-          {profile && (
+          {hasMeaningfulProfile && profile && (
             <section className="bg-neutral-900 rounded-3xl p-8 text-white relative overflow-hidden group">
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                   <span className="text-xs font-black uppercase tracking-widest text-neutral-400">Profile Optimized</span>
                 </div>
-                <h3 className="text-2xl font-black mb-2 italic">Looking sharp, {profile.fullName.split(' ')[0]}!</h3>
+                <h3 className="text-2xl font-black mb-2 italic">
+                  Looking sharp, {profile.fullName.trim().split(/\s+/)[0] || "there"}!
+                </h3>
                 <p className="text-neutral-400 font-medium mb-6 max-w-md">Your profile is currently visible to companies searching for top talent. Keep your experience up to date to increase your visibility.</p>
                 <div className="flex items-center gap-4">
                    <button 
@@ -217,11 +220,11 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
         {/* Sidebar */}
         <div className="space-y-8">
           {/* Quick Profile Card */}
-          {profile && (
+          {hasMeaningfulProfile && profile && (
             <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8">
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-neutral-100 rounded-full mx-auto mb-4 flex items-center justify-center font-black text-3xl text-neutral-300">
-                  {profile.fullName.charAt(0)}
+                  {profile.fullName.trim().charAt(0)}
                 </div>
                 <h4 className="text-xl font-black text-neutral-900">{profile.fullName}</h4>
                 <p className="text-sm text-neutral-500 font-medium">{profile.headline}</p>

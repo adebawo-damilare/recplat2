@@ -20,12 +20,12 @@ This project now uses Next.js App Router for:
 
 - `GET /api/health` health endpoint
 - `GET /api/categories` — MVP talent lanes (Postgres-backed when `DATABASE_URL` is set + migration `0002_categories.sql`; see **`docs/CATEGORY_MODEL.md`**)
-- `GET /api/jobs` paginated jobs endpoint with cursor-based pagination and rate limiting (Postgres when `DATABASE_URL` is set, else Firestore-backed listing)
+- `GET /api/jobs` paginated jobs endpoint with cursor-based pagination and rate limiting (Postgres-backed listing)
   - query params: `limit` (max 50), `cursor`, optional `category` (slug: `marketers` \| `designers` \| `sales`)
   - response includes `pagination.nextCursor`
   - rate limit: sliding window **120 requests / 60s** per client IP (proxied via `x-forwarded-for` / `x-real-ip`)
   - if `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set (see `.env.example`), limits are enforced with **Upstash** (distributed). Otherwise the app uses the **in-memory** limiter for local/dev.
-- `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` — Postgres writes + Firebase ID token (`Authorization: Bearer …`) when Postgres + Admin are configured
+- `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` — Postgres writes with signed session auth
 - `POST /api/applications` — Postgres application row when configured  
 - `GET /api/applications/mine` — candidate’s applications + vacancy payloads (Postgres; Bearer token)
 - `GET /api/ai/health` — reports AI provider wiring
@@ -47,7 +47,7 @@ GitHub Actions **CI** (lint + `next build` + Playwright) and **branch protection
 - `npm run dev` (Next dev server)
 - `npm run build`
 - `npm run start`
-- `npm run test:e2e` — Playwright’s `webServer` sets `TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS=1` so `GET /api/jobs` does not hang on Firestore when no DB/network; use `CI=1 npm run test:e2e` (or unset `reuseExistingServer`) so a fresh dev server picks up that env instead of an already-running instance.
+- `npm run test:e2e` — Playwright’s `webServer` sets `TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS=1` for stable CI behavior when no DB/network; use `CI=1 npm run test:e2e` (or unset `reuseExistingServer`) so a fresh dev server picks up that env instead of an already-running instance.
 - `npm run db:apply`
 - `npm run smoke:api`
 - `npm run test:load`

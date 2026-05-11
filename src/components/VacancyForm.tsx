@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { X, Briefcase, MapPin, DollarSign, FileText, CheckCircle, Building2 } from "lucide-react";
-import { auth, type Vacancy } from '../lib/firebase';
+import type { Vacancy } from "../lib/domainTypes";
 import { persistVacancyWithFallback } from "../lib/jobsApi";
 import { VacancyCategoryField } from "./vacancies/VacancyCategoryField";
 
@@ -30,7 +30,6 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
 
     setLoading(true);
     try {

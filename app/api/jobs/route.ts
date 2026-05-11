@@ -4,7 +4,7 @@ import { fetchOpenVacanciesPage, insertVacancyForOwner } from "../../../src/serv
 import { extractCategorySlugForCreate } from "../../../src/server/jobs/vacancyPayload";
 import { enforceJobsApiRateLimit } from "../../../src/server/distributedRateLimit";
 import { getClientKey } from "../../../src/server/rateLimit";
-import { verifyFirebaseIdToken } from "../../../src/server/auth/firebaseAdmin";
+import { requireTalentBridgeSession } from "../../../src/server/auth/requireSession";
 import { hasPostgresConfigured } from "../../../src/server/db/postgres";
 
 export const revalidate = 30;
@@ -80,6 +80,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Diagnostic log for production debugging (no secrets included).
+    console.error("[/api/jobs] unexpected failure", {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : undefined,
+      categoryParam,
+      cursor,
+      limitParam,
+    });
+
     return NextResponse.json(
       {
         error: "Unable to fetch jobs right now.",
@@ -112,13 +121,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code: "POSTGRES_UNAVAILABLE" }, { status: 503 });
   }
 
-  const authResult = await verifyFirebaseIdToken(request.headers.get("authorization"));
-  if (authResult.ok === false) {
-    if (authResult.reason === "ADMIN_UNAVAILABLE") {
-      return NextResponse.json({ code: "FIREBASE_ADMIN_UNAVAILABLE" }, { status: 503 });
-    }
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  }
+  const authResult = await requireTalentBridgeSession(request);
+  if (authResult.ok === false) return authResult.response;
 
   const body = await request.json();
   const payload = body as Partial<{
@@ -153,7 +157,7 @@ export async function POST(request: NextRequest) {
   let vacancy;
   try {
     vacancy = await insertVacancyForOwner({
-      ownerUid: authResult.uid,
+      ownerUserId: authResult.user.userId,
       companyName: payload.companyName.trim(),
       jobTitle: payload.jobTitle.trim(),
       location: payload.location.trim(),

@@ -5,7 +5,7 @@
 
 import { motion } from "motion/react";
 import { Database } from "lucide-react";
-import type { Vacancy } from "../../lib/firebase";
+import type { Vacancy } from "../../lib/domainTypes";
 import { AppView } from "../../appView";
 
 interface HomeFeaturedVacanciesProps {

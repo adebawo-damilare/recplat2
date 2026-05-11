@@ -17,8 +17,10 @@ export default defineConfig(({mode}) => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify - file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+      // When `next dev` runs on 3000 alongside Vite, SPA can call same-origin `/api/*`.
+      proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: true } },
     },
   };
 });

@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 
-import type { Vacancy } from "../../lib/firebase";
-import type { PaginatedVacanciesResult } from "./firestoreVacancies";
+import type { Vacancy } from "../../lib/domainTypes";
+import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { resolveActiveCategoryIdBySlug } from "../categories/resolveActiveCategoryId";
 import { getDrizzleDb } from "../db/postgres";
 import { applications, categories, companies, vacancies } from "../schema";
@@ -13,6 +13,15 @@ function catSummaryFromJoined(
   label: string | null,
 ): { slug: string; label: string } | null {
   return slug && label ? { slug, label } : null;
+}
+
+function toEpochMs(value: unknown): number {
+  if (value instanceof Date) return value.getTime();
+  const ms = new Date(String(value)).getTime();
+  if (Number.isNaN(ms)) {
+    throw new Error("INVALID_VACANCY_CREATED_AT");
+  }
+  return ms;
 }
 
 export async function fetchOpenVacanciesPageFromPostgres(
@@ -66,7 +75,7 @@ export async function fetchOpenVacanciesPageFromPostgres(
 
   if (hasMore && last) {
     nextCursor = encodeVacancyCursor({
-      createdAtMs: last.v.createdAt.getTime(),
+      createdAtMs: toEpochMs(last.v.createdAt),
       id: last.v.id,
     });
   }
@@ -74,14 +83,14 @@ export async function fetchOpenVacanciesPageFromPostgres(
   return { jobs, nextCursor };
 }
 
-async function findCompanyByOwnerAndName(ownerUid: string, name: string) {
+async function findCompanyByOwnerAndName(ownerUserId: string, name: string) {
   const db = getDrizzleDb();
   const rows = await db
     .select()
     .from(companies)
     .where(
       and(
-        eq(companies.ownerFirebaseUid, ownerUid),
+        eq(companies.ownerUserId, ownerUserId),
         sql`lower(${companies.name}) = lower(${name})`,
       ),
     )
@@ -89,20 +98,20 @@ async function findCompanyByOwnerAndName(ownerUid: string, name: string) {
   return rows[0] ?? null;
 }
 
-export async function ensureCompanyForOwner(ownerUid: string, name: string) {
-  const existing = await findCompanyByOwnerAndName(ownerUid, name);
+export async function ensureCompanyForOwner(ownerUserId: string, name: string) {
+  const existing = await findCompanyByOwnerAndName(ownerUserId, name);
   if (existing) return existing;
 
   const db = getDrizzleDb();
   const inserted = await db
     .insert(companies)
-    .values({ ownerFirebaseUid: ownerUid, name })
+    .values({ ownerUserId, name })
     .returning();
   return inserted[0];
 }
 
 export async function insertVacancyForOwner(input: {
-  ownerUid: string;
+  ownerUserId: string;
   companyName: string;
   jobTitle: string;
   location: string;
@@ -112,7 +121,7 @@ export async function insertVacancyForOwner(input: {
   categorySlug?: string | null;
 }) {
   const db = getDrizzleDb();
-  const company = await ensureCompanyForOwner(input.ownerUid, input.companyName);
+  const company = await ensureCompanyForOwner(input.ownerUserId, input.companyName);
   const id = crypto.randomUUID();
 
   let categoryId: string | null = null;
@@ -136,7 +145,7 @@ export async function insertVacancyForOwner(input: {
       description: input.description,
       requirements: input.requirements,
       status: "open",
-      postedByFirebaseUid: input.ownerUid,
+      postedByUserId: input.ownerUserId,
     })
     .returning();
 
@@ -149,7 +158,7 @@ export type UpdateVacancyForOwnerResult =
 
 export async function updateVacancyForOwner(
   vacancyId: string,
-  ownerUid: string,
+  ownerUserId: string,
   patch: Partial<{
     companyName: string;
     jobTitle: string;
@@ -164,7 +173,7 @@ export async function updateVacancyForOwner(
   const db = getDrizzleDb();
   const existing = await db.select().from(vacancies).where(eq(vacancies.id, vacancyId)).limit(1);
   const row = existing[0];
-  if (!row || row.postedByFirebaseUid !== ownerUid) {
+  if (!row || row.postedByUserId !== ownerUserId) {
     return { ok: false as const, reason: "NOT_FOUND_OR_FORBIDDEN" as const };
   }
 
@@ -172,7 +181,7 @@ export async function updateVacancyForOwner(
   let companyNameDenorm = row.companyNameDenorm;
 
   if (patch.companyName && patch.companyName !== row.companyNameDenorm) {
-    const company = await ensureCompanyForOwner(ownerUid, patch.companyName);
+    const company = await ensureCompanyForOwner(ownerUserId, patch.companyName);
     companyId = company.id;
     companyNameDenorm = patch.companyName;
   }
@@ -231,7 +240,7 @@ async function mapJoinedRowByVacancyId(id: string): Promise<Vacancy> {
   return mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel));
 }
 
-export async function listVacanciesForOwner(ownerUid: string) {
+export async function listVacanciesForOwner(ownerUserId: string) {
   const db = getDrizzleDb();
   const rows = await db
     .select({
@@ -241,7 +250,7 @@ export async function listVacanciesForOwner(ownerUid: string) {
     })
     .from(vacancies)
     .leftJoin(categories, eq(vacancies.categoryId, categories.id))
-    .where(eq(vacancies.postedByFirebaseUid, ownerUid))
+    .where(eq(vacancies.postedByUserId, ownerUserId))
     .orderBy(desc(vacancies.updatedAt));
 
   return rows.map((r) => mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)));
@@ -264,11 +273,11 @@ export async function getVacancyById(id: string): Promise<Vacancy | null> {
   return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
 }
 
-export async function recordApplicationPostgres(vacancyId: string, candidateUid: string) {
+export async function recordApplicationPostgres(vacancyId: string, candidateUserId: string) {
   const db = getDrizzleDb();
 
   await db
     .insert(applications)
-    .values({ vacancyId, candidateFirebaseUid: candidateUid })
-    .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateFirebaseUid] });
+    .values({ vacancyId, candidateUserId })
+    .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
 }

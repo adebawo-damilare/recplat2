@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyFirebaseIdToken } from "../../../../src/server/auth/firebaseAdmin";
+import { requireTalentBridgeSession } from "../../../../src/server/auth/requireSession";
 import { hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateLimit";
 import { isMvpTalentCategorySlug } from "../../../../src/shared/mvpCategories";
@@ -22,13 +22,8 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     return NextResponse.json({ code: "POSTGRES_UNAVAILABLE" }, { status: 503 });
   }
 
-  const authResult = await verifyFirebaseIdToken(request.headers.get("authorization"));
-  if (authResult.ok === false) {
-    if (authResult.reason === "ADMIN_UNAVAILABLE") {
-      return NextResponse.json({ code: "FIREBASE_ADMIN_UNAVAILABLE" }, { status: 503 });
-    }
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  }
+  const authResult = await requireTalentBridgeSession(request);
+  if (authResult.ok === false) return authResult.response;
 
   const raw = await request.json();
   const body = raw as Partial<{
@@ -60,7 +55,7 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     patch.categorySlug = null;
   }
 
-  const result = await updateVacancyForOwner(id, authResult.uid, patch);
+  const result = await updateVacancyForOwner(id, authResult.user.userId, patch);
 
   if (result.ok === false) {
     if (result.reason === "INVALID_CATEGORY_SLUG") {

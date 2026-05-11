@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { LogIn, ArrowRight, Github, Chrome, ShieldCheck, Mail, Lock, UserPlus } from "lucide-react";
-import { signIn, signInByEmail, signUpByEmail } from '../lib/firebase';
+import { LogIn, ArrowRight, ShieldCheck, Mail, Lock } from "lucide-react";
+import { refreshTalentBridgeSession } from "../lib/authBrowser";
 
 interface SignInProps {
   onSuccess: () => void;
@@ -15,43 +15,37 @@ interface SignInProps {
 
 export default function SignIn({ onSuccess, onCancel }: SignInProps) {
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [mode, setMode] = useState<'google' | 'email'>('google');
-  const [emailMode, setEmailMode] = useState<'signin' | 'signup'>('signin');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailMode, setEmailMode] = useState<"signin" | "signup">("signin");
   const [error, setError] = useState<string | null>(null);
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const user = await signIn();
-      if (user) onSuccess();
-    } catch (error) {
-      console.error("Sign in failed", error);
-      setError("Google sign-in failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEmailAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    
+    if (!email.trim() || !password) return;
+
     setLoading(true);
     setError(null);
     try {
-      let user;
-      if (emailMode === 'signin') {
-        user = await signInByEmail(email, password);
-      } else {
-        user = await signUpByEmail(email, password);
+      const path = emailMode === "signin" ? "/api/auth/login" : "/api/auth/register";
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const raw = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(raw.error || "Authentication failed. Check your credentials.");
+        return;
       }
-      if (user) onSuccess();
-    } catch (err: any) {
+
+      await refreshTalentBridgeSession();
+      onSuccess();
+    } catch (err: unknown) {
       console.error("Email auth failed", err);
-      setError(err.message || "Authentication failed. Check your credentials.");
+      setError(err instanceof Error ? err.message : "Authentication failed.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +53,7 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-neutral-100 overflow-hidden"
@@ -69,14 +63,9 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
             <LogIn className="w-8 h-8 text-blue-600" />
           </div>
           <h2 className="text-3xl font-bold tracking-tight mb-2">
-            {mode === 'google' ? 'Welcome Back' : (emailMode === 'signin' ? 'Sign In' : 'Create Account')}
+            {emailMode === "signin" ? "Sign In" : "Create Account"}
           </h2>
-          <p className="text-neutral-500">
-            {mode === 'google' 
-              ? 'Sign in to manage your profile or post new opportunities.' 
-              : 'Use your email address to access your account.'
-            }
-          </p>
+          <p className="text-neutral-500">Use your email and password — stored securely in Postgres.</p>
         </div>
 
         {error && (
@@ -89,107 +78,68 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
 
         <div className="p-8 space-y-4">
           <AnimatePresence mode="wait">
-            {mode === 'google' ? (
-              <motion.div
-                key="google-mode"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-4"
+            <motion.form
+              key="email-mode"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onSubmit={handleEmailAction}
+              className="space-y-4"
+            >
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    autoComplete="email"
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={emailMode === "signup" ? "At least 8 characters" : "••••••••"}
+                    autoComplete={emailMode === "signup" ? "new-password" : "current-password"}
+                    minLength={emailMode === "signup" ? 8 : undefined}
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 px-6 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
               >
-                <button 
-                  onClick={handleGoogleSignIn}
-                  disabled={loading}
-                  className="w-full py-4 px-6 bg-white border border-neutral-200 rounded-2xl font-bold flex items-center justify-center gap-3 hover:border-blue-200 hover:bg-neutral-50 transition-all shadow-sm group disabled:opacity-50"
+                {loading ? "Processing..." : emailMode === "signin" ? "Sign In" : "Create Account"}
+                <ArrowRight className="w-5 h-5 ml-auto opacity-50" />
+              </button>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEmailMode(emailMode === "signin" ? "signup" : "signin")}
+                  className="text-sm font-bold text-blue-600 hover:underline"
                 >
-                  <Chrome className="w-5 h-5 text-blue-600" />
-                  <span>{loading ? "Connecting..." : "Continue with Google"}</span>
-                  <ArrowRight className="w-4 h-4 ml-auto text-neutral-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  {emailMode === "signin" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
                 </button>
-
-                <button 
-                  onClick={() => setMode('email')}
-                  className="w-full py-4 px-6 bg-neutral-50 border border-neutral-200 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-100 transition-all"
-                >
-                  <Mail className="w-5 h-5 text-neutral-500" />
-                  <span>Sign in with Email</span>
-                </button>
-
-                <button 
-                  disabled 
-                  className="w-full py-4 px-6 bg-white border border-neutral-200 rounded-2xl font-bold flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
-                >
-                  <Github className="w-5 h-5 text-neutral-900" />
-                  <span>Continue with GitHub</span>
-                  <span className="ml-auto text-[10px] uppercase tracking-widest text-neutral-400">Soon</span>
-                </button>
-              </motion.div>
-            ) : (
-              <motion.form
-                key="email-mode"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleEmailAction}
-                className="space-y-4"
-              >
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input 
-                      type="email" 
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@company.com"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input 
-                      type="password" 
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 px-6 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
-                >
-                  {loading ? "Processing..." : (emailMode === 'signin' ? 'Sign In' : 'Create Account')}
-                  <ArrowRight className="w-5 h-5 ml-auto opacity-50" />
-                </button>
-
-                <div className="flex flex-col gap-2 pt-2">
-                  <button 
-                    type="button"
-                    onClick={() => setEmailMode(emailMode === 'signin' ? 'signup' : 'signin')}
-                    className="text-sm font-bold text-blue-600 hover:underline"
-                  >
-                    {emailMode === 'signin' ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setMode('google')}
-                    className="text-sm font-medium text-neutral-500 hover:text-neutral-900"
-                  >
-                    Go back to Google sign-in
-                  </button>
-                </div>
-              </motion.form>
-            )}
+              </div>
+            </motion.form>
           </AnimatePresence>
         </div>
 
@@ -197,13 +147,15 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
           <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
             <ShieldCheck className="w-5 h-5 text-emerald-500" />
             <p className="text-[11px] text-neutral-500 leading-tight">
-              We use secure, industry-standard authentication. Your credentials are never stored on our servers.
+              Passwords are hashed with bcrypt. Sessions use signed HTTP-only cookies (configure TALENTBRIDGE_AUTH_SECRET in
+              production).
             </p>
           </div>
         </div>
 
         <div className="p-6 bg-neutral-50 border-t border-neutral-100 text-center">
-          <button 
+          <button
+            type="button"
             onClick={onCancel}
             className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
           >

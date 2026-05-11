@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, type CandidateProfile } from "../../src/lib/firebase";
+import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 import CandidateDashboard from "../../src/components/CandidateDashboard";
 import PortfolioViewer from "../../src/components/PortfolioViewer";
+import type { CandidateProfile } from "../../src/lib/domainTypes";
 
 export default function ProfileClientPage() {
   const router = useRouter();
+  const { user, loading } = useTalentBridgeUser();
   const [portfolioCandidate, setPortfolioCandidate] = useState<CandidateProfile | null>(null);
 
-  useEffect(() => onAuthStateChanged(auth, (user) => {
-    if (!user) router.replace("/sign-in");
-  }), [router]);
+  useEffect(() => {
+    if (!loading && !user) router.replace("/sign-in");
+  }, [loading, user, router]);
 
   return (
     <div className="pt-24 min-h-screen bg-neutral-50/50">

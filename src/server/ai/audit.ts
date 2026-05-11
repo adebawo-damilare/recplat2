@@ -3,7 +3,7 @@ import { aiAuditEvents } from "../schema";
 import { getTalentBridgeAiBackend, getTalentBridgeAiModel } from "./config";
 
 export async function recordAiAudit(entry: {
-  actorFirebaseUid?: string | null;
+  actorUserId?: string | null;
   eventType: string;
   payload?: unknown;
   provider?: string;
@@ -18,7 +18,7 @@ export async function recordAiAudit(entry: {
     const [row] = await db
       .insert(aiAuditEvents)
       .values({
-        actorFirebaseUid: entry.actorFirebaseUid ?? null,
+        actorUserId: entry.actorUserId ?? null,
         provider: entry.provider ?? getTalentBridgeAiBackend(),
         model: entry.model ?? getTalentBridgeAiModel(),
         eventType: entry.eventType,

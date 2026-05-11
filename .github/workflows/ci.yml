@@ -65,6 +65,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/smoke
+      TALENTBRIDGE_AUTH_SECRET: ci_smoke_only_secret_for_auth_signing_32_chars_min
 
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +78,7 @@ jobs:
       - run: npm ci
 
       - name: Apply SQL migrations
-        run: npm run db:apply && npm run db:apply:categories
+        run: npm run db:apply && npm run db:apply:categories && npm run db:apply:users
 
       - name: Production build
         run: npm run build

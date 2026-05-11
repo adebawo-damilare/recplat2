@@ -15,9 +15,9 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - Postgres schema + SQL migration for companies, vacancies, applications, `ai_audit_events` (`database/migrations/0001_initial.sql`).
 - **Category lanes (synthesis wedge):** `categories` table + `vacancies.category_id`, `GET /api/categories`, `GET /api/jobs?category=`, optional `categorySlug` on vacancy writes — see **`docs/CATEGORY_MODEL.md`** and `database/migrations/0002_categories.sql`.
 - Drizzle schema split under `src/server/schema/*` (+ server DB client `src/server/db/postgres.ts`).
-- Dual read path (**local default**): `GET /api/jobs` uses Postgres when `DATABASE_URL` is set, else Firestore — **overridden** when **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (**Jobs Slice v1** prod).
-- Write path for jobs: `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine` with Firebase ID token verification (`FIREBASE_SERVICE_ACCOUNT_JSON`).
-- Applications: `POST /api/applications`, **`GET /api/applications/mine`**. Client Firestore fallbacks for job/app data disabled when **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`** (`src/lib/talentBridgeApiMode.ts`).
+- Postgres job path: `GET /api/jobs`, `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine`.
+- Postgres applications path: `POST /api/applications`, **`GET /api/applications/mine`**.
+- Postgres auth path: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`; protected routes use signed session verification.
 - AI provider switch + audit hooks (`TALENTBRIDGE_AI_PROVIDER`, `GET /api/ai/health`).
 - Client bridges `src/lib/jobsApi.ts`, **`src/lib/applicationsApi.ts`**.
 - UI uses `jobsApi` for list / seed / apply / recruiter CRUD (TalentBridge components only).
@@ -40,11 +40,11 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is already verified (then pick backbone track A/B/C/D from prior planning).  
 2. Promote **`recruit/docs/`** structural items (**`category_fields`, candidate profiles, invitations/screening, pipeline**) per **`docs/TALENTBRIDGE_MVP_PLAN.md`** phases B–D when prioritized (see **`docs/ROADMAP_FROM_REFERENCE.md`** P0).
-3. Supabase Auth: replace Firebase Admin token verification on routes when ready; keep the same handler shape.
+3. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.
 4. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
 5. Search index / workers deferred until discovery scale phase (**`TALENTBRIDGE_MVP_PLAN.md`** §6).
 6. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
 
 ## E2E note
 
-Playwright injects **`TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS=1`** on the spawned dev server (`playwright.config.ts`) so **`GET /api/jobs`** returns an empty page without calling Firestore (avoids hangs in CI / offline). For integration tests against real Firestore or Postgres, run the app without that env and point `DATABASE_URL` or ensure Firebase access.
+Playwright injects **`TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS=1`** on the spawned dev server (`playwright.config.ts`) so **`GET /api/jobs`** returns an empty page during CI/offline runs.

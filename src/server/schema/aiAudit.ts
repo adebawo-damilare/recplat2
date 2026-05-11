@@ -4,7 +4,7 @@ export const aiAuditEvents = pgTable(
   "ai_audit_events",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    actorFirebaseUid: text("actor_firebase_uid"),
+    actorUserId: text("actor_user_id"),
     provider: text("provider").notNull(),
     model: text("model"),
     eventType: text("event_type").notNull(),

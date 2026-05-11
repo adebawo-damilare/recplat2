@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyFirebaseIdToken } from "../../../../src/server/auth/firebaseAdmin";
+import { requireTalentBridgeSession } from "../../../../src/server/auth/requireSession";
 import { hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateLimit";
 import { insertVacancyForOwner } from "../../../../src/server/jobs";
@@ -22,19 +22,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code: "POSTGRES_UNAVAILABLE" }, { status: 503 });
   }
 
-  const authResult = await verifyFirebaseIdToken(request.headers.get("authorization"));
-  if (authResult.ok === false) {
-    if (authResult.reason === "ADMIN_UNAVAILABLE") {
-      return NextResponse.json({ code: "FIREBASE_ADMIN_UNAVAILABLE" }, { status: 503 });
-    }
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  }
+  const authResult = await requireTalentBridgeSession(request);
+  if (authResult.ok === false) return authResult.response;
 
   const created = [];
   try {
     for (const template of SAMPLE_VACANCY_TEMPLATES) {
       const vacancy = await insertVacancyForOwner({
-        ownerUid: authResult.uid,
+        ownerUserId: authResult.user.userId,
         companyName: template.companyName,
         jobTitle: template.jobTitle,
         location: template.location,
@@ -59,7 +54,7 @@ export async function POST(request: NextRequest) {
   }
 
   await recordAiAudit({
-    actorFirebaseUid: authResult.uid,
+    actorUserId: authResult.user.userId,
     eventType: "vacancy.seed_sample",
     payload: { vacancyCount: SAMPLE_VACANCY_TEMPLATES.length },
     provider: "system",

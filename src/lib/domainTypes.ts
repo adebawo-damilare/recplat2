@@ -1,0 +1,51 @@
+/**
+ * TalentBridge domain shapes shared by UI and Postgres-backed APIs (no Firebase).
+ */
+
+export interface CandidateProfile {
+  fullName: string;
+  email: string;
+  headline: string;
+  summary: string;
+  skills: string;
+  experience: string;
+  userId: string;
+  portfolioUrl?: string | null;
+  portfolioContent?: string | null;
+  createdAt?: string | unknown;
+  updatedAt?: string | unknown;
+}
+
+export interface VacancyCategorySummary {
+  slug: string;
+  label: string;
+}
+
+export interface Vacancy {
+  id?: string;
+  jobTitle: string;
+  companyName: string;
+  location: string;
+  salary: string;
+  description: string;
+  requirements: string;
+  status: "open" | "closed";
+  postedBy: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  category?: VacancyCategorySummary | null;
+}
+
+export interface Application {
+  id?: string;
+  vacancyId: string;
+  candidateId: string;
+  status: "applied" | "viewed" | "interviewing" | "rejected" | "hired";
+  appliedAt: unknown;
+  vacancy?: Vacancy;
+}
+
+export type TalentBridgeUser = {
+  id: string;
+  email: string;
+};

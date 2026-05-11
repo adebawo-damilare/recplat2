@@ -104,7 +104,7 @@ This is intentionally **narrower** than the full synthesis hire-loop MVP and **n
 
 - **Name it:** **Jobs Slice v1** so stakeholders do not confuse it with the full marketplace loop.  
 - **Shipping guide:** **`docs/MVP_JOBS_SLICE_V1.md`** — Postgres-only job/application data flags, checklist, explicit out-of-scope items.  
-- **Auth:** Firebase sign-in remains for v1; **vacancy + application persistence** targets **Postgres** (see **`TALENTBRIDGE_JOBS_POSTGRES_ONLY`** / **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY`** in that doc).
+- **Auth:** Postgres-native email/password + signed session cookie; **vacancy + application persistence** is Postgres.
 
 ---
 
@@ -127,7 +127,7 @@ Payroll, contracts, invoicing, **full ATS replacement**, deep HR integrations, a
 
 ### Implemented **now** in this repo (narrow vertical slice)
 
-- Vacancy lifecycle with Postgres/Firestore duality  
+- Vacancy lifecycle with Postgres-backed APIs  
 - Applications  
 - MVP **three** talent lanes tied to **`vacancies`**  
 - **`GET /api/categories`**, category filter/listing UX  

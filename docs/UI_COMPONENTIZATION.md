@@ -21,7 +21,7 @@ The marketing shell and landing experience were extracted from `App.tsx` into fo
 
 `App.tsx` retains:
 
-- Firebase auth subscription and vacancy loading / seed orchestration for the home teaser
+- Session-aware auth checks and vacancy loading / seed orchestration for the home teaser
 - `navigateTo` guard for unauthenticated access to recruiter/candidate/profile views
 - `AnimatePresence` and view switching (`JobBoard`, `TalentBoard`, dashboards, etc.)
 

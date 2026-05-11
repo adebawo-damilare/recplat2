@@ -1,24 +1,10 @@
 /**
- * Browser helpers: prefer Next `/api/*` (Postgres-backed).
- * When `NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY=1` (Jobs Slice v1 production), Firestore fallbacks are disabled.
+ * Jobs + applications via Next `/api/*` (Postgres + session cookie / optional Bearer JWT).
  */
 
-import {
-  auth,
-  applyToJob as applyToJobFirestore,
-  deleteVacancy as deleteVacancyFirestore,
-  getVacancies as getVacanciesFirestore,
-  getVacanciesByUser,
-  postVacancy as createVacancyFirestore,
-  seedVacancies as seedVacanciesFirestore,
-  updateVacancy as updateVacancyFirestore,
-  type Vacancy,
-} from "./firebase";
-import {
-  isBrowserJobsPostgresOnly,
-  shouldFallbackToFirestoreForJobsApi,
-} from "./talentBridgeApiMode";
-import { categorySummaryFromWriteSlug } from "./vacancyWriteShared";
+import type { Vacancy } from "./domainTypes";
+import { refreshTalentBridgeSession } from "./authBrowser";
+import { isBrowserJobsPostgresOnly, shouldFallbackToFirestoreForJobsApi } from "./talentBridgeApiMode";
 
 export type VacancyWritePayload = {
   jobTitle: string;
@@ -27,19 +13,12 @@ export type VacancyWritePayload = {
   salary: string;
   description: string;
   requirements: string;
-  /** Omitted → leave unset on create, leave unchanged on update (Postgres PATCH). explicit null clears. */
   categorySlug?: string | null;
 };
 
-async function buildAuthHeaders(): Promise<HeadersInit | null> {
-  const user = auth.currentUser;
-  if (!user) return null;
-  try {
-    const token = await user.getIdToken();
-    return { Authorization: `Bearer ${token}` };
-  } catch {
-    return null;
-  }
+async function ensureSignedIn(): Promise<boolean> {
+  const u = await refreshTalentBridgeSession();
+  return Boolean(u);
 }
 
 function shouldFallback(status: number, payload?: { code?: string }) {
@@ -52,10 +31,7 @@ export async function fetchPublicJobsWithFallback(
   categorySlug?: string | null,
 ) {
   const csRaw = categorySlug?.trim().toLowerCase();
-  const cs =
-    csRaw && csRaw !== "all"
-      ? csRaw
-      : null;
+  const cs = csRaw && csRaw !== "all" ? csRaw : null;
 
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
@@ -80,43 +56,24 @@ export async function fetchPublicJobsWithFallback(
     console.warn("[jobsApi] /api/jobs failed", error);
   }
 
-  if (isBrowserJobsPostgresOnly()) {
-    return [];
-  }
-
-  const fb = await getVacanciesFirestore();
-  const rows = fb || [];
-  if (!cs) {
-    return rows;
-  }
-
-  return rows.filter((job) => job.category?.slug === cs);
+  return [];
 }
 
-export async function fetchMyVacanciesWithFallback(ownerUid: string) {
-  const headers = await buildAuthHeaders();
-
+export async function fetchMyVacanciesWithFallback(): Promise<Vacancy[]> {
   try {
-    if (headers) {
-      const res = await fetch(`/api/jobs/mine`, { headers, credentials: "same-origin" });
-      const raw = (await res.json().catch(() => ({}))) as { jobs?: Vacancy[]; code?: string };
-      if (res.ok) {
-        return raw.jobs ?? [];
-      }
-      if (!shouldFallback(res.status, raw)) {
-        console.warn("[jobsApi] Unexpected /api/jobs/mine response", res.status);
-      }
+    const res = await fetch(`/api/jobs/mine`, { credentials: "same-origin" });
+    const raw = (await res.json().catch(() => ({}))) as { jobs?: Vacancy[]; code?: string };
+    if (res.ok) {
+      return raw.jobs ?? [];
+    }
+    if (!shouldFallback(res.status, raw)) {
+      console.warn("[jobsApi] Unexpected /api/jobs/mine response", res.status);
     }
   } catch (error) {
     console.warn("[jobsApi] /api/jobs/mine failed", error);
   }
 
-  if (isBrowserJobsPostgresOnly()) {
-    return [];
-  }
-
-  const fb = await getVacanciesByUser(ownerUid);
-  return fb || [];
+  return [];
 }
 
 function buildVacancyWriteJson(payload: VacancyWritePayload): Record<string, unknown> {
@@ -139,201 +96,139 @@ function buildVacancyWriteJson(payload: VacancyWritePayload): Record<string, unk
 }
 
 export async function persistVacancyWithFallback(payload: VacancyWritePayload, vacancy?: Vacancy | null) {
-  const headers = await buildAuthHeaders();
-
-  const apiBody = buildVacancyWriteJson(payload);
-
-  if (headers) {
-    try {
-      if (!vacancy) {
-        const res = await fetch(`/api/jobs`, {
-          method: "POST",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(apiBody),
-        });
-        const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
-        if (res.ok && raw.job) {
-          return raw.job;
-        }
-        if (!shouldFallback(res.status, raw)) {
-          throw new Error(`Unable to create vacancy (${res.status})`);
-        }
-      } else if (vacancy.id) {
-        const res = await fetch(`/api/jobs/${vacancy.id}`, {
-          method: "PATCH",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(apiBody),
-        });
-        const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
-        if (res.ok && raw.job) {
-          return raw.job;
-        }
-        if (!shouldFallback(res.status, raw)) {
-          throw new Error(`Unable to update vacancy (${res.status})`);
-        }
-      }
-    } catch (error) {
-      console.warn("[jobsApi] Vacancy API write failed", error);
-      if (isBrowserJobsPostgresOnly()) {
-        throw new Error("Saving vacancies requires the Postgres-backed API (see docs/MVP_JOBS_SLICE_V1.md).");
-      }
-    }
-  }
-
-  if (!auth.currentUser) {
+  const signedIn = await ensureSignedIn();
+  if (!signedIn) {
     throw new Error("You must be signed in to save a vacancy.");
   }
 
+  const apiBody = buildVacancyWriteJson(payload);
+
+  try {
+    if (!vacancy) {
+      const res = await fetch(`/api/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(apiBody),
+      });
+      const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
+      if (res.ok && raw.job) {
+        return raw.job;
+      }
+      if (!shouldFallback(res.status, raw)) {
+        throw new Error(`Unable to create vacancy (${res.status})`);
+      }
+    } else if (vacancy.id) {
+      const res = await fetch(`/api/jobs/${vacancy.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(apiBody),
+      });
+      const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
+      if (res.ok && raw.job) {
+        return raw.job;
+      }
+      if (!shouldFallback(res.status, raw)) {
+        throw new Error(`Unable to update vacancy (${res.status})`);
+      }
+    }
+  } catch (error) {
+    console.warn("[jobsApi] Vacancy API write failed", error);
+  }
+
   if (isBrowserJobsPostgresOnly()) {
-    throw new Error("Vacancy saves require Postgres + API (Jobs Slice v1).");
+    throw new Error("Saving vacancies requires the Postgres-backed API (see docs/MVP_JOBS_SLICE_V1.md).");
   }
-
-  const coreFields = {
-    jobTitle: payload.jobTitle,
-    companyName: payload.companyName,
-    location: payload.location,
-    salary: payload.salary,
-    description: payload.description,
-    requirements: payload.requirements,
-  };
-
-  const categoryPatch: Partial<Pick<Vacancy, "category">> = {};
-  if (payload.categorySlug === null) {
-    categoryPatch.category = null;
-  } else if (typeof payload.categorySlug === "string" && payload.categorySlug.trim()) {
-    const sum = categorySummaryFromWriteSlug(payload.categorySlug.trim());
-    if (sum) {
-      categoryPatch.category = sum;
-    }
-  }
-
-  if (vacancy?.id) {
-    await updateVacancyFirestore(vacancy.id, { ...coreFields, ...categoryPatch });
-    const merged: Vacancy = { ...vacancy, ...coreFields };
-    if ("category" in categoryPatch) {
-      merged.category = categoryPatch.category === null ? undefined : categoryPatch.category;
-    }
-    return merged;
-  }
-
-  const createPayload: Omit<Vacancy, "id" | "status"> = {
-    ...coreFields,
-    postedBy: auth.currentUser.uid,
-  };
-
-  if (categoryPatch.category) {
-    createPayload.category = categoryPatch.category;
-  }
-
-  await createVacancyFirestore(createPayload);
-  return null;
+  throw new Error("Unable to save vacancy. Check DATABASE_URL, migrations, and session.");
 }
 
 export async function closeVacancyWithFallback(id: string) {
-  const headers = await buildAuthHeaders();
+  const signedIn = await ensureSignedIn();
+  if (!signedIn) {
+    throw new Error("You must be signed in.");
+  }
 
-  if (headers) {
-    try {
-      const res = await fetch(`/api/jobs/${id}`, {
-        method: "PATCH",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "closed" }),
-      });
-      const raw = (await res.json().catch(() => ({}))) as { code?: string };
-      if (res.ok) {
-        return true;
-      }
-      if (!shouldFallback(res.status, raw)) {
-        console.warn("[jobsApi] Unable to close vacancy via API", res.status);
-      }
-    } catch (error) {
-      console.warn("[jobsApi] close via API failed", error);
-      if (isBrowserJobsPostgresOnly()) {
-        throw new Error("Closing vacancies requires the Postgres-backed API.");
-      }
+  try {
+    const res = await fetch(`/api/jobs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ status: "closed" }),
+    });
+    const raw = (await res.json().catch(() => ({}))) as { code?: string };
+    if (res.ok) {
+      return true;
     }
+    if (!shouldFallback(res.status, raw)) {
+      console.warn("[jobsApi] Unable to close vacancy via API", res.status);
+    }
+  } catch (error) {
+    console.warn("[jobsApi] close via API failed", error);
   }
 
   if (isBrowserJobsPostgresOnly()) {
     throw new Error("Closing vacancies requires the Postgres-backed API.");
   }
-
-  await deleteVacancyFirestore(id);
-  return true;
+  throw new Error("Unable to close vacancy.");
 }
 
 export async function seedSampleVacanciesViaApi(): Promise<Vacancy[]> {
-  const headers = await buildAuthHeaders();
-
-  if (headers) {
-    try {
-      const res = await fetch(`/api/jobs/seed-sample`, {
-        method: "POST",
-        headers,
-      });
-      const raw = (await res.json().catch(() => ({}))) as { jobs?: Vacancy[]; code?: string };
-      if (res.ok) {
-        return raw.jobs ?? [];
-      }
-      if (!shouldFallback(res.status, raw)) {
-        throw new Error(`Unable to seed via API (${res.status})`);
-      }
-    } catch (error) {
-      console.warn("[jobsApi] sample seed API failed", error);
-      if (isBrowserJobsPostgresOnly()) {
-        throw new Error("Sample seed requires Postgres, migrations, and a signed-in user token (POST /api/jobs/seed-sample).");
-      }
-    }
-  }
-
-  if (!auth.currentUser) {
+  const signedIn = await ensureSignedIn();
+  if (!signedIn) {
     throw new Error("Sign in required to seed vacancies.");
   }
 
-  if (isBrowserJobsPostgresOnly()) {
-    throw new Error("Seeding vacancies requires Postgres (use POST /api/jobs/seed-sample when DATABASE_URL is set).");
+  try {
+    const res = await fetch(`/api/jobs/seed-sample`, {
+      method: "POST",
+      credentials: "same-origin",
+    });
+    const raw = (await res.json().catch(() => ({}))) as { jobs?: Vacancy[]; code?: string };
+    if (res.ok) {
+      return raw.jobs ?? [];
+    }
+    if (!shouldFallback(res.status, raw)) {
+      throw new Error(`Unable to seed via API (${res.status})`);
+    }
+  } catch (error) {
+    console.warn("[jobsApi] sample seed API failed", error);
   }
 
-  await seedVacanciesFirestore(auth.currentUser.uid);
-  return (await getVacanciesFirestore()) || [];
+  throw new Error("Sample seed requires Postgres, migrations, and a signed-in session (POST /api/jobs/seed-sample).");
 }
 
-export async function applyToVacancyWithFallback(vacancyId: string) {
-  if (!auth.currentUser) {
+export async function applyToVacancyWithFallback(vacancyId: string): Promise<boolean> {
+  const signedIn = await ensureSignedIn();
+  if (!signedIn) {
     alert("Please sign in to apply for jobs.");
     return false;
   }
 
-  const headers = await buildAuthHeaders();
-
-  if (headers) {
-    try {
-      const res = await fetch(`/api/applications`, {
-        method: "POST",
-        headers: {
-          ...headers,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ vacancyId }),
-      });
-      const raw = (await res.json().catch(() => ({}))) as { code?: string };
-      if (res.ok) {
-        return true;
-      }
-      if (!shouldFallback(res.status, raw)) {
-        alert("Unable to apply right now.");
-        return false;
-      }
-    } catch (error) {
-      console.warn("[jobsApi] application API failed", error);
+  try {
+    const res = await fetch(`/api/applications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ vacancyId }),
+    });
+    const raw = (await res.json().catch(() => ({}))) as { code?: string };
+    if (res.ok) {
+      return true;
     }
+    if (!shouldFallback(res.status, raw)) {
+      alert("Unable to apply right now.");
+      return false;
+    }
+  } catch (error) {
+    console.warn("[jobsApi] application API failed", error);
   }
 
   if (isBrowserJobsPostgresOnly()) {
-    alert("Applications require Postgres + API (Jobs Slice v1).");
+    alert("Applications require Postgres + API.");
     return false;
   }
 
-  await applyToJobFirestore(vacancyId, auth.currentUser.uid);
-  return true;
+  alert("Unable to apply right now.");
+  return false;
 }
