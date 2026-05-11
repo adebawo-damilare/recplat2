@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, count, eq, ilike, or, sql } from "drizzle-orm";
 
 import type { CandidateProfile } from "../../lib/domainTypes";
 import { getDrizzleDb } from "../db/postgres";
@@ -26,6 +26,51 @@ export async function listAllCandidateProfiles(): Promise<CandidateProfile[]> {
   const db = getDrizzleDb();
   const rows = await db.select().from(candidateProfiles).orderBy(asc(candidateProfiles.fullName));
   return rows.map(mapCandidateRow);
+}
+
+function escapeIlikeFragment(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+export async function listCandidateProfilesPaged(
+  rawLimit: number,
+  rawOffset: number,
+  searchText?: string | null,
+): Promise<{ candidates: CandidateProfile[]; total: number }> {
+  const limit = Math.max(1, Math.min(50, rawLimit));
+  const offset = Math.max(0, rawOffset);
+  const db = getDrizzleDb();
+  const qRaw = searchText?.trim().slice(0, 200) ?? "";
+  const pattern = qRaw.length > 0 ? `%${escapeIlikeFragment(qRaw)}%` : null;
+  const searchCond = pattern
+    ? or(
+        ilike(candidateProfiles.fullName, pattern),
+        ilike(candidateProfiles.headline, pattern),
+        ilike(candidateProfiles.skills, pattern),
+        ilike(candidateProfiles.summary, pattern),
+      )!
+    : undefined;
+
+  const countBase = db.select({ value: count() }).from(candidateProfiles);
+  const countRows = searchCond ? await countBase.where(searchCond) : await countBase;
+  const total = Number(countRows[0]?.value ?? 0);
+
+  const rows = searchCond
+    ? await db
+        .select()
+        .from(candidateProfiles)
+        .where(searchCond)
+        .orderBy(asc(candidateProfiles.fullName))
+        .limit(limit)
+        .offset(offset)
+    : await db
+        .select()
+        .from(candidateProfiles)
+        .orderBy(asc(candidateProfiles.fullName))
+        .limit(limit)
+        .offset(offset);
+
+  return { candidates: rows.map(mapCandidateRow), total };
 }
 
 export async function getCandidateProfileByUserId(userId: string): Promise<CandidateProfile | null> {

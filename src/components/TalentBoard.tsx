@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Search, User, X } from "lucide-react";
+import { Search, User, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { CandidateProfile } from "../lib/domainTypes";
-import { fetchAllCandidatesPublic } from "../lib/candidatesApi";
+import { fetchCandidatesPage } from "../lib/candidatesApi";
 import ProfileCard from "./ProfileCard";
+
+const PAGE_SIZE = 10;
 
 interface TalentBoardProps {
   onViewPortfolio: (candidate: CandidateProfile) => void;
@@ -16,32 +18,55 @@ interface TalentBoardProps {
 
 export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
 
-  const fetchCandidates = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchAllCandidatesPublic();
-      setCandidates(data);
-    } catch (error) {
-      console.error("Failed to fetch candidates", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  useLayoutEffect(() => {
+    setPageIndex(0);
+  }, [debouncedSearch]);
 
   useEffect(() => {
-    void fetchCandidates();
-  }, []);
+    let cancelled = false;
+    setLoading(true);
+    void fetchCandidatesPage({
+      limit: PAGE_SIZE,
+      offset: pageIndex * PAGE_SIZE,
+      q: debouncedSearch || undefined,
+    })
+      .then(({ candidates: rows, total: t }) => {
+        if (!cancelled) {
+          setCandidates(rows);
+          setTotal(t);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch candidates", error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pageIndex, debouncedSearch]);
 
-  const filteredCandidates = candidates.filter(
-    (c) =>
-      c.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.headline.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.skills.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  useEffect(() => {
+    setSelectedCandidate(null);
+  }, [pageIndex, debouncedSearch]);
+
+  const start = total === 0 ? 0 : pageIndex * PAGE_SIZE + 1;
+  const end = pageIndex * PAGE_SIZE + candidates.length;
+  const canGoPrev = pageIndex > 0 && !loading;
+  const canGoNext = end < total && !loading;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="talent-board">
@@ -69,8 +94,8 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
             [1, 2, 3].map((i) => (
               <div key={i} className="bg-white p-6 rounded-2xl border border-neutral-100 h-32 animate-pulse"></div>
             ))
-          ) : filteredCandidates.length > 0 ? (
-            filteredCandidates.map((c) => (
+          ) : candidates.length > 0 ? (
+            candidates.map((c) => (
               <motion.div
                 key={c.userId}
                 whileHover={{ scale: 1.01 }}
@@ -118,6 +143,33 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
               <p className="text-neutral-500 text-sm font-medium">No candidates found.</p>
             </div>
           )}
+
+          <div className="flex flex-col gap-2 pt-2">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={!canGoPrev}
+                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <ChevronLeft className="w-4 h-4" /> Previous
+              </button>
+              <span className="text-xs font-semibold text-neutral-500">Page {pageIndex + 1}</span>
+              <button
+                type="button"
+                disabled={!canGoNext}
+                onClick={() => setPageIndex((p) => p + 1)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            {total > 0 && (
+              <p className="text-center text-[11px] text-neutral-400 font-medium">
+                Showing {start}–{end} of {total}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="lg:col-span-2">

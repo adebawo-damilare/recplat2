@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import type { Vacancy } from "../../lib/domainTypes";
 import type { PaginatedVacanciesResult } from "./paginatedTypes";
@@ -24,10 +24,15 @@ function toEpochMs(value: unknown): number {
   return ms;
 }
 
+function escapeIlikeFragment(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export async function fetchOpenVacanciesPageFromPostgres(
   rawLimit: number,
   cursor?: string | null,
   categorySlug?: string | null,
+  searchText?: string | null,
 ): Promise<PaginatedVacanciesResult> {
   const pageSize = Math.max(1, Math.min(rawLimit, 50));
   const db = getDrizzleDb();
@@ -48,6 +53,18 @@ export async function fetchOpenVacanciesPageFromPostgres(
   const slugFilter = categorySlug?.trim().toLowerCase();
   if (slugFilter) {
     conditions.push(eq(categories.slug, slugFilter));
+  }
+
+  const qRaw = searchText?.trim();
+  if (qRaw && qRaw.length > 0) {
+    const pattern = `%${escapeIlikeFragment(qRaw.slice(0, 200))}%`;
+    conditions.push(
+      or(
+        ilike(vacancies.jobTitle, pattern),
+        ilike(vacancies.companyNameDenorm, pattern),
+        ilike(vacancies.description, pattern),
+      )!,
+    );
   }
 
   const nextWhere = and(...conditions)!;

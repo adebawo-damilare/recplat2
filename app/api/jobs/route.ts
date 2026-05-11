@@ -43,11 +43,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unknown category filter." }, { status: 400 });
   }
 
+  const qParam = request.nextUrl.searchParams.get("q")?.trim().slice(0, 200) || null;
+
   try {
     const { jobs, nextCursor } = await fetchOpenVacanciesPage(
       limitParam,
       cursor,
       categorySlug,
+      qParam,
     );
 
     return NextResponse.json(
