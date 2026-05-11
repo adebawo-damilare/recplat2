@@ -79,6 +79,25 @@ TalentBridge reads `DATABASE_URL` at runtime: when set, vacancy reads/writes use
 
 ---
 
+## Optional: role admin controls (recruiter allowlist)
+
+These variables gate the `/api/admin/users/role` endpoint used by the recruiter dashboard's role-management panel.
+
+| Variable | Purpose |
+|----------|---------|
+| `TALENTBRIDGE_ENABLE_ROLE_ADMIN` | Set to `1` to enable role-management operations. Any other value disables changes and returns `403 FORBIDDEN_ROLE_ADMIN`. |
+| `TALENTBRIDGE_ROLE_ADMIN_EMAILS` | Comma-separated allowlist of recruiter emails allowed to change user roles, e.g. `admin@company.com,ops@company.com`. Comparison is case-insensitive and whitespace is trimmed. |
+
+Safety behavior:
+
+- Caller must be an authenticated recruiter **and** in `TALENTBRIDGE_ROLE_ADMIN_EMAILS`.
+- Self-role changes are blocked.
+- Changes are audit-logged (`user.role_changed` in `ai_audit_events`).
+
+After updating these values, redeploy so runtime picks them up.
+
+---
+
 ## Optional: distributed rate limiting
 
 Without these, `/api/jobs` uses an **in-process** sliding window limiter—fine for a single warm instance or local dev.

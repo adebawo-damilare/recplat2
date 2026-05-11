@@ -5,6 +5,7 @@
 import type { Application } from "./domainTypes";
 import { refreshTalentBridgeSession } from "./authBrowser";
 import { shouldFallbackToFirestoreForJobsApi } from "./talentBridgeApiMode";
+import { normalizeApplicationStatus } from "./applicationStatus";
 
 /** Maps ISO appliedAt strings from API back to shapes the UI expects. */
 function normalizeApplications(payload: unknown): Application[] {
@@ -13,6 +14,7 @@ function normalizeApplications(payload: unknown): Application[] {
     vacancyId: string;
     candidateId: string;
     appliedAt: string;
+    status?: unknown;
     vacancy?: Application["vacancy"];
   }>;
   if (!Array.isArray(rows)) return [];
@@ -22,7 +24,7 @@ function normalizeApplications(payload: unknown): Application[] {
     candidateId: r.candidateId,
     appliedAt: r.appliedAt,
     vacancy: r.vacancy as Application["vacancy"],
-    status: "applied" as const,
+    status: normalizeApplicationStatus(r.status),
   }));
 }
 

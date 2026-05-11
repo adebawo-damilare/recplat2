@@ -9,6 +9,7 @@ export const applications = pgTable(
       .notNull()
       .references(() => vacancies.id, { onDelete: "cascade" }),
     candidateUserId: text("candidate_user_id").notNull(),
+    status: text("status").notNull().default("applied"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

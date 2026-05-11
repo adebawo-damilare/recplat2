@@ -15,9 +15,13 @@ TalentBridge uses **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`) fo
 npm run db:apply
 npm run db:apply:categories
 npm run db:apply:users
+npm run db:apply:roles
+npm run db:apply:application-status
 ```
 
 Categories migration (`0002_categories.sql`) **adds `categories`, seeds marketers/designers/sales, and adds `vacancies.category_id`**. Apply it after `0001_initial.sql`.
+
+`0004_user_roles.sql` adds `users.role`. `0005_application_status.sql` adds `applications.status` for the recruiter pipeline.
 
 Or with `psql`:
 
@@ -25,6 +29,8 @@ Or with `psql`:
 psql "$DATABASE_URL" -f database/migrations/0001_initial.sql
 psql "$DATABASE_URL" -f database/migrations/0002_categories.sql
 psql "$DATABASE_URL" -f database/migrations/0003_users_auth.sql
+psql "$DATABASE_URL" -f database/migrations/0004_user_roles.sql
+psql "$DATABASE_URL" -f database/migrations/0005_application_status.sql
 ```
 
 On Windows PowerShell you can use `psql` from PostgreSQL tools, or run the same statements in the host SQL editor.

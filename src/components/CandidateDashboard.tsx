@@ -156,9 +156,17 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-black text-neutral-900">{app.vacancy?.jobTitle}</h4>
                           <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-tighter ${
-                            app.status === 'applied' ? 'bg-blue-100 text-blue-600' :
-                            app.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                            'bg-emerald-100 text-emerald-600'
+                            app.status === "applied"
+                              ? "bg-blue-100 text-blue-600"
+                              : app.status === "viewed"
+                                ? "bg-amber-100 text-amber-700"
+                                : app.status === "interviewing"
+                                  ? "bg-violet-100 text-violet-700"
+                                  : app.status === "rejected"
+                                    ? "bg-red-100 text-red-600"
+                                    : app.status === "hired"
+                                      ? "bg-emerald-200 text-emerald-800"
+                                      : "bg-neutral-100 text-neutral-600"
                           }`}>
                             {app.status}
                           </span>
