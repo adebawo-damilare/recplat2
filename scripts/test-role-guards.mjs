@@ -94,6 +94,25 @@ async function run() {
     throw new Error("recruiter should be forbidden from applying");
   }
 
+  const candidatesAnon = await fetchJson("GET", "/api/candidates");
+  if (candidatesAnon.res.status !== 401) {
+    throw new Error(`GET /api/candidates without session should be 401, got ${candidatesAnon.res.status}`);
+  }
+
+  const candidatesAsCandidate = await fetchJson("GET", "/api/candidates", {
+    headers: { cookie: candidate.cookie },
+  });
+  if (!candidatesAsCandidate.res.ok || !Array.isArray(candidatesAsCandidate.body?.candidates)) {
+    throw new Error(`candidate GET /api/candidates failed -> ${candidatesAsCandidate.res.status}`);
+  }
+
+  const candidatesAsRecruiter = await fetchJson("GET", "/api/candidates", {
+    headers: { cookie: recruiter.cookie },
+  });
+  if (!candidatesAsRecruiter.res.ok || !Array.isArray(candidatesAsRecruiter.body?.candidates)) {
+    throw new Error(`recruiter GET /api/candidates failed -> ${candidatesAsRecruiter.res.status}`);
+  }
+
   console.log("role-guards: ok", base);
 }
 
