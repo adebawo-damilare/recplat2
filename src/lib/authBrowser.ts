@@ -5,6 +5,14 @@
 
 import type { TalentBridgeUser } from "./domainTypes";
 
+/** Cross-component sync: multiple `useTalentBridgeUser` instances (nav vs page) must all refetch. */
+export const TALENTBRIDGE_SESSION_CHANGED_EVENT = "talentbridge-session-changed";
+
+export function notifyTalentBridgeSessionChanged(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(TALENTBRIDGE_SESSION_CHANGED_EVENT));
+}
+
 let cache: TalentBridgeUser | null = null;
 
 /** Best-effort in-memory snapshot; refresh via refreshTalentBridgeSession(). */
@@ -34,5 +42,6 @@ export async function logoutTalentBridgeSession(): Promise<void> {
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
   } finally {
     cache = null;
+    notifyTalentBridgeSessionChanged();
   }
 }
