@@ -16,7 +16,7 @@ On every **pull request** and **push** to **`main`**, **`master`**, or **`dev`**
    - **`npm run build`** — full **Next.js production build** (`next build`).  
    - **Playwright (`npm run test:e2e`)** — browser tests against a spawned dev server, with **`TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS`** enabled for stable CI behavior in offline/ephemeral environments ([`playwright.config.ts`](../playwright.config.ts)).
 
-2. **Job `smoke-postgres`** (parallel): starts **Postgres 16** in Actions, applies **`database/migrations`**, builds the app, runs **`next start`** with **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, then **`scripts/smoke-api.mjs`** with **`SMOKE_EXPECT_POSTGRES_READY=1`**. That path hits **real Postgres** for listings and verifies **`GET /api/applications/mine`** returns **401** without a token.
+2. **Job `smoke-postgres`** (parallel): starts **Postgres 16** in Actions, applies **`database/migrations`**, builds the app, runs **`next start`** with **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, then **`scripts/smoke-api.mjs`** with **`SMOKE_EXPECT_POSTGRES_READY=1`**. That path hits **real Postgres** for listings and verifies **`GET /api/applications/mine`** returns **401** without a token. It then runs **`scripts/test-role-guards.mjs`** and **`scripts/test-application-pipeline.mjs`** against the same server (role gates + application board / status / candidate visibility).
 
 You can rerun the workflow manually from GitHub (**Actions → CI → Run workflow**).
 

@@ -20,6 +20,7 @@
     "db:seed:samples": "tsx scripts/seed-neon-sample.ts",
     "smoke:api": "node scripts/smoke-api.mjs",
     "test:role-guards": "node scripts/test-role-guards.mjs",
+    "test:application-pipeline": "node scripts/test-application-pipeline.mjs",
     "release:prod:db:apply": "dotenv -e .env.release -- npm run db:apply",
     "release:prod:db:apply:categories": "dotenv -e .env.release -- npm run db:apply:categories",
     "release:prod:db:apply:users": "dotenv -e .env.release -- npm run db:apply:users",

@@ -101,3 +101,6 @@ jobs:
 
       - name: Role guard regression checks
         run: ROLE_TEST_BASE_URL=http://127.0.0.1:3000 npm run test:role-guards
+
+      - name: Application pipeline regression checks
+        run: PIPELINE_TEST_BASE_URL=http://127.0.0.1:3000 npm run test:application-pipeline
