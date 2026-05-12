@@ -3,7 +3,8 @@
  */
 
 export interface CandidateProfile {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   headline: string;
   summary: string;

@@ -5,7 +5,8 @@
       "description": "Professional profile for job seekers.",
       "type": "object",
       "properties": {
-        "fullName": { "type": "string", "description": "Full name" },
+        "firstName": { "type": "string", "description": "Given name" },
+        "lastName": { "type": "string", "description": "Family name" },
         "email": { "type": "string", "description": "Contact email" },
         "headline": { "type": "string", "description": "Professional headline (e.g. Senior Frontend Dev)" },
         "summary": { "type": "string", "description": "Professional summary" },
@@ -15,7 +16,7 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "userId": { "type": "string", "description": "Owner UID" }
       },
-      "required": ["fullName", "email", "userId"]
+      "required": ["firstName", "lastName", "email", "userId"]
     },
     "Vacancy": {
       "title": "Vacancy Notice",

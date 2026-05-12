@@ -13,4 +13,22 @@ test.describe("Public API", () => {
     const res = await request.get("/api/health");
     expect(res.ok()).toBeTruthy();
   });
+
+  test("GET /api/candidates without session is rejected (401 or 503 when DB/auth off)", async ({ request }) => {
+    const res = await request.get("/api/candidates?limit=10&offset=0");
+    if (res.status() === 401) return;
+    expect(res.status()).toBe(503);
+    const body = await res.json();
+    expect(["POSTGRES_UNAVAILABLE", "AUTH_UNAVAILABLE"]).toContain(body?.code);
+  });
+
+  test("GET /api/jobs returns pagination metadata for limit=10", async ({ request }) => {
+    const res = await request.get("/api/jobs?limit=10");
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body).toHaveProperty("jobs");
+    expect(body).toHaveProperty("pagination");
+    expect(body.pagination).toHaveProperty("limit");
+    expect(typeof body.pagination?.nextCursor === "string" || body.pagination?.nextCursor === null).toBeTruthy();
+  });
 });

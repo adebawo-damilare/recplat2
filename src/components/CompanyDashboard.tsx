@@ -28,6 +28,7 @@ import {
   type RecruiterBoardApplication,
 } from "../lib/recruiterApplicationsApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
+import { formatCandidateFullName } from "../lib/candidateName";
 import VacancyForm from './VacancyForm';
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
@@ -272,7 +273,9 @@ export default function CompanyDashboard() {
                 {pipelineRows.map((row) => (
                   <tr key={row.id} className="hover:bg-neutral-50/80">
                     <td className="py-3 pr-4 align-top">
-                      <div className="font-bold text-neutral-900">{row.candidate.fullName}</div>
+                      <div className="font-bold text-neutral-900">
+                        {formatCandidateFullName(row.candidate.firstName, row.candidate.lastName) || "(No profile)"}
+                      </div>
                       <div className="text-xs text-neutral-500 truncate max-w-[200px]">{row.candidate.email}</div>
                       {row.candidate.headline ? (
                         <div className="text-xs text-neutral-400 mt-0.5 line-clamp-2">{row.candidate.headline}</div>

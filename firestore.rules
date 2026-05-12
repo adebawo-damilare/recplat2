@@ -29,7 +29,8 @@ service cloud.firestore {
 
     // --- Candidate Rules ---
     function isValidCandidate(data) {
-      return data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+      return data.firstName is string && data.firstName.size() >= 1 && data.firstName.size() <= 80
+          && data.lastName is string && data.lastName.size() <= 80
           && data.email is string && data.email.size() <= 100
           && (!('portfolioUrl' in data) || (data.portfolioUrl is string && data.portfolioUrl.size() <= 500))
           && (!('portfolioContent' in data) || (data.portfolioContent is string && data.portfolioContent.size() <= 10000))
@@ -49,7 +50,7 @@ service cloud.firestore {
                     && incoming().userId == existing().userId
                     && incoming().createdAt == existing().createdAt
                     && incoming().updatedAt == request.time
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'email', 'headline', 'summary', 'skills', 'experience', 'portfolioUrl', 'portfolioContent', 'updatedAt']);
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['firstName', 'lastName', 'email', 'headline', 'summary', 'skills', 'experience', 'portfolioUrl', 'portfolioContent', 'updatedAt']);
       allow delete: if isOwner(existing().userId) || existing().userId.matches('^sample-.*');
     }
 
