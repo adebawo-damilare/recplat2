@@ -6,6 +6,25 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 
 **Production mutations (opt-in):** the script registers users, creates a vacancy, applies, updates pipeline state, and queries Postgres. When your release file targets **production**, set `PROD_CHECKLIST_ORIGIN` in `.env.release` to the same site origin as `SMOKE_BASE_URL` (for example `https://recplat2.vercel.app`), and set **`ALLOW_PROD_CHECKLIST_MUTATIONS=1`** to confirm. If the origins match and the flag is not set, the script exits before any request. For preview or staging URLs, either leave `PROD_CHECKLIST_ORIGIN` empty or point it at a non-matching origin so the gate does not apply.
 
+### What “prod mutations” means (bookmark)
+
+**Mutations** here means **writes and state changes**, not read-only checks like `GET /api/health`.
+
+When `run-prod-checklist.mjs` runs against **production** (`SMOKE_BASE_URL` + `DATABASE_URL` in `.env.release`), it intentionally performs **real HTTP writes** to the live app, for example:
+
+- `POST /api/auth/register` — creates **real user rows** in Postgres
+- `PATCH /api/candidates/me` — updates a **real candidate profile**
+- `POST /api/jobs` — creates a **real vacancy**
+- `PATCH /api/jobs/[id]` — edits that vacancy
+- `POST /api/applications` — creates a **real application**
+- `PATCH /api/applications/[id]` — changes application status (e.g. pipeline stage)
+
+It also runs **direct SQL reads** against `DATABASE_URL` to verify those writes landed. That is not a mutation by itself, but it only makes sense after the script has **mutated** prod data above.
+
+**Prod** means the deployment and database you pointed the script at (typically real users’ environment), not a disposable local or preview database.
+
+That is why **`ALLOW_PROD_CHECKLIST_MUTATIONS=1`** exists when `PROD_CHECKLIST_ORIGIN` matches `SMOKE_BASE_URL`: the checklist is a **strong verification tool**, not a passive smoke test, and it **leaves test users, jobs, and applications** in the database until you clean them up.
+
 ## 1) Public health checks
 
 - [ ] `GET /api/health` returns `200` and `ok: true`
