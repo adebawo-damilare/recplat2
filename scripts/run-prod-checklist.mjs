@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import postgres from "postgres";
+import { postgresOptions } from "./postgres-url-options.mjs";
 
 config({ path: ".env.release" });
 
@@ -7,7 +8,8 @@ const base = (process.env.SMOKE_BASE_URL || "").replace(/\/$/, "");
 if (!base) throw new Error("SMOKE_BASE_URL missing in .env.release");
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL missing in .env.release");
 
-const sql = postgres(process.env.DATABASE_URL);
+const dbUrl = process.env.DATABASE_URL;
+const sql = postgres(dbUrl, postgresOptions(dbUrl));
 
 const out = [];
 function ok(name, details = "") {
