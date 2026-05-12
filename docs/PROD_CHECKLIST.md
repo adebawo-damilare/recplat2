@@ -2,7 +2,9 @@
 
 Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 
-**Automation:** `scripts/run-prod-checklist.mjs` (via `npx dotenv-cli -e .env.release -- node scripts/run-prod-checklist.mjs`) hits the same API and DB checks, including **application pipeline** (`GET /api/applications/board`, `PATCH /api/applications/[id]`, candidate `status` after update, `vacancyId` filter, candidate forbidden on board).
+**Automation:** `scripts/run-prod-checklist.mjs` (via `npx dotenv-cli -o -e .env.release -- node scripts/run-prod-checklist.mjs`) hits the same API and DB checks, including **application pipeline** (`GET /api/applications/board`, `PATCH /api/applications/[id]`, candidate `status` after update, `vacancyId` filter, candidate forbidden on board).
+
+**Production mutations (opt-in):** the script registers users, creates a vacancy, applies, updates pipeline state, and queries Postgres. When your release file targets **production**, set `PROD_CHECKLIST_ORIGIN` in `.env.release` to the same site origin as `SMOKE_BASE_URL` (for example `https://recplat2.vercel.app`), and set **`ALLOW_PROD_CHECKLIST_MUTATIONS=1`** to confirm. If the origins match and the flag is not set, the script exits before any request. For preview or staging URLs, either leave `PROD_CHECKLIST_ORIGIN` empty or point it at a non-matching origin so the gate does not apply.
 
 ## 1) Public health checks
 
