@@ -39,7 +39,7 @@ Also required for authenticated API writes:
 - `TALENTBRIDGE_AUTH_SECRET` (>=32 chars) — see `.env.example`  
 - Apply migrations: `npm run db:apply`, `npm run db:apply:categories`, `npm run db:apply:users`
 
-**Note:** Candidate profile data is now served by Postgres-backed routes (`/api/candidates/*`).
+**Note:** Candidate profile data is now served by Postgres-backed routes (`/api/candidates/*`). Profiles store **`first_name`** / **`last_name`** (API JSON: **`firstName`** / **`lastName`**).
 
 If vacancy writes fail, check `/api/jobs` response codes in Network and confirm `DATABASE_URL` + `TALENTBRIDGE_AUTH_SECRET` are set in the deployment environment.
 

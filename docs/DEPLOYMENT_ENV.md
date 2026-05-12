@@ -81,7 +81,7 @@ TalentBridge reads `DATABASE_URL` at runtime: when set, vacancy reads/writes use
 
 ## Optional: role admin controls (recruiter allowlist)
 
-These variables gate the `/api/admin/users/role` endpoint used by the recruiter dashboard's role-management panel.
+These variables gate the `/api/admin/users/role` endpoint and the **Role Management** card on the company dashboard. `GET /api/auth/session` includes **`canManageUserRoles: true|false`** (same allowlist rules) so the UI only renders that panel for allowlisted recruiters.
 
 | Variable | Purpose |
 |----------|---------|
