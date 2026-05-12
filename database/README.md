@@ -13,18 +13,38 @@ TalentBridge uses **Postgres** (Neon, Supabase pooler, or any `DATABASE_URL`) fo
 
 ```bash
 npm run db:apply
-npm run db:apply:categories
-npm run db:apply:users
-npm run db:apply:roles
-npm run db:apply:application-status
-npm run db:apply:candidate-name-split
+npm run db:check:migrations
 ```
 
-Categories migration (`0002_categories.sql`) **adds `categories`, seeds marketers/designers/sales, and adds `vacancies.category_id`**. Apply it after `0001_initial.sql`.
+`db:apply` applies all files in `database/migrations` in filename order and records each run in `schema_migrations` (`filename`, `checksum`, `applied_at`).
 
 `0004_user_roles.sql` adds `users.role`. `0005_application_status.sql` adds `applications.status` for the recruiter pipeline.
 
 `0006_candidate_name_split.sql` replaces `candidate_profiles.full_name` with **`first_name`** and **`last_name`** (existing rows are migrated automatically).
+
+### Explicit target commands (preview vs prod)
+
+Use explicit env-targeted commands so migrations are applied to the correct Neon DB:
+
+```bash
+# Preview/local target (.env.local)
+npm run release:preview:db:apply
+npm run release:preview:db:check:migrations
+
+# Production target (.env.release)
+npm run release:prod:db:apply
+npm run release:prod:db:check:migrations
+```
+
+Optional parity diff between two DBs (for example preview vs prod):
+
+```bash
+DB_PARITY_LEFT_NAME=preview \
+DB_PARITY_LEFT_URL="postgresql://..." \
+DB_PARITY_RIGHT_NAME=prod \
+DB_PARITY_RIGHT_URL="postgresql://..." \
+npm run db:check:parity
+```
 
 Or with `psql`:
 

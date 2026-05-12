@@ -4,6 +4,7 @@
  *        node scripts/db-apply.mjs database/migrations/0001_initial.sql
  */
 import { readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
@@ -31,6 +32,14 @@ const migrationPaths = explicitMigrationPath
       .filter((name) => name.endsWith(".sql"))
       .sort((a, b) => a.localeCompare(b))
       .map((name) => join(migrationsDir, name));
+
+function migrationFileName(absolutePath) {
+  return absolutePath.replace(/\\/g, "/").split("/").pop() ?? absolutePath;
+}
+
+function sha256(input) {
+  return createHash("sha256").update(input).digest("hex");
+}
 
 function postgresOptions(databaseUrl) {
   let hostname = "";
@@ -67,9 +76,27 @@ function postgresOptions(databaseUrl) {
 const sql = postgres(url, postgresOptions(url));
 
 try {
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      filename TEXT PRIMARY KEY,
+      checksum TEXT NOT NULL,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   for (const migrationPath of migrationPaths) {
     const sqlText = readFileSync(migrationPath, "utf8");
-    await sql.unsafe(sqlText);
+    const filename = migrationFileName(migrationPath);
+    const checksum = sha256(sqlText);
+    await sql.begin(async (tx) => {
+      await tx.unsafe(sqlText);
+      await tx`
+        INSERT INTO schema_migrations (filename, checksum, applied_at)
+        VALUES (${filename}, ${checksum}, NOW())
+        ON CONFLICT (filename)
+        DO UPDATE SET checksum = EXCLUDED.checksum, applied_at = NOW()
+      `;
+    });
     console.log("Applied:", migrationPath);
   }
 } catch (err) {
