@@ -39,6 +39,8 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 ## Next
 
+**Suggested active branch (post–Jobs Slice v1):** `feat/e2e-authenticated-flows` — Playwright coverage for **authenticated** flows once test credentials + env are wired in CI (see **E2E note** below).
+
 1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is already verified (then pick backbone track A/B/C/D from prior planning).  
 2. Promote **`recruit/docs/`** structural items (**`category_fields`, candidate profiles, invitations/screening, pipeline**) per **`docs/TALENTBRIDGE_MVP_PLAN.md`** phases B–D when prioritized (see **`docs/ROADMAP_FROM_REFERENCE.md`** P0).
 3. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.
