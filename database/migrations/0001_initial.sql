@@ -11,8 +11,28 @@ CREATE TABLE IF NOT EXISTS companies (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS companies_owner_uid_name_lower_uidx
-  ON companies (owner_firebase_uid, (lower(name)));
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'companies'
+      AND column_name = 'owner_firebase_uid'
+  ) THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS companies_owner_uid_name_lower_uidx
+      ON companies (owner_firebase_uid, (lower(name)));
+  ELSIF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'companies'
+      AND column_name = 'owner_user_id'
+  ) THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS companies_owner_user_name_lower_uidx
+      ON companies (owner_user_id, (lower(name)));
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS vacancies (
   id TEXT PRIMARY KEY,
@@ -34,7 +54,26 @@ CREATE INDEX IF NOT EXISTS vacancies_open_created_idx
   ON vacancies (status, created_at DESC, id DESC)
   WHERE status = 'open';
 
-CREATE INDEX IF NOT EXISTS vacancies_owner_idx ON vacancies (posted_by_firebase_uid);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'vacancies'
+      AND column_name = 'posted_by_firebase_uid'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS vacancies_owner_idx ON vacancies (posted_by_firebase_uid);
+  ELSIF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'vacancies'
+      AND column_name = 'posted_by_user_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS vacancies_owner_idx ON vacancies (posted_by_user_id);
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

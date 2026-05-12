@@ -4,10 +4,12 @@
  *        node scripts/db-apply.mjs database/migrations/0001_initial.sql
  */
 import { readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import postgres from "postgres";
+import { postgresOptions } from "./postgres-url-options.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
@@ -32,44 +34,38 @@ const migrationPaths = explicitMigrationPath
       .sort((a, b) => a.localeCompare(b))
       .map((name) => join(migrationsDir, name));
 
-function postgresOptions(databaseUrl) {
-  let hostname = "";
-  try {
-    hostname = new URL(databaseUrl).hostname;
-  } catch {
-    // non-URL form; still try with defaults below
-  }
+function migrationFileName(absolutePath) {
+  return absolutePath.replace(/\\/g, "/").split("/").pop() ?? absolutePath;
+}
 
-  const isLocal =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1" ||
-    hostname.endsWith(".local") ||
-    hostname === "host.docker.internal";
-
-  const sslExplicitlyOff =
-    /sslmode\s*=\s*disable/i.test(databaseUrl) ||
-    /[?&]ssl\s*=\s*0\b/i.test(databaseUrl);
-
-  const opts = {
-    max: 1,
-    connect_timeout: 45,
-  };
-
-  // Cloud DBs often reset the TCP session if TLS is not used; local Docker usually has no TLS.
-  if (!sslExplicitlyOff && !isLocal) {
-    opts.ssl = "require";
-  }
-
-  return opts;
+function sha256(input) {
+  return createHash("sha256").update(input).digest("hex");
 }
 
 const sql = postgres(url, postgresOptions(url));
 
 try {
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      filename TEXT PRIMARY KEY,
+      checksum TEXT NOT NULL,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   for (const migrationPath of migrationPaths) {
     const sqlText = readFileSync(migrationPath, "utf8");
-    await sql.unsafe(sqlText);
+    const filename = migrationFileName(migrationPath);
+    const checksum = sha256(sqlText);
+    await sql.begin(async (tx) => {
+      await tx.unsafe(sqlText);
+      await tx`
+        INSERT INTO schema_migrations (filename, checksum, applied_at)
+        VALUES (${filename}, ${checksum}, NOW())
+        ON CONFLICT (filename)
+        DO UPDATE SET checksum = EXCLUDED.checksum, applied_at = NOW()
+      `;
+    });
     console.log("Applied:", migrationPath);
   }
 } catch (err) {

@@ -63,6 +63,9 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 
 ## 6) Postgres spot checks (Neon SQL editor)
 
+- [ ] Before smoke, run explicit production DB migration + guard:
+  - `npm run release:prod:db:apply`
+  - `npm run release:prod:db:check:migrations`
 - [ ] `select id, email, created_at from users order by created_at desc limit 5;`
 - [ ] `select id, job_title, posted_by_user_id, status from vacancies order by created_at desc limit 5;`
 - [ ] `select id, vacancy_id, candidate_user_id, created_at from applications order by created_at desc limit 10;`

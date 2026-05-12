@@ -78,7 +78,10 @@ jobs:
       - run: npm ci
 
       - name: Apply SQL migrations
-        run: npm run db:apply && npm run db:apply:categories && npm run db:apply:users && npm run db:apply:roles && npm run db:apply:application-status
+        run: npm run db:apply
+
+      - name: Schema migration parity guard
+        run: npm run db:check:migrations
 
       - name: Production build
         run: npm run build
