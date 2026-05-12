@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import postgres from "postgres";
+import { postgresOptions } from "./postgres-url-options.mjs";
 
 config({ path: ".env.release" });
 
@@ -7,7 +8,37 @@ const base = (process.env.SMOKE_BASE_URL || "").replace(/\/$/, "");
 if (!base) throw new Error("SMOKE_BASE_URL missing in .env.release");
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL missing in .env.release");
 
-const sql = postgres(process.env.DATABASE_URL);
+/** Same logical site as SMOKE_BASE_URL (protocol + host). Set in .env.release for production. */
+function originKey(url) {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}`.toLowerCase();
+  } catch {
+    return url.replace(/\/$/, "").toLowerCase();
+  }
+}
+
+const prodChecklistOrigin = process.env.PROD_CHECKLIST_ORIGIN?.trim();
+if (prodChecklistOrigin) {
+  const isProdTarget = originKey(base) === originKey(prodChecklistOrigin);
+  const mutationsOk = process.env.ALLOW_PROD_CHECKLIST_MUTATIONS === "1";
+  if (isProdTarget && !mutationsOk) {
+    console.error(`
+Refusing to run: SMOKE_BASE_URL matches PROD_CHECKLIST_ORIGIN (production checklist target).
+
+This script creates real users, jobs, and applications. To confirm intentional production
+mutations, set in .env.release (or the shell):
+
+  ALLOW_PROD_CHECKLIST_MUTATIONS=1
+
+See docs/PROD_CHECKLIST.md (automation + production mutations).
+`);
+    process.exit(1);
+  }
+}
+
+const dbUrl = process.env.DATABASE_URL;
+const sql = postgres(dbUrl, postgresOptions(dbUrl));
 
 const out = [];
 function ok(name, details = "") {
