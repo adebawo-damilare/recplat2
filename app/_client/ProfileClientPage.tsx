@@ -6,6 +6,7 @@ import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 import CandidateDashboard from "../../src/components/CandidateDashboard";
 import PortfolioViewer from "../../src/components/PortfolioViewer";
 import type { CandidateProfile } from "../../src/lib/domainTypes";
+import { formatCandidateFullName } from "../../src/lib/candidateName";
 
 export default function ProfileClientPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function ProfileClientPage() {
         <PortfolioViewer
           content={portfolioCandidate.portfolioContent}
           url={portfolioCandidate.portfolioUrl}
-          candidateName={portfolioCandidate.fullName}
+          candidateName={formatCandidateFullName(portfolioCandidate.firstName, portfolioCandidate.lastName)}
           candidateEmail={portfolioCandidate.email}
           onClose={() => setPortfolioCandidate(null)}
         />

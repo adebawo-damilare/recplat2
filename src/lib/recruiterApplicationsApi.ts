@@ -12,7 +12,7 @@ export type RecruiterBoardApplication = {
   status: Application["status"];
   appliedAt: string;
   vacancy: { id: string; jobTitle: string; companyName: string };
-  candidate: { userId: string; fullName: string; email: string; headline: string };
+  candidate: { userId: string; firstName: string; lastName: string; email: string; headline: string };
 };
 
 export async function fetchRecruiterApplicationBoard(vacancyId?: string | null): Promise<RecruiterBoardApplication[]> {

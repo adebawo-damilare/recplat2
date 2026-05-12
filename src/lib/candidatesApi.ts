@@ -60,7 +60,7 @@ export async function saveMyCandidateProfile(
   patch: Partial<
     Pick<
       CandidateProfile,
-      "fullName" | "email" | "headline" | "summary" | "skills" | "experience" | "portfolioUrl" | "portfolioContent"
+      "firstName" | "lastName" | "email" | "headline" | "summary" | "skills" | "experience" | "portfolioUrl" | "portfolioContent"
     >
   >,
 ): Promise<CandidateProfile | null> {

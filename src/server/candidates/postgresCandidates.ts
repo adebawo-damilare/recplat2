@@ -9,7 +9,8 @@ import { SAMPLE_CANDIDATE_SEEDS } from "./sampleCandidateSeeds";
 function mapCandidateRow(row: typeof candidateProfiles.$inferSelect): CandidateProfile {
   return {
     userId: row.userId,
-    fullName: row.fullName,
+    firstName: row.firstName,
+    lastName: row.lastName,
     email: row.emailSnapshot,
     headline: row.headline,
     summary: row.summary,
@@ -24,7 +25,10 @@ function mapCandidateRow(row: typeof candidateProfiles.$inferSelect): CandidateP
 
 export async function listAllCandidateProfiles(): Promise<CandidateProfile[]> {
   const db = getDrizzleDb();
-  const rows = await db.select().from(candidateProfiles).orderBy(asc(candidateProfiles.fullName));
+  const rows = await db
+    .select()
+    .from(candidateProfiles)
+    .orderBy(asc(candidateProfiles.lastName), asc(candidateProfiles.firstName));
   return rows.map(mapCandidateRow);
 }
 
@@ -44,7 +48,8 @@ export async function listCandidateProfilesPaged(
   const pattern = qRaw.length > 0 ? `%${escapeIlikeFragment(qRaw)}%` : null;
   const searchCond = pattern
     ? or(
-        ilike(candidateProfiles.fullName, pattern),
+        ilike(candidateProfiles.firstName, pattern),
+        ilike(candidateProfiles.lastName, pattern),
         ilike(candidateProfiles.headline, pattern),
         ilike(candidateProfiles.skills, pattern),
         ilike(candidateProfiles.summary, pattern),
@@ -60,13 +65,13 @@ export async function listCandidateProfilesPaged(
         .select()
         .from(candidateProfiles)
         .where(searchCond)
-        .orderBy(asc(candidateProfiles.fullName))
+        .orderBy(asc(candidateProfiles.lastName), asc(candidateProfiles.firstName))
         .limit(limit)
         .offset(offset)
     : await db
         .select()
         .from(candidateProfiles)
-        .orderBy(asc(candidateProfiles.fullName))
+        .orderBy(asc(candidateProfiles.lastName), asc(candidateProfiles.firstName))
         .limit(limit)
         .offset(offset);
 
@@ -89,7 +94,15 @@ export async function upsertCandidateProfileForUser(
   patch: Partial<
     Pick<
       CandidateProfile,
-      "fullName" | "email" | "headline" | "summary" | "skills" | "experience" | "portfolioUrl" | "portfolioContent"
+      | "firstName"
+      | "lastName"
+      | "email"
+      | "headline"
+      | "summary"
+      | "skills"
+      | "experience"
+      | "portfolioUrl"
+      | "portfolioContent"
     >
   >,
 ): Promise<CandidateProfile> {
@@ -106,7 +119,8 @@ export async function upsertCandidateProfileForUser(
       .insert(candidateProfiles)
       .values({
         userId,
-        fullName: patch.fullName ?? "",
+        firstName: patch.firstName ?? "",
+        lastName: patch.lastName ?? "",
         emailSnapshot: patch.email ?? "",
         headline: patch.headline ?? "",
         summary: patch.summary ?? "",
@@ -124,7 +138,8 @@ export async function upsertCandidateProfileForUser(
   const [row] = await db
     .update(candidateProfiles)
     .set({
-      fullName: patch.fullName !== undefined ? patch.fullName : cur.fullName,
+      firstName: patch.firstName !== undefined ? patch.firstName : cur.firstName,
+      lastName: patch.lastName !== undefined ? patch.lastName : cur.lastName,
       emailSnapshot: patch.email !== undefined ? patch.email : cur.emailSnapshot,
       headline: patch.headline !== undefined ? patch.headline : cur.headline,
       summary: patch.summary !== undefined ? patch.summary : cur.summary,
@@ -163,7 +178,8 @@ export async function seedSampleCandidatesIfMissing(): Promise<{ created: number
 
     await db.insert(candidateProfiles).values({
       userId: u.id,
-      fullName: s.fullName,
+      firstName: s.firstName,
+      lastName: s.lastName,
       emailSnapshot: s.email,
       headline: s.headline,
       summary: s.summary,

@@ -2,7 +2,8 @@
 
 export type SampleCandidateSeed = {
   email: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   headline: string;
   summary: string;
   skills: string;
@@ -13,7 +14,8 @@ export type SampleCandidateSeed = {
 
 export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
   {
-    fullName: "Marcus Holloway",
+    firstName: "Marcus",
+    lastName: "Holloway",
     email: "marcus.sample@talentbridge.invalid",
     headline: "Cloud Architect | AWS & Azure Expert",
     summary:
@@ -25,7 +27,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
       "# Marcus Holloway\n\n## Cloud Architect & infrastructure Hero\n\nExperienced in designing and deploying scalable cloud infrastructures.",
   },
   {
-    fullName: "Elena Fisher",
+    firstName: "Elena",
+    lastName: "Fisher",
     email: "elena.sample@talentbridge.invalid",
     headline: "UI/UX Specialist & Framer Motion Enthusiast",
     summary: "Designing interfaces that feel like magic. I bridge the gap between aesthetics and function.",
@@ -36,7 +39,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
       "# Elena Fisher\n\n## UI/UX Designer & Product Strategist\n\nI create digital experiences that people love.",
   },
   {
-    fullName: "Satoshi Tanaka",
+    firstName: "Satoshi",
+    lastName: "Tanaka",
     email: "satoshi.sample@talentbridge.invalid",
     headline: "Smart Contract Developer | Rust & Solidity",
     summary: "Writing secure code for decentralized futures. Specialist in DeFi protocols and ZK proofs.",
@@ -45,7 +49,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
     portfolioUrl: "https://etherscan.io",
   },
   {
-    fullName: "Sarah Connor",
+    firstName: "Sarah",
+    lastName: "Connor",
     email: "sarah.sample@talentbridge.invalid",
     headline: "Cybersecurity Analyst | Threat Intelligence",
     summary: "Protecting systems from the future. Expert in penetration testing and network infrastructure.",
@@ -54,7 +59,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
     portfolioUrl: "https://sarahconnor.tech",
   },
   {
-    fullName: "James Holden",
+    firstName: "James",
+    lastName: "Holden",
     email: "holden.sample@talentbridge.invalid",
     headline: "Operations Manager | Logistics & Team Leadership",
     summary: "Managing complex operations in high-pressure environments. Doing the right thing, always.",
@@ -63,7 +69,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
     portfolioUrl: "https://rocinante.space",
   },
   {
-    fullName: "Diana Prince",
+    firstName: "Diana",
+    lastName: "Prince",
     email: "diana.sample@talentbridge.invalid",
     headline: "Principal Researcher & Strategy Advisor",
     summary:
@@ -73,7 +80,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
     portfolioUrl: "https://diana-prince.com",
   },
   {
-    fullName: "Arthur Dent",
+    firstName: "Arthur",
+    lastName: "Dent",
     email: "arthur.sample@talentbridge.invalid",
     headline: "Technical Writer & Content Strategist",
     summary: "I explain complex things simply. Specialist in documentation for galaxy-scale systems.",
@@ -82,7 +90,8 @@ export const SAMPLE_CANDIDATE_SEEDS: SampleCandidateSeed[] = [
     portfolioUrl: "https://hitchhikers.guide",
   },
   {
-    fullName: "Lara Croft",
+    firstName: "Lara",
+    lastName: "Croft",
     email: "lara.sample@talentbridge.invalid",
     headline: "Field Researcher | Digital Heritage Specialist",
     summary:

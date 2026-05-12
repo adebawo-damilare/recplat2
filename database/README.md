@@ -17,11 +17,14 @@ npm run db:apply:categories
 npm run db:apply:users
 npm run db:apply:roles
 npm run db:apply:application-status
+npm run db:apply:candidate-name-split
 ```
 
 Categories migration (`0002_categories.sql`) **adds `categories`, seeds marketers/designers/sales, and adds `vacancies.category_id`**. Apply it after `0001_initial.sql`.
 
 `0004_user_roles.sql` adds `users.role`. `0005_application_status.sql` adds `applications.status` for the recruiter pipeline.
+
+`0006_candidate_name_split.sql` replaces `candidate_profiles.full_name` with **`first_name`** and **`last_name`** (existing rows are migrated automatically).
 
 Or with `psql`:
 
@@ -31,6 +34,7 @@ psql "$DATABASE_URL" -f database/migrations/0002_categories.sql
 psql "$DATABASE_URL" -f database/migrations/0003_users_auth.sql
 psql "$DATABASE_URL" -f database/migrations/0004_user_roles.sql
 psql "$DATABASE_URL" -f database/migrations/0005_application_status.sql
+psql "$DATABASE_URL" -f database/migrations/0006_candidate_name_split.sql
 ```
 
 On Windows PowerShell you can use `psql` from PostgreSQL tools, or run the same statements in the host SQL editor.

@@ -27,10 +27,82 @@ CREATE TABLE IF NOT EXISTS candidate_profiles (
 );
 
 DROP INDEX IF EXISTS companies_owner_uid_name_lower_uidx;
-ALTER TABLE companies RENAME COLUMN owner_firebase_uid TO owner_user_id;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'companies'
+      AND column_name = 'owner_firebase_uid'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'companies'
+      AND column_name = 'owner_user_id'
+  ) THEN
+    ALTER TABLE companies RENAME COLUMN owner_firebase_uid TO owner_user_id;
+  END IF;
+END $$;
+
 CREATE UNIQUE INDEX IF NOT EXISTS companies_owner_user_name_lower_uidx
   ON companies (owner_user_id, (lower(name)));
 
-ALTER TABLE vacancies RENAME COLUMN posted_by_firebase_uid TO posted_by_user_id;
-ALTER TABLE applications RENAME COLUMN candidate_firebase_uid TO candidate_user_id;
-ALTER TABLE ai_audit_events RENAME COLUMN actor_firebase_uid TO actor_user_id;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'vacancies'
+      AND column_name = 'posted_by_firebase_uid'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'vacancies'
+      AND column_name = 'posted_by_user_id'
+  ) THEN
+    ALTER TABLE vacancies RENAME COLUMN posted_by_firebase_uid TO posted_by_user_id;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'applications'
+      AND column_name = 'candidate_firebase_uid'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'applications'
+      AND column_name = 'candidate_user_id'
+  ) THEN
+    ALTER TABLE applications RENAME COLUMN candidate_firebase_uid TO candidate_user_id;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'ai_audit_events'
+      AND column_name = 'actor_firebase_uid'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'ai_audit_events'
+      AND column_name = 'actor_user_id'
+  ) THEN
+    ALTER TABLE ai_audit_events RENAME COLUMN actor_firebase_uid TO actor_user_id;
+  END IF;
+END $$;

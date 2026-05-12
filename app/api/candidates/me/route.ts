@@ -63,7 +63,8 @@ export async function PATCH(request: NextRequest) {
   const patch = body as Partial<Record<string, unknown>>;
   const mapped: Parameters<typeof upsertCandidateProfileForUser>[1] = {};
 
-  if (typeof patch.fullName === "string") mapped.fullName = patch.fullName;
+  if (typeof patch.firstName === "string") mapped.firstName = patch.firstName;
+  if (typeof patch.lastName === "string") mapped.lastName = patch.lastName;
   if (typeof patch.email === "string") mapped.email = patch.email;
   if (typeof patch.headline === "string") mapped.headline = patch.headline;
   if (typeof patch.summary === "string") mapped.summary = patch.summary;

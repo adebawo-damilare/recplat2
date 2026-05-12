@@ -52,11 +52,14 @@ Apply SQL **against the same Postgres** as **Production** `DATABASE_URL` (usuall
 npm run release:prod:db:apply
 npm run release:prod:db:apply:categories
 npm run release:prod:db:apply:users
+npm run release:prod:db:apply:roles
+npm run release:prod:db:apply:application-status
+npm run release:prod:db:apply:candidate-name-split
 ```
 
 (or the older one-liners with `DATABASE_URL="postgresql://..." npm run db:apply` …)
 
-Or use `psql` / Neon SQL editor with `database/migrations/0001_initial.sql`, `0002_categories.sql`, then `0003_users_auth.sql` in order.
+Or use `psql` / Neon SQL editor with migrations in order — see **`database/README.md`** (includes `0006_candidate_name_split.sql` for **`first_name` / `last_name`** on candidate profiles when upgrading from `full_name`).
 
 **Already applied?** If prod DB was created from a Neon backup of staging or migrations were run once, re-running apply scripts is **idempotent** for tables that use `IF NOT EXISTS`—still confirm with your team before repeating on prod.
 

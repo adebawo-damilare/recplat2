@@ -8,14 +8,16 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 
 - [ ] `GET /api/health` returns `200` and `ok: true`
 - [ ] `GET /api/jobs?limit=5` returns `200` with `jobs`
+- [ ] `GET /api/jobs?limit=10` (optional `q=` search) returns `200` with `pagination.nextCursor` when more pages exist
 - [ ] `GET /api/categories` returns `200` with categories
+- [ ] `GET /api/candidates` without a session returns **`401`** (listing is authenticated; supports `limit`, `offset`, optional `q`)
 
 ## 2) Auth flow
 
 - [ ] Open `/sign-in`
 - [ ] Create a new user with email/password (or sign in existing user)
 - [ ] Confirm successful sign-in redirect/UX
-- [ ] `GET /api/auth/session` returns `user` (not `null`)
+- [ ] `GET /api/auth/session` returns `user` (not `null`) with `id`, `email`, `role`, and **`canManageUserRoles`** (boolean; `true` only when role admin is enabled and the email is allowlisted)
 
 ## 3) Recruiter vacancy create/edit/close
 
@@ -33,6 +35,11 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 
 ## 4) Candidate profile + apply
 
+### Talent directory (`/talent`)
+
+- [ ] While signed out, open **`/talent`** — you should get the sign-in/sign-up flow (no candidate listing without auth)
+- [ ] While signed in (candidate or recruiter), **`/talent`** lists candidates with pagination (10 per page) and search
+
 - [ ] Open `/dashboard/profile`
 - [ ] Save candidate profile fields
 - [ ] Refresh and confirm profile persists
@@ -49,6 +56,7 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 - [ ] Confirm env vars are set for this deployment when role admin is intended:
   - `TALENTBRIDGE_ENABLE_ROLE_ADMIN=1`
   - `TALENTBRIDGE_ROLE_ADMIN_EMAILS=<comma-separated recruiter admin emails>`
+- [ ] **Role Management** card appears on `/dashboard/company` only for allowlisted recruiters (`canManageUserRoles`); other recruiters should not see the card (API still returns `403` if called anyway)
 - [ ] As an allowlisted recruiter, update another user's role from recruiter dashboard role panel
 - [ ] Confirm disallowed actor (non-allowlisted recruiter or candidate) receives `403 FORBIDDEN_ROLE_ADMIN`
 - [ ] Confirm self-role change attempt is blocked
@@ -58,7 +66,7 @@ Use this checklist after deploy (for example: `https://recplat2.vercel.app`).
 - [ ] `select id, email, created_at from users order by created_at desc limit 5;`
 - [ ] `select id, job_title, posted_by_user_id, status from vacancies order by created_at desc limit 5;`
 - [ ] `select id, vacancy_id, candidate_user_id, created_at from applications order by created_at desc limit 10;`
-- [ ] `select user_id, full_name, email_snapshot, updated_at from candidate_profiles order by updated_at desc limit 5;`
+- [ ] `select user_id, first_name, last_name, email_snapshot, updated_at from candidate_profiles order by updated_at desc limit 5;`
 - [ ] `select actor_user_id, event_type, payload_json, created_at from ai_audit_events where event_type='user.role_changed' order by created_at desc limit 5;`
 
 ## 7) Post-release log watch (10-30 minutes)

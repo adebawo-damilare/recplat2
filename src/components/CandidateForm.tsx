@@ -8,6 +8,7 @@ import { motion } from "motion/react";
 import { User, Mail, Briefcase, FileText, Code, Clock, Save, ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 import { fetchMyCandidateProfile, saveMyCandidateProfile } from "../lib/candidatesApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
+import { candidateHasDisplayableName } from "../lib/candidateName";
 
 interface CandidateFormProps {
   onSuccess: () => void;
@@ -19,7 +20,8 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     headline: "",
     summary: "",
@@ -39,7 +41,8 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
         const profile = await fetchMyCandidateProfile();
         if (profile) {
           setFormData({
-            fullName: profile.fullName || "",
+            firstName: profile.firstName || "",
+            lastName: profile.lastName || "",
             email: profile.email || user.email || "",
             headline: profile.headline || "",
             summary: profile.summary || "",
@@ -67,7 +70,8 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
     setLoading(true);
     try {
       const saved = await saveMyCandidateProfile({
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         headline: formData.headline,
         summary: formData.summary,
@@ -87,6 +91,8 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
       setLoading(false);
     }
   };
+
+  const hasSavedName = candidateHasDisplayableName(formData.firstName, formData.lastName);
 
   if (initialLoading) {
     return (
@@ -112,7 +118,7 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
 
       <div className="mb-10">
         <h2 className="text-3xl font-bold tracking-tight mb-2">
-          {formData.fullName ? 'Edit Your Profile' : 'Build Your Profile'}
+          {hasSavedName ? 'Edit Your Profile' : 'Build Your Profile'}
         </h2>
         <p className="text-neutral-500">Highlight your expertise and get discovered by top companies.</p>
       </div>
@@ -121,27 +127,45 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-bold flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-600" /> Full Name
+              <User className="w-4 h-4 text-blue-600" /> First name
             </label>
             <input
               required
               type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-              placeholder="Elon Musk"
+              autoComplete="given-name"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              placeholder="Jordan"
               className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-bold flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-600" /> Last name
+            </label>
+            <input
+              type="text"
+              autoComplete="family-name"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              placeholder="Lee"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2 md:col-span-2">
             <label className="text-sm font-bold flex items-center gap-2">
               <Mail className="w-4 h-4 text-blue-600" /> Professional Email
             </label>
             <input
               required
               type="email"
+              autoComplete="email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
-              placeholder="elon@spacex.com"
+              placeholder="jordan@company.com"
               className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>

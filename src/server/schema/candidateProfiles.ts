@@ -5,7 +5,8 @@ export const candidateProfiles = pgTable("candidate_profiles", {
   userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
-  fullName: text("full_name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   emailSnapshot: text("email_snapshot").notNull(),
   headline: text("headline").notNull(),
   summary: text("summary").notNull(),

@@ -55,7 +55,8 @@ export async function POST(request: Request) {
     await db.insert(candidateProfiles).values({
       userId,
       emailSnapshot: email,
-      fullName: "",
+      firstName: "",
+      lastName: "",
       headline: "",
       summary: "",
       skills: "",

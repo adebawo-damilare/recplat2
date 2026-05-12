@@ -24,6 +24,12 @@ import type { CandidateProfile, Application } from "../lib/domainTypes";
 import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
 import { fetchMyCandidateProfile } from "../lib/candidatesApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
+import {
+  candidateHasDisplayableName,
+  formatCandidateFullName,
+  formatCandidateGreetingFirst,
+  getCandidateAvatarLetter,
+} from "../lib/candidateName";
 import ProfileCard from './ProfileCard';
 import CandidateForm from './CandidateForm';
 
@@ -80,7 +86,9 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
     );
   }
 
-  const hasMeaningfulProfile = Boolean(profile?.fullName?.trim());
+  const hasMeaningfulProfile = Boolean(
+    profile && candidateHasDisplayableName(profile.firstName, profile.lastName),
+  );
   const profileCompletion = hasMeaningfulProfile ? 100 : 0;
 
   return (
@@ -202,7 +210,7 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
                   <span className="text-xs font-black uppercase tracking-widest text-neutral-400">Profile Optimized</span>
                 </div>
                 <h3 className="text-2xl font-black mb-2 italic">
-                  Looking sharp, {profile.fullName.trim().split(/\s+/)[0] || "there"}!
+                  Looking sharp, {formatCandidateGreetingFirst(profile.firstName)}!
                 </h3>
                 <p className="text-neutral-400 font-medium mb-6 max-w-md">Your profile is currently visible to companies searching for top talent. Keep your experience up to date to increase your visibility.</p>
                 <div className="flex items-center gap-4">
@@ -232,9 +240,11 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
             <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8">
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-neutral-100 rounded-full mx-auto mb-4 flex items-center justify-center font-black text-3xl text-neutral-300">
-                  {profile.fullName.trim().charAt(0)}
+                  {getCandidateAvatarLetter(profile.firstName, profile.lastName)}
                 </div>
-                <h4 className="text-xl font-black text-neutral-900">{profile.fullName}</h4>
+                <h4 className="text-xl font-black text-neutral-900">
+                  {formatCandidateFullName(profile.firstName, profile.lastName)}
+                </h4>
                 <p className="text-sm text-neutral-500 font-medium">{profile.headline}</p>
               </div>
 

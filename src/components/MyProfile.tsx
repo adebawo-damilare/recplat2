@@ -9,6 +9,7 @@ import { User, Plus, ArrowLeft, Loader2 } from "lucide-react";
 import type { CandidateProfile } from "../lib/domainTypes";
 import { fetchMyCandidateProfile } from "../lib/candidatesApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
+import { candidateHasDisplayableName } from "../lib/candidateName";
 import ProfileCard from './ProfileCard';
 
 interface MyProfileProps {
@@ -51,7 +52,7 @@ export default function MyProfile({ onEdit, onBack, onViewPortfolio }: MyProfile
     );
   }
 
-  if (!profile?.fullName?.trim()) {
+  if (!profile || !candidateHasDisplayableName(profile.firstName, profile.lastName)) {
     return (
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}

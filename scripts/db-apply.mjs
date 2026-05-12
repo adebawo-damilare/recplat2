@@ -3,7 +3,7 @@
  * Usage: npm run db:apply
  *        node scripts/db-apply.mjs database/migrations/0001_initial.sql
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
@@ -23,8 +23,14 @@ if (!url) {
   process.exit(1);
 }
 
-const migrationPath = resolve(process.argv[2] ?? join(repoRoot, "database/migrations/0001_initial.sql"));
-const sqlText = readFileSync(migrationPath, "utf8");
+const migrationsDir = join(repoRoot, "database/migrations");
+const explicitMigrationPath = process.argv[2];
+const migrationPaths = explicitMigrationPath
+  ? [resolve(explicitMigrationPath)]
+  : readdirSync(migrationsDir)
+      .filter((name) => name.endsWith(".sql"))
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => join(migrationsDir, name));
 
 function postgresOptions(databaseUrl) {
   let hostname = "";
@@ -61,8 +67,11 @@ function postgresOptions(databaseUrl) {
 const sql = postgres(url, postgresOptions(url));
 
 try {
-  await sql.unsafe(sqlText);
-  console.log("Applied:", migrationPath);
+  for (const migrationPath of migrationPaths) {
+    const sqlText = readFileSync(migrationPath, "utf8");
+    await sql.unsafe(sqlText);
+    console.log("Applied:", migrationPath);
+  }
 } catch (err) {
   const code = err?.code ?? err?.errno;
   if (code === "ECONNRESET" || code === "ETIMEDOUT" || code === "ECONNREFUSED") {

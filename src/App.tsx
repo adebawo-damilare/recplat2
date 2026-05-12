@@ -19,6 +19,7 @@ import HomePage from "./components/home/HomePage";
 import AppNav from "./components/layout/AppNav";
 import AppFooter from "./components/layout/AppFooter";
 import { AppView } from "./appView";
+import { formatCandidateFullName } from "./lib/candidateName";
 
 export default function App() {
   const [view, setView] = useState<AppView>(AppView.HOME);
@@ -130,7 +131,7 @@ export default function App() {
           <PortfolioViewer
             content={portfolioCandidate.portfolioContent}
             url={portfolioCandidate.portfolioUrl}
-            candidateName={portfolioCandidate.fullName}
+            candidateName={formatCandidateFullName(portfolioCandidate.firstName, portfolioCandidate.lastName)}
             candidateEmail={portfolioCandidate.email}
             onClose={() => setPortfolioCandidate(null)}
           />

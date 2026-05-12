@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search, User, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { CandidateProfile } from "../lib/domainTypes";
+import { formatCandidateFullName } from "../lib/candidateName";
 import { fetchCandidatesPage } from "../lib/candidatesApi";
 import ProfileCard from "./ProfileCard";
 
@@ -110,12 +111,14 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
                   <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center overflow-hidden">
                     <img
                       src={`https://picsum.photos/seed/${c.userId}/100/100`}
-                      alt={c.fullName}
+                      alt={formatCandidateFullName(c.firstName, c.lastName) || "Candidate"}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-sm font-bold truncate">{c.fullName}</h3>
+                    <h3 className="text-sm font-bold truncate">
+                      {formatCandidateFullName(c.firstName, c.lastName) || "—"}
+                    </h3>
                     <p className="text-xs text-neutral-500 truncate">{c.headline}</p>
                   </div>
                 </div>

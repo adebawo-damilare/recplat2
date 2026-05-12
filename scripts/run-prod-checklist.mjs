@@ -108,7 +108,8 @@ try {
   // 3) Candidate profile save/load
   {
     const patch = {
-      fullName: "Prod Checklist User",
+      firstName: "Prod",
+      lastName: "Checklist User",
       email: candidateEmail,
       headline: "QA candidate",
       summary: "Profile save check",
@@ -122,7 +123,12 @@ try {
       headers: { cookie: candidateCookie },
       body: JSON.stringify(patch),
     });
-    if (res.status === 200 && body?.profile?.fullName === patch.fullName) ok("PATCH /api/candidates/me", "profile persisted");
+    if (
+      res.status === 200 &&
+      body?.profile?.firstName === patch.firstName &&
+      body?.profile?.lastName === patch.lastName
+    )
+      ok("PATCH /api/candidates/me", "profile persisted");
     else fail("PATCH /api/candidates/me", `${res.status} ${JSON.stringify(body)}`);
   }
   {

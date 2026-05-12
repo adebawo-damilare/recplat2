@@ -45,7 +45,7 @@ export type RecruiterBoardRow = {
   status: PipelineApplicationStatus;
   appliedAt: Date;
   vacancy: { id: string; jobTitle: string; companyName: string };
-  candidate: { userId: string; fullName: string; email: string; headline: string };
+  candidate: { userId: string; firstName: string; lastName: string; email: string; headline: string };
 };
 
 /** Applications across vacancies owned by this recruiter (optionally scoped to one vacancy). */
@@ -64,7 +64,8 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, vacancy
       appliedAt: applications.createdAt,
       vacancyJobTitle: vacancies.jobTitle,
       vacancyCompany: vacancies.companyNameDenorm,
-      candidateFullName: candidateProfiles.fullName,
+      candidateFirstName: candidateProfiles.firstName,
+      candidateLastName: candidateProfiles.lastName,
       candidateEmailSnapshot: candidateProfiles.emailSnapshot,
       candidateHeadline: candidateProfiles.headline,
     })
@@ -87,7 +88,8 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, vacancy
     },
     candidate: {
       userId: r.candidateUserId,
-      fullName: r.candidateFullName?.trim() ? r.candidateFullName : "(No profile)",
+      firstName: r.candidateFirstName?.trim() ?? "",
+      lastName: r.candidateLastName?.trim() ?? "",
       email: r.candidateEmailSnapshot?.trim() ? r.candidateEmailSnapshot : "",
       headline: r.candidateHeadline?.trim() ? r.candidateHeadline : "",
     },

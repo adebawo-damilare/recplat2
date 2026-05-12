@@ -7,6 +7,7 @@ import React from 'react';
 import { motion } from "motion/react";
 import { Mail, User, FileText, Code, ExternalLink, Edit3 } from "lucide-react";
 import { type CandidateProfile } from "../lib/domainTypes";
+import { formatCandidateFullName } from "../lib/candidateName";
 
 interface ProfileCardProps {
   candidate: CandidateProfile;
@@ -16,6 +17,7 @@ interface ProfileCardProps {
 }
 
 export default function ProfileCard({ candidate, isOwnProfile, onEdit, onViewPortfolio }: ProfileCardProps) {
+  const displayName = formatCandidateFullName(candidate.firstName, candidate.lastName);
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -27,10 +29,10 @@ export default function ProfileCard({ candidate, isOwnProfile, onEdit, onViewPor
           <img 
             src={`https://picsum.photos/seed/${candidate.userId}/200/200`} 
             className="w-32 h-32 rounded-3xl object-cover shadow-xl ring-4 ring-neutral-50"
-            alt={candidate.fullName}
+            alt={displayName || "Candidate"}
           />
           <div>
-            <h2 className="text-4xl font-bold mb-2 tracking-tight">{candidate.fullName}</h2>
+            <h2 className="text-4xl font-bold mb-2 tracking-tight">{displayName || "Candidate"}</h2>
             <p className="text-blue-600 font-bold text-lg">{candidate.headline}</p>
             <div className="flex items-center justify-center md:justify-start gap-2 mt-2 text-neutral-400">
                <Mail className="w-3 h-3" />
