@@ -9,6 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import postgres from "postgres";
+import { postgresOptions } from "./postgres-url-options.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
@@ -39,38 +40,6 @@ function migrationFileName(absolutePath) {
 
 function sha256(input) {
   return createHash("sha256").update(input).digest("hex");
-}
-
-function postgresOptions(databaseUrl) {
-  let hostname = "";
-  try {
-    hostname = new URL(databaseUrl).hostname;
-  } catch {
-    // non-URL form; still try with defaults below
-  }
-
-  const isLocal =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1" ||
-    hostname.endsWith(".local") ||
-    hostname === "host.docker.internal";
-
-  const sslExplicitlyOff =
-    /sslmode\s*=\s*disable/i.test(databaseUrl) ||
-    /[?&]ssl\s*=\s*0\b/i.test(databaseUrl);
-
-  const opts = {
-    max: 1,
-    connect_timeout: 45,
-  };
-
-  // Cloud DBs often reset the TCP session if TLS is not used; local Docker usually has no TLS.
-  if (!sslExplicitlyOff && !isLocal) {
-    opts.ssl = "require";
-  }
-
-  return opts;
 }
 
 const sql = postgres(url, postgresOptions(url));

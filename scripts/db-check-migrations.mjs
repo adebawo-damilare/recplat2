@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import postgres from "postgres";
+import { postgresOptions } from "./postgres-url-options.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
@@ -26,7 +27,7 @@ function sha256(input) {
   return createHash("sha256").update(input).digest("hex");
 }
 
-const sql = postgres(url, { ssl: "require", max: 1, connect_timeout: 45 });
+const sql = postgres(url, postgresOptions(url));
 
 try {
   await sql.unsafe(`

@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { postgresOptions } from "./postgres-url-options.mjs";
 
 const leftUrl = process.env.DB_PARITY_LEFT_URL?.trim();
 const rightUrl = process.env.DB_PARITY_RIGHT_URL?.trim();
@@ -11,7 +12,7 @@ if (!leftUrl || !rightUrl) {
 }
 
 async function snapshot(url) {
-  const sql = postgres(url, { ssl: "require", max: 1, connect_timeout: 45 });
+  const sql = postgres(url, postgresOptions(url));
   try {
     const cols = await sql.unsafe(`
       select table_name, column_name, data_type, is_nullable
