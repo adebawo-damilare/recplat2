@@ -9,9 +9,9 @@ test.describe("Candidate apply flow (authenticated)", () => {
     await page.goto("/jobs", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("job-board")).toBeVisible({ timeout: 30_000 });
 
-    const firstJobCard = page.locator("[data-testid^='job-card-']").first();
-    await expect(firstJobCard).toBeVisible({ timeout: 30_000 });
-    await firstJobCard.click();
+    const applyJobCard = page.locator("[data-testid^='job-card-']").filter({ hasText: /E2E Candidate Apply/ }).first();
+    await expect(applyJobCard).toBeVisible({ timeout: 30_000 });
+    await applyJobCard.click();
 
     const applyBtn = page.getByTestId("apply-now-button");
     await expect(applyBtn).toBeVisible({ timeout: 30_000 });

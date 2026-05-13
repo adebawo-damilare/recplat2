@@ -10,9 +10,9 @@ const candidateStorage = path.join(authDir, "candidate.json");
 const recruiterStorage = path.join(authDir, "recruiter.json");
 
 setup.describe("seed sessions", () => {
-  setup.describe.configure({ mode: "serial" });
+  setup.describe.configure({ mode: "serial", timeout: 120_000 });
 
-  setup("register recruiter + candidate and seed one vacancy", async ({ request }) => {
+  setup("register recruiter + candidate and seed vacancies", async ({ request }) => {
     await mkdir(authDir, { recursive: true });
 
     const password = "E2eTestUser!23456";
@@ -30,20 +30,35 @@ setup.describe("seed sessions", () => {
     }
     expect(recruiterRes.ok(), await recruiterRes.text()).toBeTruthy();
 
-    const vacancyRes = await request.post("/api/jobs", {
+    const vacancyApplyRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
       data: {
         jobTitle: `E2E Candidate Apply ${Date.now()}`,
         companyName: "E2E Labs",
         location: "Remote",
         salary: "$120k-$140k",
-        description: "Automated E2E vacancy",
+        description: "Automated E2E vacancy for board apply flow",
         requirements: "Playwright setup",
         categorySlug: "designers",
         jobType: "remote",
       },
     });
-    expect(vacancyRes.ok(), await vacancyRes.text()).toBeTruthy();
+    expect(vacancyApplyRes.ok(), await vacancyApplyRes.text()).toBeTruthy();
+
+    const vacancyDetailRes = await request.post("/api/jobs", {
+      headers: { "content-type": "application/json" },
+      data: {
+        jobTitle: `E2E Job Detail ${Date.now()}`,
+        companyName: "E2E Labs",
+        location: "Hybrid",
+        salary: "$110k-$130k",
+        description: "Automated E2E vacancy for public job detail page",
+        requirements: "Playwright job detail",
+        categorySlug: "designers",
+        jobType: "hybrid",
+      },
+    });
+    expect(vacancyDetailRes.ok(), await vacancyDetailRes.text()).toBeTruthy();
     await request.storageState({ path: recruiterStorage });
 
     const logoutRes = await request.post("/api/auth/logout", { headers: { "content-type": "application/json" } });
