@@ -22,6 +22,30 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page.getByTestId("nav-find-candidates")).toBeVisible();
   });
 
+  test("home Active Opportunities shows at most 6 cards and Explore all jobs", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const section = page.getByTestId("home-featured-jobs");
+    await expect(section.getByRole("heading", { name: "Active Opportunities" })).toBeVisible();
+    await expect(section.getByTestId("home-explore-all-jobs")).toBeVisible();
+
+    await expect(async () => {
+      const n = await section.getByTestId("home-featured-job-card").count();
+      if (n > 0) return;
+      await expect(section.getByText("No active vacancies at the moment.")).toBeVisible();
+    }).toPass({ timeout: 30_000 });
+
+    const cardCount = await section.getByTestId("home-featured-job-card").count();
+    expect(cardCount).toBeLessThanOrEqual(6);
+
+    const countEl = section.getByTestId("home-featured-count");
+    if (await countEl.isVisible()) {
+      await expect(countEl).toHaveText(/\d+ of \d+/);
+    }
+
+    await section.getByTestId("home-explore-all-jobs").click();
+    await expect(page).toHaveURL(/\/jobs\/?$/);
+  });
+
   test("footer visible on home", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("app-footer")).toBeVisible();
