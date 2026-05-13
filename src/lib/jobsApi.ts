@@ -98,6 +98,24 @@ export async function fetchHomeFeaturedJobs(): Promise<{ jobs: Vacancy[]; totalO
   return { jobs: [], totalOpen: 0 };
 }
 
+/** Public job detail (open vacancies only). Returns null if 404 / error. */
+export async function fetchPublicJobById(id: string): Promise<Vacancy | null> {
+  const trimmed = id?.trim();
+  if (!trimmed) return null;
+  try {
+    const res = await fetch(`/api/jobs/${encodeURIComponent(trimmed)}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return raw.job ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPublicJobsWithFallback(
   limit = 75,
   cursor?: string | null,

@@ -32,6 +32,14 @@ test.describe("Public API", () => {
     expect(body.totalOpen).toBeGreaterThanOrEqual(body.jobs.length);
   });
 
+  test("GET /api/jobs/{id} returns 404 for unknown id when jobs API is up", async ({ request }) => {
+    const res = await request.get("/api/jobs/00000000-0000-4000-8000-000000000001");
+    if (res.status() === 503) return;
+    expect(res.status()).toBe(404);
+    const body = await res.json();
+    expect(body?.code).toBe("NOT_FOUND");
+  });
+
   test("GET /api/jobs returns pagination metadata for limit=10", async ({ request }) => {
     const res = await request.get("/api/jobs?limit=10");
     expect(res.ok()).toBeTruthy();

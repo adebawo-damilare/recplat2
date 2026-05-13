@@ -262,6 +262,18 @@ export default function JobBoard() {
                 </section>
               </div>
 
+              {selectedJob.id ? (
+                <div className="mb-4 text-center">
+                  <a
+                    href={`/jobs/${selectedJob.id}`}
+                    className="text-sm font-bold text-blue-600 underline underline-offset-4 decoration-blue-200 hover:text-blue-700"
+                    data-testid="job-board-view-full-posting"
+                  >
+                    View full posting
+                  </a>
+                </div>
+              ) : null}
+
               <div className="mt-12 flex gap-4">
                 <button
                   type="button"

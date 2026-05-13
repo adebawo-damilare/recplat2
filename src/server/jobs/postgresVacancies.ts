@@ -337,6 +337,24 @@ export async function getVacancyById(id: string): Promise<Vacancy | null> {
   return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
 }
 
+/** Public job page: only open vacancies (closed or missing → null). */
+export async function getOpenVacancyByIdFromPostgres(id: string): Promise<Vacancy | null> {
+  const db = getDrizzleDb();
+  const rows = await db
+    .select({
+      v: vacancies,
+      catSlug: categories.slug,
+      catLabel: categories.label,
+    })
+    .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .where(and(eq(vacancies.id, id), eq(vacancies.status, "open")))
+    .limit(1);
+
+  const r = rows[0];
+  return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
+}
+
 export async function recordApplicationPostgres(vacancyId: string, candidateUserId: string) {
   const db = getDrizzleDb();
 

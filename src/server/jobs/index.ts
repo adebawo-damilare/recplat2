@@ -1,8 +1,10 @@
+import type { Vacancy } from "../../lib/domainTypes";
 import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { hasPostgresConfigured } from "../db/postgres";
 import {
   countOpenVacanciesFromPostgres,
   fetchOpenVacanciesPageFromPostgres,
+  getOpenVacancyByIdFromPostgres,
   getVacancyById,
   insertVacancyForOwner,
   listVacanciesForOwner,
@@ -48,4 +50,14 @@ export async function fetchOpenVacanciesPage(
     throw new Error("JOBS_POSTGRES_REQUIRED");
   }
   return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug, searchText);
+}
+
+export async function getOpenVacancyById(id: string): Promise<Vacancy | null> {
+  if (process.env.TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS === "1") {
+    return null;
+  }
+  if (!hasPostgresConfigured()) {
+    throw new Error("JOBS_POSTGRES_REQUIRED");
+  }
+  return getOpenVacancyByIdFromPostgres(id);
 }
