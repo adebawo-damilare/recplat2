@@ -19,7 +19,7 @@ export default function ProfileClientPage() {
   }, [loading, user, router]);
 
   return (
-    <div className="pt-24 min-h-screen bg-neutral-50/50">
+    <div className="pt-24 min-h-screen bg-neutral-50/50" data-testid="candidate-profile-dashboard">
       <CandidateDashboard onViewPortfolio={(candidate) => setPortfolioCandidate(candidate)} />
       {portfolioCandidate && (
         <PortfolioViewer

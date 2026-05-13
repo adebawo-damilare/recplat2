@@ -39,15 +39,17 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 ## Next
 
-**Suggested active branch (post–Jobs Slice v1):** `feat/e2e-authenticated-flows` — Playwright coverage for **authenticated** flows once test credentials + env are wired in CI (see **E2E note** below).
+**Authenticated E2E (Playwright):** run locally with **`npm run test:e2e:auth`** when **`.env.local`** has **`DATABASE_URL`** + **`TALENTBRIDGE_AUTH_SECRET`** (Next loads them for **`npm run dev`**). CI runs the same path in **`smoke-postgres`** after **`E2E_RUN_AUTH=1`** (see **`docs/CICD.md`**). Add specs under **`e2e/authenticated/`**; session seeding lives in **`e2e/auth.setup.ts`**.
 
 1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is already verified (then pick backbone track A/B/C/D from prior planning).  
 2. Promote **`recruit/docs/`** structural items (**`category_fields`, candidate profiles, invitations/screening, pipeline**) per **`docs/TALENTBRIDGE_MVP_PLAN.md`** phases B–D when prioritized (see **`docs/ROADMAP_FROM_REFERENCE.md`** P0).
 3. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.
 4. Expand schema (pipeline, screenings) only when product needs it — avoid premature tables.
 5. Search index / workers deferred until discovery scale phase (**`TALENTBRIDGE_MVP_PLAN.md`** §6).
-6. E2E coverage for authenticated flows when Playwright test credentials are available in CI.
+6. Expand **authenticated Playwright** coverage (recruiter flows, apply-to-job UI, etc.); baseline is **`e2e/authenticated/`** + **`e2e/auth.setup.ts`** (see **E2E note**).
 
 ## E2E note
 
 Playwright injects **`TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS=1`** on the spawned dev server (`playwright.config.ts`) so **`GET /api/jobs`** returns an empty page during CI/offline runs.
+
+**Authenticated flows:** with **`E2E_RUN_AUTH=1`**, the config adds a **`setup`** project (**`e2e/auth.setup.ts`**) that registers a throwaway candidate via **`POST /api/auth/register`** and writes **`e2e/.auth/candidate.json`**, then runs specs under **`e2e/authenticated/`** with that storage state. Locally use **`npm run test:e2e:auth`**. In GitHub Actions, **`smoke-postgres`** sets **`E2E_RUN_AUTH=1`** and **`PLAYWRIGHT_NO_WEBSERVER=1`** so Playwright attaches to the **`next start`** process already bound to port 3000 (see **`docs/CICD.md`**). The default **`quality`** job runs **`npm run test:e2e`** without **`E2E_RUN_AUTH`**, so only public/unauthenticated browser tests run there.

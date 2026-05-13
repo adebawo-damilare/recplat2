@@ -16,7 +16,9 @@ On every **pull request** and **push** to **`main`**, **`master`**, or **`dev`**
    - **`npm run build`** — full **Next.js production build** (`next build`).  
    - **Playwright (`npm run test:e2e`)** — browser tests against a spawned dev server, with **`TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS`** enabled for stable CI behavior in offline/ephemeral environments ([`playwright.config.ts`](../playwright.config.ts)).
 
-2. **Job `smoke-postgres`** (parallel): starts **Postgres 16** in Actions, applies **`database/migrations`**, builds the app, runs **`next start`** with **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, then **`scripts/smoke-api.mjs`** with **`SMOKE_EXPECT_POSTGRES_READY=1`**. That path hits **real Postgres** for listings and verifies **`GET /api/applications/mine`** returns **401** without a token. It then runs **`scripts/test-role-guards.mjs`** and **`scripts/test-application-pipeline.mjs`** against the same server (role gates + application board / status / candidate visibility).
+2. **Job `smoke-postgres`** (parallel): starts **Postgres 16** in Actions, applies **`database/migrations`**, builds the app, runs **`next start`** with **`TALENTBRIDGE_JOBS_POSTGRES_ONLY=1`**, then **`scripts/smoke-api.mjs`** with **`SMOKE_EXPECT_POSTGRES_READY=1`**. That path hits **real Postgres** for listings and verifies **`GET /api/applications/mine`** returns **401** without a token. It then runs **`scripts/test-role-guards.mjs`** and **`scripts/test-application-pipeline.mjs`** against the same server (role gates + application board / status / candidate visibility). Finally it runs **Playwright** with **`E2E_RUN_AUTH=1`**, **`PLAYWRIGHT_NO_WEBSERVER=1`**, and **`PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000`** so **`e2e/auth.setup.ts`** registers a throwaway candidate via **`POST /api/auth/register`**, saves **`e2e/.auth/candidate.json`**, and **`e2e/authenticated/**`** specs run against the already-started server (no duplicate dev server on port 3000).
+
+The default **`quality`** job still runs **`npm run test:e2e`** **without** **`E2E_RUN_AUTH`** (public / unauthenticated browser tests only; **`e2e/authenticated/**`** is ignored). To run authenticated E2E locally against **`npm run dev`** with Postgres in **`.env.local`**, use **`npm run test:e2e:auth`** (sets **`E2E_RUN_AUTH=1`**).
 
 You can rerun the workflow manually from GitHub (**Actions → CI → Run workflow**).
 
@@ -61,7 +63,7 @@ Scope and MVP framing (for prioritizing what merges): **`docs/TALENTBRIDGE_MVP_P
 - **Preview deployments**: keep enabled for PRs—good for QA without touching production.
 - **Ignored Build Step** (advanced): you can skip a build when a `[skip ci]` marker appears—but that can hide breakage; rely on GH checks before merge instead.
 
-Secrets for Postgres / hosted env are described in **`docs/DEPLOYMENT_ENV.md`**; CI does **not** need your production `DATABASE_URL` for **`lint`** / **`build`** / **`test:e2e`** with the current Playwright stub.
+Secrets for Postgres / hosted env are described in **`docs/DEPLOYMENT_ENV.md`**; CI **`quality`** does **not** need your production `DATABASE_URL` for **`lint`** / **`build`** / default **`test:e2e`**. The **`smoke-postgres`** job uses an ephemeral Postgres service plus job-level **`DATABASE_URL`** for API scripts and authenticated Playwright setup.
 
 ---
 
