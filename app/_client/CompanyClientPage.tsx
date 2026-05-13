@@ -15,7 +15,7 @@ export default function CompanyClientPage() {
   }, [loading, user, router]);
 
   return (
-    <div className="pt-24 min-h-screen bg-neutral-50/50">
+    <div className="pt-24 min-h-screen bg-neutral-50/50" data-testid="recruiter-dashboard-page">
       <CompanyDashboard />
     </div>
   );

@@ -139,6 +139,7 @@ export default function JobBoard() {
                 key={job.id || `job-${idx}`}
                 whileHover={{ scale: 1.01 }}
                 onClick={() => setSelectedJob(job)}
+                data-testid={`job-card-${job.id || `idx-${idx}`}`}
                 className={`p-5 rounded-2xl border cursor-pointer transition-all ${
                   selectedJob?.id === (job.id || `job-${idx}`)
                     ? "bg-blue-50 border-blue-200 shadow-md ring-1 ring-blue-100"
@@ -264,6 +265,7 @@ export default function JobBoard() {
                   type="button"
                   onClick={handleApply}
                   disabled={applying || (selectedJob.id ? appliedJobs.has(selectedJob.id) : false)}
+                  data-testid="apply-now-button"
                   className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:bg-emerald-500"
                 >
                   {applying ? "Sending..." : selectedJob.id && appliedJobs.has(selectedJob.id) ? "Application Sent" : "Apply Now"}

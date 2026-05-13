@@ -19,12 +19,21 @@ export default defineConfig({
     ? [
         { name: "setup", testMatch: "**/auth.setup.ts" },
         {
-          name: "chromium-authenticated",
+          name: "chromium-auth-candidate",
           dependencies: ["setup"],
-          testMatch: "**/authenticated/**/*.spec.ts",
+          testMatch: "**/authenticated/candidate-*.spec.ts",
           use: {
             ...devices["Desktop Chrome"],
             storageState: "e2e/.auth/candidate.json",
+          },
+        },
+        {
+          name: "chromium-auth-recruiter",
+          dependencies: ["setup"],
+          testMatch: "**/authenticated/recruiter-*.spec.ts",
+          use: {
+            ...devices["Desktop Chrome"],
+            storageState: "e2e/.auth/recruiter.json",
           },
         },
         {
@@ -50,7 +59,7 @@ export default defineConfig({
           timeout: 120_000,
           env: {
             ...process.env,
-            TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS: "1",
+            TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS: runAuth ? "0" : "1",
           },
         },
       }),
