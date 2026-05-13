@@ -32,11 +32,12 @@ export async function fetchPublicJobsPage(
   cursor?: string | null,
   categorySlug?: string | null,
   q?: string | null,
-  options?: { includeTotal?: boolean },
+  options?: { includeTotal?: boolean; jobType?: JobType | null },
 ): Promise<{ jobs: Vacancy[]; nextCursor: string | null; totalOpen?: number }> {
   const csRaw = categorySlug?.trim().toLowerCase();
   const cs = csRaw && csRaw !== "all" ? csRaw : null;
   const includeTotal = options?.includeTotal === true;
+  const jobType = options?.jobType ?? null;
 
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
@@ -44,6 +45,7 @@ export async function fetchPublicJobsPage(
     if (cs) qs.set("category", cs);
     if (q?.trim()) qs.set("q", q.trim().slice(0, 200));
     if (includeTotal) qs.set("includeTotal", "1");
+    if (jobType) qs.set("jobType", jobType);
 
     const res = await fetch(`/api/jobs?${qs.toString()}`, {
       credentials: "same-origin",
@@ -120,8 +122,9 @@ export async function fetchPublicJobsWithFallback(
   limit = 75,
   cursor?: string | null,
   categorySlug?: string | null,
+  jobType?: JobType | null,
 ) {
-  const { jobs } = await fetchPublicJobsPage(limit, cursor, categorySlug, undefined);
+  const { jobs } = await fetchPublicJobsPage(limit, cursor, categorySlug, undefined, { jobType: jobType ?? null });
   return jobs;
 }
 

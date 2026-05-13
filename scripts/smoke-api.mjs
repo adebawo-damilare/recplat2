@@ -175,6 +175,17 @@ try {
     throw new Error("GET /api/jobs: expected { jobs: array }");
   }
 
+  const firstJobId = jobs.jobs[0]?.id;
+  if (firstJobId) {
+    const detail = await fetchJson("GET", `/api/jobs/${firstJobId}`);
+    if (!detail.res.ok) {
+      throw new Error(`GET /api/jobs/${firstJobId} -> ${detail.res.status}: ${detail.text.slice(0, 200)}`);
+    }
+    if (!detail.body?.job?.id) {
+      throw new Error(`GET /api/jobs/${firstJobId}: expected { job: { id } }`);
+    }
+  }
+
   const ai = await check("ai health", "/api/ai/health");
   if (!ai || typeof ai.provider !== "string") {
     throw new Error("GET /api/ai/health: expected { provider: string }");

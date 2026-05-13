@@ -1,4 +1,5 @@
 import type { Vacancy } from "../../lib/domainTypes";
+import type { JobType } from "../../shared/jobTypes";
 import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { hasPostgresConfigured } from "../db/postgres";
 import {
@@ -26,6 +27,7 @@ export {
 export async function countOpenVacancies(
   categorySlug?: string | null,
   searchText?: string | null,
+  jobType?: JobType | null,
 ): Promise<number> {
   if (process.env.TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS === "1") {
     return 0;
@@ -33,7 +35,7 @@ export async function countOpenVacancies(
   if (!hasPostgresConfigured()) {
     throw new Error("JOBS_POSTGRES_REQUIRED");
   }
-  return countOpenVacanciesFromPostgres(categorySlug, searchText);
+  return countOpenVacanciesFromPostgres(categorySlug, searchText, jobType);
 }
 
 export async function fetchOpenVacanciesPage(
@@ -41,6 +43,7 @@ export async function fetchOpenVacanciesPage(
   cursor?: string | null,
   categorySlug?: string | null,
   searchText?: string | null,
+  jobType?: JobType | null,
 ): Promise<PaginatedVacanciesResult> {
   if (process.env.TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS === "1") {
     return { jobs: [], nextCursor: null };
@@ -49,7 +52,7 @@ export async function fetchOpenVacanciesPage(
   if (!hasPostgresConfigured()) {
     throw new Error("JOBS_POSTGRES_REQUIRED");
   }
-  return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug, searchText);
+  return fetchOpenVacanciesPageFromPostgres(limit, cursor, categorySlug, searchText, jobType);
 }
 
 export async function getOpenVacancyById(id: string): Promise<Vacancy | null> {

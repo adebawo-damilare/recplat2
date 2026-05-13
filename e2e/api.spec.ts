@@ -49,4 +49,12 @@ test.describe("Public API", () => {
     expect(body.pagination).toHaveProperty("limit");
     expect(typeof body.pagination?.nextCursor === "string" || body.pagination?.nextCursor === null).toBeTruthy();
   });
+
+  test("GET /api/jobs rejects unknown jobType filter with 400", async ({ request }) => {
+    const res = await request.get("/api/jobs?limit=1&jobType=not_a_real_type");
+    if (res.status() === 503) return;
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body?.error).toBe("Unknown jobType filter.");
+  });
 });
