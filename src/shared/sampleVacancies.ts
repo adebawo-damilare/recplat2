@@ -1,7 +1,10 @@
 /** Shared seed templates for Postgres (`db:seed:samples`, API seed). Jobs Slice v1 targets Postgres APIs only. */
 
+import type { JobType } from "./jobTypes";
+
 export interface SampleVacancySeed {
   jobTitle: string;
+  jobType: JobType;
   companyName: string;
   location: string;
   salary: string;
@@ -14,6 +17,7 @@ export const SAMPLE_VACANCY_TEMPLATES: SampleVacancySeed[] = [
   {
     categorySlug: "marketers",
     jobTitle: "Growth Marketing Lead",
+    jobType: "remote",
     companyName: "Northwind Labs",
     location: "Remote (Americas)",
     salary: "$120k - $160k",
@@ -25,6 +29,7 @@ export const SAMPLE_VACANCY_TEMPLATES: SampleVacancySeed[] = [
   {
     categorySlug: "designers",
     jobTitle: "Senior Product Designer",
+    jobType: "hybrid",
     companyName: "CreativePulse Studio",
     location: "London, UK · Hybrid",
     salary: "£70k - £90k",
@@ -36,6 +41,7 @@ export const SAMPLE_VACANCY_TEMPLATES: SampleVacancySeed[] = [
   {
     categorySlug: "sales",
     jobTitle: "Enterprise Account Executive",
+    jobType: "full_time",
     companyName: "Vertex Platforms",
     location: "Austin / Remote",
     salary: "$145k base + uncapped commission",
@@ -47,6 +53,7 @@ export const SAMPLE_VACANCY_TEMPLATES: SampleVacancySeed[] = [
   {
     categorySlug: "sales",
     jobTitle: "Revenue Partnerships Lead",
+    jobType: "full_time",
     companyName: "Harbor Freight AI",
     location: "NYC Hybrid",
     salary: "$165k base + bonuses",

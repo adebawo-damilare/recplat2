@@ -55,6 +55,7 @@ async function run() {
     description: "CI pipeline test",
     requirements: "None",
     categorySlug: "designers",
+    jobType: "full_time",
   };
 
   const { res: createRes, body: createBody } = await fetchJson("POST", "/api/jobs", {

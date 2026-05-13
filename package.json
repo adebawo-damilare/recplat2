@@ -18,6 +18,7 @@
     "db:apply:roles": "node scripts/db-apply.mjs database/migrations/0004_user_roles.sql",
     "db:apply:application-status": "node scripts/db-apply.mjs database/migrations/0005_application_status.sql",
     "db:apply:candidate-name-split": "node scripts/db-apply.mjs database/migrations/0006_candidate_name_split.sql",
+    "db:apply:job-type": "node scripts/db-apply.mjs database/migrations/0007_job_type.sql",
     "db:check:migrations": "node scripts/db-check-migrations.mjs",
     "db:check:parity": "node scripts/db-check-parity.mjs",
     "db:seed:samples": "tsx scripts/seed-neon-sample.ts",

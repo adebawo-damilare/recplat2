@@ -80,7 +80,11 @@ try {
       EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='applications' AND column_name='status'
-      ) AS applications_status
+      ) AS applications_status,
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='vacancies' AND column_name='job_type'
+      ) AS vacancies_job_type
   `;
 
   const s = shape[0];
@@ -90,6 +94,7 @@ try {
   if (s.candidate_full_name) shapeIssues.push("candidate_profiles.full_name still present");
   if (!s.users_role) shapeIssues.push("users.role missing");
   if (!s.applications_status) shapeIssues.push("applications.status missing");
+  if (!s.vacancies_job_type) shapeIssues.push("vacancies.job_type missing");
 
   if (missing.length || checksumMismatch.length || shapeIssues.length) {
     console.error("Schema migration parity check failed.");

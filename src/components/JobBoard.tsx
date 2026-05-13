@@ -10,6 +10,7 @@ import type { Vacancy } from "../lib/domainTypes";
 import { refreshTalentBridgeSession } from "../lib/authBrowser";
 import { fetchPublicJobsPage, applyToVacancyWithFallback } from "../lib/jobsApi";
 import { useTalentCategories } from "./jobs/useTalentCategories";
+import { jobTypeLabel } from "../shared/jobTypes";
 
 const PAGE_SIZE = 10;
 
@@ -159,6 +160,7 @@ export default function JobBoard() {
                   {job.category?.label ? (
                     <span className="rounded-md bg-neutral-900/5 px-2 py-0.5 text-neutral-600">{job.category.label}</span>
                   ) : null}
+                  <span className="rounded-md bg-neutral-900/5 px-2 py-0.5 text-neutral-600">{jobTypeLabel(job.jobType)}</span>
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {job.location}
                   </span>
@@ -239,8 +241,8 @@ export default function JobBoard() {
                   <span className="text-lg font-bold text-blue-600">{selectedJob.salary}</span>
                 </div>
                 <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-100 flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Work Type</span>
-                  <span className="text-lg font-bold text-neutral-900">Full-time</span>
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Work type</span>
+                  <span className="text-lg font-bold text-neutral-900">{jobTypeLabel(selectedJob.jobType)}</span>
                 </div>
               </div>
 

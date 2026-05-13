@@ -23,6 +23,7 @@ import {
 import type { CandidateProfile, Application } from "../lib/domainTypes";
 import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
 import { fetchMyCandidateProfile } from "../lib/candidatesApi";
+import { jobTypeLabel } from "../shared/jobTypes";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import {
   candidateHasDisplayableName,
@@ -182,6 +183,9 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
                         <div className="flex items-center gap-4 text-xs text-neutral-500 font-medium">
                           <span className="flex items-center gap-1"><Code className="w-3 h-3"/> {app.vacancy?.companyName}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {app.vacancy?.location}</span>
+                          {app.vacancy?.jobType ? (
+                            <span className="text-neutral-600 font-semibold">{jobTypeLabel(app.vacancy.jobType)}</span>
+                          ) : null}
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Applied {formatAppliedDate(app.appliedAt)}</span>
                         </div>
                       </div>

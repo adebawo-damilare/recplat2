@@ -29,6 +29,7 @@ import {
 } from "../lib/recruiterApplicationsApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import { formatCandidateFullName } from "../lib/candidateName";
+import { jobTypeLabel } from "../shared/jobTypes";
 import VacancyForm from './VacancyForm';
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
@@ -354,6 +355,9 @@ export default function CompanyDashboard() {
                         {v.category.label}
                       </span>
                     ) : null}
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-violet-50 text-violet-700 border border-violet-100">
+                      {jobTypeLabel(v.jobType)}
+                    </span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${
                       v.status === 'open' ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-100 text-neutral-400'
                     }`}>

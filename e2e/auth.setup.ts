@@ -40,6 +40,7 @@ setup.describe("seed sessions", () => {
         description: "Automated E2E vacancy",
         requirements: "Playwright setup",
         categorySlug: "designers",
+        jobType: "remote",
       },
     });
     expect(vacancyRes.ok(), await vacancyRes.text()).toBeTruthy();

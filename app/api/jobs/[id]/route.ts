@@ -6,6 +6,7 @@ import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateL
 import { isMvpTalentCategorySlug } from "../../../../src/shared/mvpCategories";
 import { parseCategorySlugForPatch } from "../../../../src/server/jobs/vacancyPayload";
 import { updateVacancyForOwner } from "../../../../src/server/jobs";
+import { parseJobTypeRequired } from "../../../../src/shared/jobTypes";
 import { getClientKey } from "../../../../src/server/rateLimit";
 
 type RouteParams = Promise<{ id: string }>;
@@ -31,6 +32,7 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
   const raw = await request.json();
   const body = raw as Partial<{
     jobTitle: string;
+    jobType: string;
     companyName: string;
     location: string;
     salary: string;
@@ -49,8 +51,16 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     return NextResponse.json({ error: "Unknown category slug." }, { status: 400 });
   }
 
-  const { categorySlug: _ignoredCategory, ...restFields } = body;
+  const { categorySlug: _ignoredCategory, jobType: _ignoredJobType, ...restFields } = body;
   const patch: Parameters<typeof updateVacancyForOwner>[2] = { ...restFields };
+
+  if (Object.prototype.hasOwnProperty.call(raw, "jobType")) {
+    const jt = parseJobTypeRequired((raw as { jobType?: unknown }).jobType);
+    if (jt.ok === false) {
+      return NextResponse.json({ error: jt.message }, { status: 400 });
+    }
+    patch.jobType = jt.value;
+  }
 
   if (catParsed.kind === "set") {
     patch.categorySlug = catParsed.slug;
