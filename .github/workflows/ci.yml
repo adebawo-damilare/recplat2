@@ -42,6 +42,7 @@ jobs:
         run: npm run test:e2e
         env:
           CI: "true"
+          E2E_RUN_AUTH: "0"
 
   # Real Postgres + Jobs Slice–style server flags: catches JOBS_POSTGRES_REQUIRED / migration drift
   # that Playwright’s Firestore stub does not exercise.
@@ -66,6 +67,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/smoke
       TALENTBRIDGE_AUTH_SECRET: ci_smoke_only_secret_for_auth_signing_32_chars_min
+      # next start uses NODE_ENV=production; session cookies must not be Secure-only over http://127.0.0.1 (Playwright API + browsers).
+      TALENTBRIDGE_SESSION_ALLOW_HTTP: "1"
 
     steps:
       - uses: actions/checkout@v4
