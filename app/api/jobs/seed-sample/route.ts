@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
         ownerUserId: authResult.user.userId,
         companyName: template.companyName,
         jobTitle: template.jobTitle,
+        jobType: template.jobType,
         location: template.location,
         salary: template.salary,
         description: template.description,

@@ -7,6 +7,7 @@ import { getClientKey } from "../../../src/server/rateLimit";
 import { requireTalentBridgeSession } from "../../../src/server/auth/requireSession";
 import { requireRole } from "../../../src/server/auth/requireRole";
 import { hasPostgresConfigured } from "../../../src/server/db/postgres";
+import { parseJobTypeRequired } from "../../../src/shared/jobTypes";
 
 export const revalidate = 30;
 
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const payload = body as Partial<{
     jobTitle: string;
+    jobType: string;
     companyName: string;
     location: string;
     salary: string;
@@ -152,6 +154,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Incomplete vacancy payload." }, { status: 400 });
   }
 
+  const jobTypeParse = parseJobTypeRequired(payload.jobType);
+  if (jobTypeParse.ok === false) {
+    return NextResponse.json({ error: jobTypeParse.message }, { status: 400 });
+  }
+
   const catParse = extractCategorySlugForCreate(payload as Partial<Record<string, unknown>>);
   if (!catParse.ok) {
     return NextResponse.json({ error: "categorySlug must be a string when provided." }, { status: 400 });
@@ -166,6 +173,7 @@ export async function POST(request: NextRequest) {
       ownerUserId: authResult.user.userId,
       companyName: payload.companyName.trim(),
       jobTitle: payload.jobTitle.trim(),
+      jobType: jobTypeParse.value,
       location: payload.location.trim(),
       salary: payload.salary.trim(),
       description: payload.description.trim(),

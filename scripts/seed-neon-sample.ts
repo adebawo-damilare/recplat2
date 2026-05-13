@@ -39,6 +39,7 @@ async function main() {
         ownerUserId,
         companyName: template.companyName,
         jobTitle: template.jobTitle,
+        jobType: template.jobType,
         location: template.location,
         salary: template.salary,
         description: template.description,

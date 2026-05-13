@@ -179,9 +179,10 @@ try {
       location: "Remote",
       salary: "$100k-$120k",
       description: "Created by automated production checklist run.",
-      requirements: "Attention to detail",
-      categorySlug: "designers",
-    };
+    requirements: "Attention to detail",
+    categorySlug: "designers",
+    jobType: "remote",
+  };
     const { res, body } = await fetchJson("/api/jobs", {
       method: "POST",
       headers: { cookie: recruiterCookie },
@@ -315,6 +316,7 @@ try {
         salary: "$100k",
         description: "Should fail",
         requirements: "N/A",
+        jobType: "full_time",
       }),
     });
     if (res.status === 403 && body?.code === "FORBIDDEN_ROLE") ok("POST /api/jobs (candidate forbidden)", "403 role guard");

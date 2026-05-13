@@ -133,6 +133,7 @@ async function checkRoleGuards() {
     description: "Role smoke test",
     requirements: "None",
     categorySlug: "designers",
+    jobType: "full_time",
   };
 
   const recruiterCreate = await fetchJson("POST", "/api/jobs", {

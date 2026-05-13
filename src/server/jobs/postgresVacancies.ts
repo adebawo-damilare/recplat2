@@ -1,6 +1,7 @@
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import type { Vacancy } from "../../lib/domainTypes";
+import type { JobType } from "../../shared/jobTypes";
 import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { resolveActiveCategoryIdBySlug } from "../categories/resolveActiveCategoryId";
 import { getDrizzleDb } from "../db/postgres";
@@ -131,6 +132,7 @@ export async function insertVacancyForOwner(input: {
   ownerUserId: string;
   companyName: string;
   jobTitle: string;
+  jobType: JobType;
   location: string;
   salary: string;
   description: string;
@@ -157,6 +159,7 @@ export async function insertVacancyForOwner(input: {
       categoryId,
       companyNameDenorm: input.companyName,
       jobTitle: input.jobTitle,
+      jobType: input.jobType,
       location: input.location,
       salary: input.salary,
       description: input.description,
@@ -179,6 +182,7 @@ export async function updateVacancyForOwner(
   patch: Partial<{
     companyName: string;
     jobTitle: string;
+    jobType?: JobType;
     location: string;
     salary: string;
     description: string;
@@ -223,6 +227,7 @@ export async function updateVacancyForOwner(
       companyNameDenorm,
       categoryId: nextCategoryId,
       jobTitle: patch.jobTitle ?? row.jobTitle,
+      jobType: patch.jobType !== undefined ? patch.jobType : (row.jobType as JobType),
       location: patch.location ?? row.location,
       salary: patch.salary ?? row.salary,
       description: patch.description ?? row.description,

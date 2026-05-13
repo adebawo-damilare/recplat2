@@ -6,6 +6,7 @@
 import { motion } from "motion/react";
 import type { Vacancy } from "../../lib/domainTypes";
 import { AppView } from "../../appView";
+import { jobTypeLabel } from "../../shared/jobTypes";
 
 interface HomeFeaturedVacanciesProps {
   vacancies: Vacancy[];
@@ -59,7 +60,7 @@ export default function HomeFeaturedVacancies({
                 <h4 className="text-lg font-bold mb-4">{job.jobTitle}</h4>
                 <div className="flex flex-wrap gap-2 mb-6">
                   <span className="px-2 py-1 bg-neutral-100 text-neutral-600 rounded text-[10px] font-bold uppercase">
-                    Full-time
+                    {jobTypeLabel(job.jobType)}
                   </span>
                   {job.category?.label ? (
                     <span className="px-2 py-1 bg-purple-50 text-purple-700 border border-purple-100 rounded text-[10px] font-bold uppercase">

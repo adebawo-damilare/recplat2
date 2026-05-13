@@ -3,11 +3,13 @@
  */
 
 import type { Vacancy } from "./domainTypes";
+import type { JobType } from "../shared/jobTypes";
 import { refreshTalentBridgeSession } from "./authBrowser";
 import { isBrowserJobsPostgresOnly, shouldFallbackToFirestoreForJobsApi } from "./talentBridgeApiMode";
 
 export type VacancyWritePayload = {
   jobTitle: string;
+  jobType: JobType;
   companyName: string;
   location: string;
   salary: string;
@@ -97,6 +99,7 @@ export async function fetchMyVacanciesWithFallback(): Promise<Vacancy[]> {
 function buildVacancyWriteJson(payload: VacancyWritePayload): Record<string, unknown> {
   const base = {
     jobTitle: payload.jobTitle,
+    jobType: payload.jobType,
     companyName: payload.companyName,
     location: payload.location,
     salary: payload.salary,

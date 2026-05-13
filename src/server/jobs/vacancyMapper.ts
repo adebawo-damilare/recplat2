@@ -1,4 +1,5 @@
 import type { Vacancy } from "../../lib/domainTypes";
+import type { JobType } from "../../shared/jobTypes";
 import type { vacancies } from "../schema";
 
 type VacancyRow = typeof vacancies.$inferSelect;
@@ -10,6 +11,7 @@ export function mapPostgresVacancyRow(
   return {
     id: row.id,
     jobTitle: row.jobTitle,
+    jobType: row.jobType as JobType,
     companyName: row.companyNameDenorm,
     location: row.location,
     salary: row.salary,

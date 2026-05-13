@@ -12,6 +12,7 @@ export const vacancies = pgTable(
     categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
     companyNameDenorm: text("company_name_denorm").notNull(),
     jobTitle: text("job_title").notNull(),
+    jobType: text("job_type").notNull().default("full_time"),
     location: text("location").notNull(),
     salary: text("salary").notNull(),
     description: text("description").notNull(),

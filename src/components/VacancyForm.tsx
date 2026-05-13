@@ -5,10 +5,12 @@
 
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { X, Briefcase, MapPin, DollarSign, FileText, CheckCircle, Building2 } from "lucide-react";
+import { X, Briefcase, MapPin, DollarSign, FileText, CheckCircle, Building2, Clock } from "lucide-react";
 import type { Vacancy } from "../lib/domainTypes";
+import type { JobType } from "../shared/jobTypes";
 import { persistVacancyWithFallback } from "../lib/jobsApi";
 import { VacancyCategoryField } from "./vacancies/VacancyCategoryField";
+import { JOB_TYPE_OPTIONS } from "../shared/jobTypes";
 
 interface VacancyFormProps {
   vacancy?: Vacancy;
@@ -26,6 +28,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
     description: vacancy?.description || "",
     requirements: vacancy?.requirements || "",
     categorySlug: vacancy?.category?.slug ?? "",
+    jobType: vacancy?.jobType ?? "full_time",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +48,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
       await persistVacancyWithFallback(
         {
           jobTitle: formData.jobTitle,
+          jobType: formData.jobType,
           companyName: formData.companyName,
           location: formData.location,
           salary: formData.salary,
@@ -83,6 +87,24 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
             value={formData.categorySlug}
             onChange={(slug) => setFormData({ ...formData, categorySlug: slug })}
           />
+          <div className="space-y-2">
+            <label className="text-sm font-bold flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-600" /> Job type
+            </label>
+            <select
+              required
+              value={formData.jobType}
+              onChange={(e) => setFormData({ ...formData, jobType: e.target.value as JobType })}
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium bg-white"
+            >
+              {JOB_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-bold flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-blue-600" /> Job Title

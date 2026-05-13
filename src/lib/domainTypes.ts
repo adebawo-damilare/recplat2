@@ -2,6 +2,8 @@
  * TalentBridge domain shapes shared by UI and Postgres-backed APIs (no Firebase).
  */
 
+import type { JobType } from "../shared/jobTypes";
+
 export interface CandidateProfile {
   firstName: string;
   lastName: string;
@@ -25,6 +27,7 @@ export interface VacancyCategorySummary {
 export interface Vacancy {
   id?: string;
   jobTitle: string;
+  jobType: JobType;
   companyName: string;
   location: string;
   salary: string;

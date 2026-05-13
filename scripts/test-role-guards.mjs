@@ -67,6 +67,7 @@ async function run() {
     description: "Role guard CI check",
     requirements: "None",
     categorySlug: "designers",
+    jobType: "full_time",
   };
 
   const recruiterCreate = await fetchJson("POST", "/api/jobs", {
