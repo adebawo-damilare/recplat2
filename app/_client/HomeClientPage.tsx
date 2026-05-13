@@ -5,20 +5,22 @@ import { useRouter } from "next/navigation";
 import HomePage from "../../src/components/home/HomePage";
 import { AppView } from "../../src/appView";
 import type { Vacancy } from "../../src/lib/domainTypes";
-import { fetchPublicJobsWithFallback } from "../../src/lib/jobsApi";
+import { fetchHomeFeaturedJobs } from "../../src/lib/jobsApi";
 import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 
 export default function HomeClientPage() {
   const router = useRouter();
   const { user } = useTalentBridgeUser();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [totalOpenVacancies, setTotalOpenVacancies] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchVacancies = async () => {
     setLoading(true);
     try {
-      const data = await fetchPublicJobsWithFallback(75);
-      setVacancies(data);
+      const { jobs, totalOpen } = await fetchHomeFeaturedJobs();
+      setVacancies(jobs);
+      setTotalOpenVacancies(totalOpen);
     } catch (error) {
       console.error("Failed to fetch vacancies", error);
     } finally {
@@ -59,7 +61,12 @@ export default function HomeClientPage() {
 
   return (
     <div className="pt-0">
-      <HomePage vacancies={vacancies} loading={loading} onNavigate={(v) => router.push(routeForView(v))} />
+      <HomePage
+        vacancies={vacancies}
+        totalOpenVacancies={totalOpenVacancies}
+        loading={loading}
+        onNavigate={(v) => router.push(routeForView(v))}
+      />
     </div>
   );
 }

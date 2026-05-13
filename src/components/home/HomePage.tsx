@@ -12,12 +12,14 @@ import HomeFeaturedVacancies from "./HomeFeaturedVacancies";
 
 interface HomePageProps {
   vacancies: Vacancy[];
+  totalOpenVacancies: number;
   loading: boolean;
   onNavigate: (view: AppView) => void;
 }
 
 export default function HomePage({
   vacancies,
+  totalOpenVacancies,
   loading,
   onNavigate,
 }: HomePageProps) {
@@ -31,7 +33,12 @@ export default function HomePage({
     >
       <HomeHero onNavigate={onNavigate} />
       <HomeAudience onNavigate={onNavigate} />
-      <HomeFeaturedVacancies vacancies={vacancies} loading={loading} onNavigate={onNavigate} />
+      <HomeFeaturedVacancies
+        vacancies={vacancies}
+        totalOpen={totalOpenVacancies}
+        loading={loading}
+        onNavigate={onNavigate}
+      />
     </motion.div>
   );
 }
