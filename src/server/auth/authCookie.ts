@@ -1,5 +1,11 @@
 export const TALENTBRIDGE_SESSION_COOKIE = "talentbridge_session";
 
+/** When set to "1", omit Secure on session cookies (local HTTP / CI `next start` over http://127.0.0.1). Never set in production HTTPS. */
+function sessionCookieSecureFlag(): boolean {
+  if (process.env.TALENTBRIDGE_SESSION_ALLOW_HTTP === "1") return false;
+  return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
 export function parseCookie(header: string | null, name: string): string | undefined {
   if (!header?.trim()) return undefined;
   for (const part of header.split(";")) {
@@ -15,7 +21,7 @@ export function parseCookie(header: string | null, name: string): string | undef
 
 /** Set-Cookie for HttpOnly JWT session */
 export function buildSessionSetCookie(token: string, maxAgeSeconds: number): string {
-  const secure = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const secure = sessionCookieSecureFlag();
   const parts = [
     `${TALENTBRIDGE_SESSION_COOKIE}=${encodeURIComponent(token)}`,
     "Path=/",
@@ -29,7 +35,7 @@ export function buildSessionSetCookie(token: string, maxAgeSeconds: number): str
 
 /** Clear cookie */
 export function buildSessionClearCookie(): string {
-  const secure = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const secure = sessionCookieSecureFlag();
   const parts = [`${TALENTBRIDGE_SESSION_COOKIE}=`, "Path=/", "HttpOnly", "Max-Age=0", "SameSite=Lax"];
   if (secure) parts.push("Secure");
   return parts.join("; ");
