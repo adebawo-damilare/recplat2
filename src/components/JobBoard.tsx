@@ -9,6 +9,7 @@ import { Search, MapPin, Briefcase, DollarSign, ChevronRight, ChevronLeft, X } f
 import type { Vacancy } from "../lib/domainTypes";
 import { refreshTalentBridgeSession } from "../lib/authBrowser";
 import { fetchPublicJobsPage, applyToVacancyWithFallback } from "../lib/jobsApi";
+import { talentBridgeUiNotify } from "../lib/talentBridgeUiNotify";
 import { useTalentCategories } from "./jobs/useTalentCategories";
 import type { JobBoardSyncedQuery } from "./jobs/jobBoardSyncedQueryTypes";
 import type { JobType } from "../shared/jobTypes";
@@ -94,7 +95,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const handleApply = async () => {
     const u = await refreshTalentBridgeSession();
     if (!u) {
-      alert("Please sign in to apply for jobs.");
+      talentBridgeUiNotify("Please sign in to apply for jobs.");
       return;
     }
     if (!selectedJob?.id) return;
@@ -104,7 +105,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
       const ok = await applyToVacancyWithFallback(selectedJob.id);
       if (ok) {
         setAppliedJobs((prev) => new Set(prev).add(selectedJob.id!));
-        alert("Application sent successfully!");
+        talentBridgeUiNotify("Application sent successfully!");
       }
     } catch (error) {
       console.error("Failed to apply", error);

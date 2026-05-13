@@ -40,7 +40,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 ## Next
 
-**Near term (Jobs Slice UX / quality):** Playwright for **`/jobs/[id]`** is in **`e2e/authenticated/candidate-job-detail.spec.ts`** (UI load + **`POST /api/applications`** via `page.request` with the candidate storage state); expand **`e2e/api.spec.ts`** as new public query params ship.
+**Near term (Jobs Slice UX / quality):** Playwright for **`/jobs/[id]`** is in **`e2e/authenticated/candidate-job-detail.spec.ts`** (real **Apply** click + **`POST /api/applications`**; `window.__TALENTBRIDGE_E2E_NO_ALERTS` avoids blocking `alert()` in automation). Expand **`e2e/api.spec.ts`** as new public query params ship.
 
 **Authenticated E2E (Playwright):** run locally with **`npm run test:e2e:auth`** when **`.env.local`** has **`DATABASE_URL`** + **`TALENTBRIDGE_AUTH_SECRET`** (Next loads them for **`npm run dev`**). CI runs the same path in **`smoke-postgres`** after **`E2E_RUN_AUTH=1`** (see **`docs/CICD.md`**). Add specs under **`e2e/authenticated/`** (e.g. apply-to-job against a known vacancy, recruiter listing); session seeding lives in **`e2e/auth.setup.ts`**.
 

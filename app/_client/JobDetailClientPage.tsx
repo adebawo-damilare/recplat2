@@ -6,6 +6,7 @@ import { Briefcase, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
 import type { Vacancy } from "../../src/lib/domainTypes";
 import { refreshTalentBridgeSession } from "../../src/lib/authBrowser";
 import { applyToVacancyWithFallback } from "../../src/lib/jobsApi";
+import { talentBridgeUiNotify } from "../../src/lib/talentBridgeUiNotify";
 import { jobTypeLabel } from "../../src/shared/jobTypes";
 
 export default function JobDetailClientPage({ job }: { job: Vacancy }) {
@@ -15,7 +16,7 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
   const handleApply = async () => {
     const u = await refreshTalentBridgeSession();
     if (!u) {
-      alert("Please sign in to apply for jobs.");
+      talentBridgeUiNotify("Please sign in to apply for jobs.");
       return;
     }
     if (!job.id) return;
@@ -24,7 +25,7 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
       const ok = await applyToVacancyWithFallback(job.id);
       if (ok) {
         setApplied(true);
-        alert("Application sent successfully!");
+        talentBridgeUiNotify("Application sent successfully!");
       }
     } catch (e) {
       console.error(e);

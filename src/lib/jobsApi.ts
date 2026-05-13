@@ -5,6 +5,7 @@
 import type { Vacancy } from "./domainTypes";
 import type { JobType } from "../shared/jobTypes";
 import { refreshTalentBridgeSession } from "./authBrowser";
+import { talentBridgeUiNotify } from "./talentBridgeUiNotify";
 import { isBrowserJobsPostgresOnly, shouldFallbackToFirestoreForJobsApi } from "./talentBridgeApiMode";
 
 export type VacancyWritePayload = {
@@ -246,7 +247,7 @@ export async function closeVacancyWithFallback(id: string) {
 export async function applyToVacancyWithFallback(vacancyId: string): Promise<boolean> {
   const signedIn = await ensureSignedIn();
   if (!signedIn) {
-    alert("Please sign in to apply for jobs.");
+    talentBridgeUiNotify("Please sign in to apply for jobs.");
     return false;
   }
 
@@ -262,7 +263,7 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<boo
       return true;
     }
     if (!shouldFallback(res.status, raw)) {
-      alert("Unable to apply right now.");
+      talentBridgeUiNotify("Unable to apply right now.");
       return false;
     }
   } catch (error) {
@@ -270,10 +271,10 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<boo
   }
 
   if (isBrowserJobsPostgresOnly()) {
-    alert("Applications require Postgres + API.");
+    talentBridgeUiNotify("Applications require Postgres + API.");
     return false;
   }
 
-  alert("Unable to apply right now.");
+  talentBridgeUiNotify("Unable to apply right now.");
   return false;
 }
