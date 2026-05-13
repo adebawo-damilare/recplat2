@@ -17,7 +17,8 @@ test.describe("Marketing shell / navigation", () => {
 
   test("talent route shows sign-in when logged out (board after auth)", async ({ page }) => {
     await page.goto("/talent", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByTestId("talent-sign-in-gate")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("sign-in-heading")).toHaveText("Sign In");
     await expect(page.getByText(/stored securely in Postgres/i)).toBeVisible();
     await expect(page.getByTestId("nav-find-candidates")).toBeVisible();
   });

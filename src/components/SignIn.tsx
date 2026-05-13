@@ -63,12 +63,13 @@ export default function SignIn({ onSuccess, onCancel }: SignInProps) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-neutral-100 overflow-hidden"
+        data-testid="sign-in-card"
       >
         <div className="p-8 pb-4 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 mb-6">
             <LogIn className="w-8 h-8 text-blue-600" />
           </div>
-          <h2 className="text-3xl font-bold tracking-tight mb-2">
+          <h2 className="text-3xl font-bold tracking-tight mb-2" data-testid="sign-in-heading">
             {emailMode === "signin" ? "Sign In" : "Create Account"}
           </h2>
           <p className="text-neutral-500">Use your email and password — stored securely in Postgres.</p>
