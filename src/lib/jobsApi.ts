@@ -32,15 +32,18 @@ export async function fetchPublicJobsPage(
   cursor?: string | null,
   categorySlug?: string | null,
   q?: string | null,
-): Promise<{ jobs: Vacancy[]; nextCursor: string | null }> {
+  options?: { includeTotal?: boolean },
+): Promise<{ jobs: Vacancy[]; nextCursor: string | null; totalOpen?: number }> {
   const csRaw = categorySlug?.trim().toLowerCase();
   const cs = csRaw && csRaw !== "all" ? csRaw : null;
+  const includeTotal = options?.includeTotal === true;
 
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
     if (cursor) qs.set("cursor", cursor);
     if (cs) qs.set("category", cs);
     if (q?.trim()) qs.set("q", q.trim().slice(0, 200));
+    if (includeTotal) qs.set("includeTotal", "1");
 
     const res = await fetch(`/api/jobs?${qs.toString()}`, {
       credentials: "same-origin",
@@ -50,13 +53,16 @@ export async function fetchPublicJobsPage(
     const raw = (await res.json().catch(() => ({}))) as {
       jobs?: Vacancy[];
       code?: string;
+      totalOpen?: number;
       pagination?: { nextCursor?: string | null };
     };
 
     if (res.ok) {
+      const jobs = raw.jobs ?? [];
       return {
-        jobs: raw.jobs ?? [],
+        jobs,
         nextCursor: raw.pagination?.nextCursor ?? null,
+        ...(includeTotal && typeof raw.totalOpen === "number" ? { totalOpen: raw.totalOpen } : {}),
       };
     }
 
@@ -68,6 +74,28 @@ export async function fetchPublicJobsPage(
   }
 
   return { jobs: [], nextCursor: null };
+}
+
+/** Home hero: up to 6 open jobs plus total count for "n of N | Explore all jobs". */
+export const HOME_FEATURED_JOB_LIMIT = 6;
+
+export async function fetchHomeFeaturedJobs(): Promise<{ jobs: Vacancy[]; totalOpen: number }> {
+  try {
+    const { jobs, totalOpen } = await fetchPublicJobsPage(
+      HOME_FEATURED_JOB_LIMIT,
+      null,
+      null,
+      undefined,
+      { includeTotal: true },
+    );
+    return {
+      jobs: jobs ?? [],
+      totalOpen: typeof totalOpen === "number" ? totalOpen : jobs.length,
+    };
+  } catch (error) {
+    console.warn("[jobsApi] fetchHomeFeaturedJobs failed", error);
+  }
+  return { jobs: [], totalOpen: 0 };
 }
 
 export async function fetchPublicJobsWithFallback(

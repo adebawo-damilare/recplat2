@@ -16,7 +16,10 @@ export default function TalentClientPage() {
 
   if (loading) {
     return (
-      <div className="pt-24 min-h-screen bg-neutral-50/50 flex items-center justify-center">
+      <div
+        className="pt-24 min-h-screen bg-neutral-50/50 flex items-center justify-center"
+        data-testid="talent-page-loading"
+      >
         <p className="text-neutral-500 text-sm font-medium">Loading…</p>
       </div>
     );
@@ -24,14 +27,14 @@ export default function TalentClientPage() {
 
   if (!user) {
     return (
-      <div className="pt-24 min-h-screen bg-neutral-50/50">
+      <div className="pt-24 min-h-screen bg-neutral-50/50" data-testid="talent-sign-in-gate">
         <SignIn onSuccess={() => void refresh()} onCancel={() => router.push("/")} />
       </div>
     );
   }
 
   return (
-    <div className="pt-24 min-h-screen bg-neutral-50/50">
+    <div className="pt-24 min-h-screen bg-neutral-50/50" data-testid="talent-board-root">
       <TalentBoard onViewPortfolio={(candidate) => setPortfolioCandidate(candidate)} />
       {portfolioCandidate && (
         <PortfolioViewer

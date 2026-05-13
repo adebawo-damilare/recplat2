@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "motion/react";
 import type { Vacancy, CandidateProfile, TalentBridgeUser } from "./lib/domainTypes";
 import { refreshTalentBridgeSession, logoutTalentBridgeSession } from "./lib/authBrowser";
-import { fetchPublicJobsWithFallback } from "./lib/jobsApi";
+import { fetchHomeFeaturedJobs } from "./lib/jobsApi";
 import CandidateForm from "./components/CandidateForm";
 import JobBoard from "./components/JobBoard";
 import TalentBoard from "./components/TalentBoard";
@@ -25,14 +25,16 @@ export default function App() {
   const [view, setView] = useState<AppView>(AppView.HOME);
   const [user, setUser] = useState<TalentBridgeUser | null>(null);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [totalOpenVacancies, setTotalOpenVacancies] = useState(0);
   const [loading, setLoading] = useState(true);
   const [portfolioCandidate, setPortfolioCandidate] = useState<CandidateProfile | null>(null);
 
   const fetchVacancies = async () => {
     setLoading(true);
     try {
-      const data = await fetchPublicJobsWithFallback(75);
-      setVacancies(data);
+      const { jobs, totalOpen } = await fetchHomeFeaturedJobs();
+      setVacancies(jobs);
+      setTotalOpenVacancies(totalOpen);
     } catch (error) {
       console.error("Failed to fetch vacancies", error);
     } finally {
@@ -88,7 +90,12 @@ export default function App() {
 
       <AnimatePresence mode="wait">
         {view === AppView.HOME && (
-          <HomePage vacancies={vacancies} loading={loading} onNavigate={navigateTo} />
+          <HomePage
+            vacancies={vacancies}
+            totalOpenVacancies={totalOpenVacancies}
+            loading={loading}
+            onNavigate={navigateTo}
+          />
         )}
 
         {view === AppView.JOIN_CANDIDATE && (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isMvpTalentCategorySlug } from "../../../src/shared/mvpCategories";
-import { fetchOpenVacanciesPage, insertVacancyForOwner } from "../../../src/server/jobs";
+import { fetchOpenVacanciesPage, insertVacancyForOwner, countOpenVacancies } from "../../../src/server/jobs";
 import { extractCategorySlugForCreate } from "../../../src/server/jobs/vacancyPayload";
 import { enforceJobsApiRateLimit } from "../../../src/server/distributedRateLimit";
 import { getClientKey } from "../../../src/server/rateLimit";
@@ -45,19 +45,32 @@ export async function GET(request: NextRequest) {
   }
 
   const qParam = request.nextUrl.searchParams.get("q")?.trim().slice(0, 200) || null;
+  const includeTotal = request.nextUrl.searchParams.get("includeTotal") === "1";
 
   try {
-    const { jobs, nextCursor } = await fetchOpenVacanciesPage(
-      limitParam,
-      cursor,
-      categorySlug,
-      qParam,
-    );
+    let jobs: Awaited<ReturnType<typeof fetchOpenVacanciesPage>>["jobs"];
+    let nextCursor: string | null;
+    let totalOpen: number | undefined;
+
+    if (includeTotal) {
+      const [page, total] = await Promise.all([
+        fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam),
+        countOpenVacancies(categorySlug, qParam),
+      ]);
+      jobs = page.jobs;
+      nextCursor = page.nextCursor;
+      totalOpen = total;
+    } else {
+      const page = await fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam);
+      jobs = page.jobs;
+      nextCursor = page.nextCursor;
+    }
 
     return NextResponse.json(
       {
         jobs,
         count: jobs.length,
+        ...(includeTotal && totalOpen !== undefined ? { totalOpen } : {}),
         pagination: {
           nextCursor,
           limit: Math.max(1, Math.min(limitParam, 50)),

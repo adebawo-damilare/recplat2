@@ -1,6 +1,7 @@
 import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { hasPostgresConfigured } from "../db/postgres";
 import {
+  countOpenVacanciesFromPostgres,
   fetchOpenVacanciesPageFromPostgres,
   getVacancyById,
   insertVacancyForOwner,
@@ -11,6 +12,7 @@ import {
 
 export type { PaginatedVacanciesResult };
 export {
+  countOpenVacanciesFromPostgres,
   fetchOpenVacanciesPageFromPostgres,
   getVacancyById,
   insertVacancyForOwner,
@@ -18,6 +20,19 @@ export {
   recordApplicationPostgres,
   updateVacancyForOwner,
 };
+
+export async function countOpenVacancies(
+  categorySlug?: string | null,
+  searchText?: string | null,
+): Promise<number> {
+  if (process.env.TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS === "1") {
+    return 0;
+  }
+  if (!hasPostgresConfigured()) {
+    throw new Error("JOBS_POSTGRES_REQUIRED");
+  }
+  return countOpenVacanciesFromPostgres(categorySlug, searchText);
+}
 
 export async function fetchOpenVacanciesPage(
   limit: number,

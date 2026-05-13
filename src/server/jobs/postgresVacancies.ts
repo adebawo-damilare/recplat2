@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import type { Vacancy } from "../../lib/domainTypes";
 import type { JobType } from "../../shared/jobTypes";
@@ -99,6 +99,48 @@ export async function fetchOpenVacanciesPageFromPostgres(
   }
 
   return { jobs, nextCursor };
+}
+
+/** Count open vacancies matching the same filters as {@link fetchOpenVacanciesPageFromPostgres} (no cursor). */
+export async function countOpenVacanciesFromPostgres(
+  categorySlug?: string | null,
+  searchText?: string | null,
+): Promise<number> {
+  const db = getDrizzleDb();
+  const slugFilter = categorySlug?.trim().toLowerCase();
+  const qRaw = searchText?.trim();
+
+  if (!slugFilter && (!qRaw || qRaw.length === 0)) {
+    const [row] = await db
+      .select({ n: count() })
+      .from(vacancies)
+      .where(eq(vacancies.status, "open"));
+    return Number(row?.n ?? 0);
+  }
+
+  const conditions = [eq(vacancies.status, "open")];
+  if (slugFilter) {
+    conditions.push(eq(categories.slug, slugFilter));
+  }
+  if (qRaw && qRaw.length > 0) {
+    const pattern = `%${escapeIlikeFragment(qRaw.slice(0, 200))}%`;
+    conditions.push(
+      or(
+        ilike(vacancies.jobTitle, pattern),
+        ilike(vacancies.companyNameDenorm, pattern),
+        ilike(vacancies.description, pattern),
+      )!,
+    );
+  }
+  const nextWhere = and(...conditions)!;
+
+  const [row] = await db
+    .select({ n: count() })
+    .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .where(nextWhere);
+
+  return Number(row?.n ?? 0);
 }
 
 async function findCompanyByOwnerAndName(ownerUserId: string, name: string) {

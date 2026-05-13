@@ -22,6 +22,16 @@ test.describe("Public API", () => {
     expect(["POSTGRES_UNAVAILABLE", "AUTH_UNAVAILABLE"]).toContain(body?.code);
   });
 
+  test("GET /api/jobs?includeTotal=1 returns totalOpen when jobs API is available", async ({ request }) => {
+    const res = await request.get("/api/jobs?limit=6&includeTotal=1");
+    if (res.status() === 503) return;
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body).toHaveProperty("jobs");
+    expect(typeof body.totalOpen).toBe("number");
+    expect(body.totalOpen).toBeGreaterThanOrEqual(body.jobs.length);
+  });
+
   test("GET /api/jobs returns pagination metadata for limit=10", async ({ request }) => {
     const res = await request.get("/api/jobs?limit=10");
     expect(res.ok()).toBeTruthy();
