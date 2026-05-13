@@ -15,6 +15,12 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page.getByTestId("app-nav").getByRole("link", { name: "Find Jobs" })).toBeVisible();
   });
 
+  test("jobs page hydrates jobType from URL query", async ({ page }) => {
+    await page.goto("/jobs?jobType=hybrid", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("job-board")).toBeVisible();
+    await expect(page.getByTestId("job-board-job-type-filter")).toHaveValue("hybrid");
+  });
+
   test("talent route shows sign-in when logged out (board after auth)", async ({ page }) => {
     await page.goto("/talent", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("talent-sign-in-gate")).toBeVisible({ timeout: 30_000 });

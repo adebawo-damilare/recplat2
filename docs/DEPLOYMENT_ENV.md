@@ -145,7 +145,7 @@ SMOKE_EXPECT_POSTGRES_READY=1 SMOKE_BASE_URL=https://your-deployment.vercel.app 
 
 Default `SMOKE_BASE_URL` targets `http://localhost:3000` if omitted.
 
-This hits **`GET /api/health`**, **`GET /api/categories`**, **`GET /api/jobs`**, **`GET /api/ai/health`**, and **`GET /api/applications/mine`** (no token). Strict mode (**`SMOKE_EXPECT_POSTGRES_READY=1`**) also requires **`postgresConfigured: true`** on **`/api/ai/health`**.
+This hits **`GET /api/health`**, **`GET /api/categories`**, **`GET /api/jobs`**, **`GET /api/jobs/{id}`** when the list returns an id, **`GET /api/ai/health`**, and **`GET /api/applications/mine`** (no token). Strict mode (**`SMOKE_EXPECT_POSTGRES_READY=1`**) also requires **`postgresConfigured: true`** on **`/api/ai/health`**.
 
 ---
 

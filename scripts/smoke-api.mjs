@@ -11,6 +11,8 @@
  *
  * Vercel Deployment Protection bypass (optional — same secret as automation bypass docs):
  *   VERCEL_AUTOMATION_BYPASS_SECRET=... npm run smoke:api
+ *
+ * When the jobs list returns at least one id, also GETs /api/jobs/{id} (open vacancy detail).
  */
 /** Default localhost (not 127.0.0.1): Node fetch on some Windows setups hangs on IPv4 loopback.) */
 const base = (process.env.SMOKE_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");

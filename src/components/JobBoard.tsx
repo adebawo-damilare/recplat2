@@ -143,6 +143,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
         </div>
         <select
           aria-label="Filter by talent lane"
+          data-testid="job-board-lane-filter"
           className="px-6 py-4 bg-white border border-neutral-200 rounded-2xl font-bold text-neutral-800 hover:bg-neutral-50 transition-colors cursor-pointer min-w-[200px]"
           value={laneFilter}
           onChange={(e) => {

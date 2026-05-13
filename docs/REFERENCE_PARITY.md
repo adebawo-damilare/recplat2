@@ -2,7 +2,7 @@
 
 The nested **`recruit/`** tree is a **pattern reference only** (not a second product UI). This document tracks what we **adopted** in TalentBridge (`recruit2`) versus what the reference implements in full, so expectations stay clear as we add features.
 
-**Last reviewed:** 2026-05-10 (categories + **`docs/TALENTBRIDGE_MVP_PLAN.md`**; update this line when the table changes materially).
+**Last reviewed:** 2026-05-13 (public job detail + list filters + smoke; update this line when the table changes materially).
 
 ---
 
@@ -18,6 +18,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 | AI | Provider switch + server-side audit | `TALENTBRIDGE_AI_PROVIDER`, `src/server/ai/*`, `ai_audit_events` |
 | Ops | DB apply, smoke | `npm run db:apply`, `npm run smoke:api`, `npm run db:seed:samples` |
 | Reads | Postgres API-backed listings and applications | Jobs Slice v1 **production** sets **`TALENTBRIDGE_JOBS_POSTGRES_ONLY`** + **`NEXT_PUBLIC_TALENTBRIDGE_JOBS_POSTGRES_ONLY`** for strict behavior (**`docs/MVP_JOBS_SLICE_V1.md`**) |
+| Public reads | Job listings + detail | **`GET /api/jobs`** (filters, cursor, `includeTotal`), **`GET /api/jobs/[id]`** (open vacancies only), **`/jobs/[id]`** |
 | UI | N/A | **We do not copy reference UI** — only TalentBridge components |
 | CI | N/A (added for this repo) | `.github/workflows/ci.yml` — see `docs/CICD.md` |
 

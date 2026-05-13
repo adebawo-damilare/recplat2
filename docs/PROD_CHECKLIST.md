@@ -29,7 +29,8 @@ That is why **`ALLOW_PROD_CHECKLIST_MUTATIONS=1`** exists when `PROD_CHECKLIST_O
 
 - [ ] `GET /api/health` returns `200` and `ok: true`
 - [ ] `GET /api/jobs?limit=5` returns `200` with `jobs`
-- [ ] `GET /api/jobs?limit=10` (optional `q=` search) returns `200` with `pagination.nextCursor` when more pages exist
+- [ ] `GET /api/jobs?limit=10` (optional `q=` search, `jobType=`, `includeTotal=1`) returns `200` with `pagination.nextCursor` when more pages exist
+- [ ] `GET /api/jobs/{uuid}` returns `200` with `job` for an **open** vacancy id from the list (or `404` + `NOT_FOUND` for a bogus id)
 - [ ] `GET /api/categories` returns `200` with categories
 - [ ] `GET /api/candidates` without a session returns **`401`** (listing is authenticated; supports `limit`, `offset`, optional `q`)
 
