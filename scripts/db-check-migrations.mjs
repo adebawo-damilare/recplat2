@@ -99,7 +99,19 @@ try {
   if (missing.length || checksumMismatch.length || shapeIssues.length) {
     console.error("Schema migration parity check failed.");
     if (missing.length) console.error("Missing migrations:", missing.join(", "));
-    if (checksumMismatch.length) console.error("Checksum mismatch:", checksumMismatch.join(", "));
+    if (checksumMismatch.length) {
+      console.error("Checksum mismatch:", checksumMismatch.join(", "));
+      for (const file of checksumMismatch) {
+        const expected = sha256(readFileSync(join(migrationsDir, file), "utf8"));
+        const actual = byFile.get(file);
+        console.error(`  ${file}: stored=${actual}`);
+        console.error(`  ${file}:  disk=${expected}`);
+      }
+      console.error(
+        "Hint: if the database schema already matches (see shape errors above), align checksums with:",
+        "npm run db:repair-migration-checksums",
+      );
+    }
     if (shapeIssues.length) console.error("Schema shape issues:", shapeIssues.join("; "));
     process.exit(1);
   }

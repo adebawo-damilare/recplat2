@@ -18,6 +18,19 @@ npm run db:check:migrations
 
 `db:apply` applies all files in `database/migrations` in filename order and records each run in `schema_migrations` (`filename`, `checksum`, `applied_at`).
 
+### Checksum mismatch after editing an old migration file
+
+If `db:check:migrations` reports a **checksum mismatch** (often for `0001_initial.sql`) but **schema shape** checks pass, the database was likely applied from an older revision of that SQL file. Re-running `0001` SQL on a live database is risky. Prefer **reconciling only the recorded checksum** to match the current file (no DDL executed):
+
+```bash
+npm run db:repair-migration-checksums
+npm run db:check:migrations
+```
+
+Dry run: `REPAIR_MIGRATION_CHECKSUMS_DRY_RUN=1 npm run db:repair-migration-checksums`
+
+Do **not** use this if you changed migration DDL in a way that was **never** applied to the database; in that case add a **new** forward migration instead.
+
 `0004_user_roles.sql` adds `users.role`. `0005_application_status.sql` adds `applications.status` for the recruiter pipeline.
 
 `0006_candidate_name_split.sql` replaces `candidate_profiles.full_name` with **`first_name`** and **`last_name`** (existing rows are migrated automatically).
@@ -30,10 +43,12 @@ Use explicit env-targeted commands so migrations are applied to the correct Neon
 # Preview/local target (.env.local)
 npm run release:preview:db:apply
 npm run release:preview:db:check:migrations
+# If checksum drift only (schema already correct): npm run release:preview:db:repair-migration-checksums
 
 # Production target (.env.release)
 npm run release:prod:db:apply
 npm run release:prod:db:check:migrations
+# If checksum drift only: npm run release:prod:db:repair-migration-checksums
 ```
 
 Optional parity diff between two DBs (for example preview vs prod):
@@ -55,6 +70,7 @@ psql "$DATABASE_URL" -f database/migrations/0003_users_auth.sql
 psql "$DATABASE_URL" -f database/migrations/0004_user_roles.sql
 psql "$DATABASE_URL" -f database/migrations/0005_application_status.sql
 psql "$DATABASE_URL" -f database/migrations/0006_candidate_name_split.sql
+psql "$DATABASE_URL" -f database/migrations/0007_job_type.sql
 ```
 
 On Windows PowerShell you can use `psql` from PostgreSQL tools, or run the same statements in the host SQL editor.
