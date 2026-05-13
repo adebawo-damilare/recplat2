@@ -26,7 +26,7 @@ This document captures how we applied the **“categories as templates”** idea
 
 - **`src/lib/jobsApi.ts`** — passes `category`, `q`, `jobType`, and optional `includeTotal` to **`GET /api/jobs`**; **`fetchPublicJobById`** for **`GET /api/jobs/[id]`**; client behavior is API-only.
 - **`VacancyCategoryField`** — recruiter vacancy form lane selector.
-- **Job board** — lane + work-arrangement dropdowns + badges on listings; on Next **`/jobs`**, **`category`** + **`jobType`** sync to the URL for shareable filters (search text stays client-only).
+- **Job board** — lane + work-arrangement dropdowns + badges on listings; on Next **`/jobs`**, **`category`**, **`jobType`**, and **`q`** sync to the URL (see `app/_client/useJobBoardQuerySync.ts` for typing-safe `q` behaviour).
 
 ## Next steps (not built here)
 

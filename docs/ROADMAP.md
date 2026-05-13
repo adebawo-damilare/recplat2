@@ -16,7 +16,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - **Category lanes (synthesis wedge):** `categories` table + `vacancies.category_id`, `GET /api/categories`, `GET /api/jobs?category=`, optional `categorySlug` on vacancy writes — see **`docs/CATEGORY_MODEL.md`** and `database/migrations/0002_categories.sql`.
 - Drizzle schema split under `src/server/schema/*` (+ server DB client `src/server/db/postgres.ts`).
 - Postgres job path: `GET /api/jobs` (query: `category`, `q`, `jobType`, `includeTotal=1`, cursor pagination), `POST /api/jobs`, `PATCH /api/jobs/[id]`, `GET /api/jobs/mine`, **`GET /api/jobs/[id]`** (public read for **open** vacancies only; `404` + `NOT_FOUND` otherwise).
-- **Public job detail + discovery polish:** `/jobs/[id]` page (metadata + apply), home/job-board links to detail, Next **`/jobs`** query sync for **`category`** + **`jobType`** (shareable filters; search stays client-side on the board). Smoke hits **`GET /api/jobs/:id`** when the list returns an id.
+- **Public job detail + discovery polish:** `/jobs/[id]` page (metadata + apply), home/job-board links to detail, Next **`/jobs`** query sync for **`category`**, **`jobType`**, and **`q`** (debounced URL updates; `q` re-hydrates on first load, lane/type URL changes, and **popstate**—not on every `q`-only param change—so typing is not clobbered). Smoke hits **`GET /api/jobs/:id`** when the list returns an id.
 - Postgres applications path: `POST /api/applications`, **`GET /api/applications/mine`**, recruiter pipeline **`GET /api/applications/board`**, **`PATCH /api/applications/[id]`** (`applications.status`).
 - Postgres auth path: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`; protected routes use signed session verification.
 - Role separation + server-side authorization (`candidate` vs `recruiter`) and allowlisted recruiter role-management endpoint (`/api/admin/users/role`) with audit logging.
@@ -40,7 +40,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 ## Next
 
-**Near term (Jobs Slice UX / quality):** optional **`q` in `/jobs` URL** with a safe sync strategy (debounced replace without clobbering in-progress typing); Playwright for **`/jobs/[id]`** when a stable seeded open vacancy id is available in CI; expand **`e2e/api.spec.ts`** if new public query params ship.
+**Near term (Jobs Slice UX / quality):** Playwright for **`/jobs/[id]`** is covered in **`e2e/authenticated/candidate-job-detail.spec.ts`** when **`E2E_RUN_AUTH=1`** (seeded vacancy); expand **`e2e/api.spec.ts`** as new public query params ship.
 
 **Authenticated E2E (Playwright):** run locally with **`npm run test:e2e:auth`** when **`.env.local`** has **`DATABASE_URL`** + **`TALENTBRIDGE_AUTH_SECRET`** (Next loads them for **`npm run dev`**). CI runs the same path in **`smoke-postgres`** after **`E2E_RUN_AUTH=1`** (see **`docs/CICD.md`**). Add specs under **`e2e/authenticated/`** (e.g. apply-to-job against a known vacancy, recruiter listing); session seeding lives in **`e2e/auth.setup.ts`**.
 

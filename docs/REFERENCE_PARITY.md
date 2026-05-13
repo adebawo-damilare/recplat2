@@ -2,7 +2,7 @@
 
 The nested **`recruit/`** tree is a **pattern reference only** (not a second product UI). This document tracks what we **adopted** in TalentBridge (`recruit2`) versus what the reference implements in full, so expectations stay clear as we add features.
 
-**Last reviewed:** 2026-05-13 (public job detail + list filters + smoke; update this line when the table changes materially).
+**Last reviewed:** 2026-05-13 (`/jobs` URL `q` + authenticated job-detail E2E; update when the table changes materially).
 
 ---
 
