@@ -43,7 +43,12 @@ setup.describe("seed sessions", () => {
         jobType: "remote",
       },
     });
-    expect(vacancyApplyRes.ok(), await vacancyApplyRes.text()).toBeTruthy();
+    if (!vacancyApplyRes.ok()) {
+      throw new Error(`seed vacancy (apply): ${vacancyApplyRes.status()} ${await vacancyApplyRes.text()}`);
+    }
+    const vacancyApplyBody = (await vacancyApplyRes.json()) as { job?: { id?: string } };
+    const seededApplyVacancyId = vacancyApplyBody.job?.id;
+    expect(seededApplyVacancyId).toBeTruthy();
 
     const vacancyDetailRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
@@ -69,6 +74,13 @@ setup.describe("seed sessions", () => {
       data: { email: candidateEmail, password, role: "candidate" },
     });
     expect(candidateRes.ok(), await candidateRes.text()).toBeTruthy();
+
+    const applyRes = await request.post("/api/applications", {
+      headers: { "content-type": "application/json" },
+      data: { vacancyId: seededApplyVacancyId },
+    });
+    expect(applyRes.ok(), await applyRes.text()).toBeTruthy();
+
     await request.storageState({ path: candidateStorage });
   });
 });
