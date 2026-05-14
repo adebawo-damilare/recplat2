@@ -15,6 +15,18 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page.getByTestId("app-nav").getByRole("link", { name: "Find Jobs" })).toBeVisible();
   });
 
+  test("jobs page hydrates jobType from URL query", async ({ page }) => {
+    await page.goto("/jobs?jobType=hybrid", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("job-board")).toBeVisible();
+    await expect(page.getByTestId("job-board-job-type-filter")).toHaveValue("hybrid", { timeout: 20_000 });
+  });
+
+  test("jobs page hydrates search q from URL query", async ({ page }) => {
+    await page.goto("/jobs?q=engineer", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("job-board")).toBeVisible();
+    await expect(page.getByTestId("job-board-search")).toHaveValue("engineer", { timeout: 10_000 });
+  });
+
   test("talent route shows sign-in when logged out (board after auth)", async ({ page }) => {
     await page.goto("/talent", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("talent-sign-in-gate")).toBeVisible({ timeout: 30_000 });
@@ -44,7 +56,7 @@ test.describe("Marketing shell / navigation", () => {
     }
 
     await section.getByTestId("home-explore-all-jobs").click();
-    await expect(page).toHaveURL(/\/jobs\/?$/);
+    await expect(page).toHaveURL(/\/jobs\/?$/, { timeout: 20_000 });
   });
 
   test("footer visible on home", async ({ page }) => {

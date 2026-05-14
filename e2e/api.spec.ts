@@ -32,6 +32,14 @@ test.describe("Public API", () => {
     expect(body.totalOpen).toBeGreaterThanOrEqual(body.jobs.length);
   });
 
+  test("GET /api/jobs/{id} returns 404 for unknown id when jobs API is up", async ({ request }) => {
+    const res = await request.get("/api/jobs/00000000-0000-4000-8000-000000000001");
+    if (res.status() === 503) return;
+    expect(res.status()).toBe(404);
+    const body = await res.json();
+    expect(body?.code).toBe("NOT_FOUND");
+  });
+
   test("GET /api/jobs returns pagination metadata for limit=10", async ({ request }) => {
     const res = await request.get("/api/jobs?limit=10");
     expect(res.ok()).toBeTruthy();
@@ -40,5 +48,13 @@ test.describe("Public API", () => {
     expect(body).toHaveProperty("pagination");
     expect(body.pagination).toHaveProperty("limit");
     expect(typeof body.pagination?.nextCursor === "string" || body.pagination?.nextCursor === null).toBeTruthy();
+  });
+
+  test("GET /api/jobs rejects unknown jobType filter with 400", async ({ request }) => {
+    const res = await request.get("/api/jobs?limit=1&jobType=not_a_real_type");
+    if (res.status() === 503) return;
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body?.error).toBe("Unknown jobType filter.");
   });
 });

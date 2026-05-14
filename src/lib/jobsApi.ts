@@ -5,6 +5,7 @@
 import type { Vacancy } from "./domainTypes";
 import type { JobType } from "../shared/jobTypes";
 import { refreshTalentBridgeSession } from "./authBrowser";
+import { talentBridgeUiNotify } from "./talentBridgeUiNotify";
 import { isBrowserJobsPostgresOnly, shouldFallbackToFirestoreForJobsApi } from "./talentBridgeApiMode";
 
 export type VacancyWritePayload = {
@@ -32,11 +33,12 @@ export async function fetchPublicJobsPage(
   cursor?: string | null,
   categorySlug?: string | null,
   q?: string | null,
-  options?: { includeTotal?: boolean },
+  options?: { includeTotal?: boolean; jobType?: JobType | null },
 ): Promise<{ jobs: Vacancy[]; nextCursor: string | null; totalOpen?: number }> {
   const csRaw = categorySlug?.trim().toLowerCase();
   const cs = csRaw && csRaw !== "all" ? csRaw : null;
   const includeTotal = options?.includeTotal === true;
+  const jobType = options?.jobType ?? null;
 
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
@@ -44,6 +46,7 @@ export async function fetchPublicJobsPage(
     if (cs) qs.set("category", cs);
     if (q?.trim()) qs.set("q", q.trim().slice(0, 200));
     if (includeTotal) qs.set("includeTotal", "1");
+    if (jobType) qs.set("jobType", jobType);
 
     const res = await fetch(`/api/jobs?${qs.toString()}`, {
       credentials: "same-origin",
@@ -98,12 +101,31 @@ export async function fetchHomeFeaturedJobs(): Promise<{ jobs: Vacancy[]; totalO
   return { jobs: [], totalOpen: 0 };
 }
 
+/** Public job detail (open vacancies only). Returns null if 404 / error. */
+export async function fetchPublicJobById(id: string): Promise<Vacancy | null> {
+  const trimmed = id?.trim();
+  if (!trimmed) return null;
+  try {
+    const res = await fetch(`/api/jobs/${encodeURIComponent(trimmed)}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const raw = (await res.json().catch(() => ({}))) as { job?: Vacancy; code?: string };
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return raw.job ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPublicJobsWithFallback(
   limit = 75,
   cursor?: string | null,
   categorySlug?: string | null,
+  jobType?: JobType | null,
 ) {
-  const { jobs } = await fetchPublicJobsPage(limit, cursor, categorySlug, undefined);
+  const { jobs } = await fetchPublicJobsPage(limit, cursor, categorySlug, undefined, { jobType: jobType ?? null });
   return jobs;
 }
 
@@ -225,7 +247,7 @@ export async function closeVacancyWithFallback(id: string) {
 export async function applyToVacancyWithFallback(vacancyId: string): Promise<boolean> {
   const signedIn = await ensureSignedIn();
   if (!signedIn) {
-    alert("Please sign in to apply for jobs.");
+    talentBridgeUiNotify("Please sign in to apply for jobs.");
     return false;
   }
 
@@ -241,7 +263,7 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<boo
       return true;
     }
     if (!shouldFallback(res.status, raw)) {
-      alert("Unable to apply right now.");
+      talentBridgeUiNotify("Unable to apply right now.");
       return false;
     }
   } catch (error) {
@@ -249,10 +271,10 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<boo
   }
 
   if (isBrowserJobsPostgresOnly()) {
-    alert("Applications require Postgres + API.");
+    talentBridgeUiNotify("Applications require Postgres + API.");
     return false;
   }
 
-  alert("Unable to apply right now.");
+  talentBridgeUiNotify("Unable to apply right now.");
   return false;
 }

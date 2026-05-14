@@ -34,6 +34,7 @@ export async function fetchOpenVacanciesPageFromPostgres(
   cursor?: string | null,
   categorySlug?: string | null,
   searchText?: string | null,
+  jobType?: JobType | null,
 ): Promise<PaginatedVacanciesResult> {
   const pageSize = Math.max(1, Math.min(rawLimit, 50));
   const db = getDrizzleDb();
@@ -66,6 +67,10 @@ export async function fetchOpenVacanciesPageFromPostgres(
         ilike(vacancies.description, pattern),
       )!,
     );
+  }
+
+  if (jobType) {
+    conditions.push(eq(vacancies.jobType, jobType));
   }
 
   const nextWhere = and(...conditions)!;
@@ -105,16 +110,25 @@ export async function fetchOpenVacanciesPageFromPostgres(
 export async function countOpenVacanciesFromPostgres(
   categorySlug?: string | null,
   searchText?: string | null,
+  jobType?: JobType | null,
 ): Promise<number> {
   const db = getDrizzleDb();
   const slugFilter = categorySlug?.trim().toLowerCase();
   const qRaw = searchText?.trim();
 
-  if (!slugFilter && (!qRaw || qRaw.length === 0)) {
+  if (!slugFilter && (!qRaw || qRaw.length === 0) && !jobType) {
     const [row] = await db
       .select({ n: count() })
       .from(vacancies)
       .where(eq(vacancies.status, "open"));
+    return Number(row?.n ?? 0);
+  }
+
+  if (!slugFilter && (!qRaw || qRaw.length === 0) && jobType) {
+    const [row] = await db
+      .select({ n: count() })
+      .from(vacancies)
+      .where(and(eq(vacancies.status, "open"), eq(vacancies.jobType, jobType))!);
     return Number(row?.n ?? 0);
   }
 
@@ -131,6 +145,9 @@ export async function countOpenVacanciesFromPostgres(
         ilike(vacancies.description, pattern),
       )!,
     );
+  }
+  if (jobType) {
+    conditions.push(eq(vacancies.jobType, jobType));
   }
   const nextWhere = and(...conditions)!;
 
@@ -331,6 +348,24 @@ export async function getVacancyById(id: string): Promise<Vacancy | null> {
     .from(vacancies)
     .leftJoin(categories, eq(vacancies.categoryId, categories.id))
     .where(eq(vacancies.id, id))
+    .limit(1);
+
+  const r = rows[0];
+  return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
+}
+
+/** Public job page: only open vacancies (closed or missing → null). */
+export async function getOpenVacancyByIdFromPostgres(id: string): Promise<Vacancy | null> {
+  const db = getDrizzleDb();
+  const rows = await db
+    .select({
+      v: vacancies,
+      catSlug: categories.slug,
+      catLabel: categories.label,
+    })
+    .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .where(and(eq(vacancies.id, id), eq(vacancies.status, "open")))
     .limit(1);
 
   const r = rows[0];

@@ -21,6 +21,7 @@ export default defineConfig({
         {
           name: "chromium-auth-candidate",
           dependencies: ["setup"],
+          fullyParallel: false,
           testMatch: "**/authenticated/candidate-*.spec.ts",
           use: {
             ...devices["Desktop Chrome"],
@@ -30,6 +31,7 @@ export default defineConfig({
         {
           name: "chromium-auth-recruiter",
           dependencies: ["setup"],
+          fullyParallel: false,
           testMatch: "**/authenticated/recruiter-*.spec.ts",
           use: {
             ...devices["Desktop Chrome"],

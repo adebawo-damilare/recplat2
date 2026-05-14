@@ -11,6 +11,8 @@
  *
  * Vercel Deployment Protection bypass (optional — same secret as automation bypass docs):
  *   VERCEL_AUTOMATION_BYPASS_SECRET=... npm run smoke:api
+ *
+ * When the jobs list returns at least one id, also GETs /api/jobs/{id} (open vacancy detail).
  */
 /** Default localhost (not 127.0.0.1): Node fetch on some Windows setups hangs on IPv4 loopback.) */
 const base = (process.env.SMOKE_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -173,6 +175,17 @@ try {
   const jobs = await check("jobs", "/api/jobs?limit=1");
   if (!Array.isArray(jobs.jobs)) {
     throw new Error("GET /api/jobs: expected { jobs: array }");
+  }
+
+  const firstJobId = jobs.jobs[0]?.id;
+  if (firstJobId) {
+    const detail = await fetchJson("GET", `/api/jobs/${firstJobId}`);
+    if (!detail.res.ok) {
+      throw new Error(`GET /api/jobs/${firstJobId} -> ${detail.res.status}: ${detail.text.slice(0, 200)}`);
+    }
+    if (!detail.body?.job?.id) {
+      throw new Error(`GET /api/jobs/${firstJobId}: expected { job: { id } }`);
+    }
   }
 
   const ai = await check("ai health", "/api/ai/health");

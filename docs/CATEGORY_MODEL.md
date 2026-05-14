@@ -17,14 +17,16 @@ This document captures how we applied the **“categories as templates”** idea
 ## APIs
 
 - **`GET /api/categories`** — public list of active lanes (cached briefly).
-- **`GET /api/jobs?category=marketers|designers|sales`** — server-side filter when using Postgres.
+- **`GET /api/jobs?category=marketers|designers|sales`** — server-side lane filter when using Postgres (unknown lane → **400**).
+- **`GET /api/jobs`** also supports **`q`** (substring search), **`jobType`** (`full_time` \| `hybrid` \| `part_time` \| `remote`; unknown → **400**), **`includeTotal=1`** (returns **`totalOpen`**), and cursor **`pagination`** — see **`docs/ROADMAP.md`** (Done).
+- **`GET /api/jobs/[id]`** — public read for a single **open** vacancy (`404` + **`NOT_FOUND`** when missing or not open).
 - **`POST /api/jobs` / `PATCH /api/jobs/[id]`** — optional `categorySlug` (string or `null` to clear on PATCH).
 
 ## Client
 
-- **`src/lib/jobsApi.ts`** — passes `category` query param to `/api/jobs`; client behavior is API-only.
+- **`src/lib/jobsApi.ts`** — passes `category`, `q`, `jobType`, and optional `includeTotal` to **`GET /api/jobs`**; **`fetchPublicJobById`** for **`GET /api/jobs/[id]`**; client behavior is API-only.
 - **`VacancyCategoryField`** — recruiter vacancy form lane selector.
-- **Job board** — lane dropdown + badges on listings.
+- **Job board** — lane + work-arrangement dropdowns + badges on listings; on Next **`/jobs`**, **`category`**, **`jobType`**, and **`q`** sync to the URL (see `app/_client/useJobBoardQuerySync.ts` for typing-safe `q` behaviour).
 
 ## Next steps (not built here)
 

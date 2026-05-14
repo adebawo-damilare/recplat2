@@ -24,7 +24,7 @@ export default function NextAppNav() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600">
-            <Link href="/jobs" className={`hover:text-blue-600 transition-colors ${pathname === "/jobs" ? activeClass : ""}`}>
+            <Link href="/jobs" className={`hover:text-blue-600 transition-colors ${pathname === "/jobs" || pathname.startsWith("/jobs/") ? activeClass : ""}`}>
               Find Jobs
             </Link>
             <Link href="/talent" data-testid="nav-find-candidates" className={`hover:text-blue-600 transition-colors ${pathname === "/talent" ? activeClass : ""}`}>

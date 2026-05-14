@@ -7,7 +7,7 @@ import { getClientKey } from "../../../src/server/rateLimit";
 import { requireTalentBridgeSession } from "../../../src/server/auth/requireSession";
 import { requireRole } from "../../../src/server/auth/requireRole";
 import { hasPostgresConfigured } from "../../../src/server/db/postgres";
-import { parseJobTypeRequired } from "../../../src/shared/jobTypes";
+import { isJobType, parseJobTypeRequired } from "../../../src/shared/jobTypes";
 
 export const revalidate = 30;
 
@@ -44,6 +44,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unknown category filter." }, { status: 400 });
   }
 
+  const jobTypeParam = searchParams.get("jobType")?.trim().toLowerCase();
+  const jobTypeFilter =
+    jobTypeParam && jobTypeParam !== "all"
+      ? isJobType(jobTypeParam)
+        ? jobTypeParam
+        : null
+      : null;
+
+  if (jobTypeParam && jobTypeFilter === null && jobTypeParam !== "all") {
+    return NextResponse.json({ error: "Unknown jobType filter." }, { status: 400 });
+  }
+
   const qParam = request.nextUrl.searchParams.get("q")?.trim().slice(0, 200) || null;
   const includeTotal = request.nextUrl.searchParams.get("includeTotal") === "1";
 
@@ -54,14 +66,14 @@ export async function GET(request: NextRequest) {
 
     if (includeTotal) {
       const [page, total] = await Promise.all([
-        fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam),
-        countOpenVacancies(categorySlug, qParam),
+        fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam, jobTypeFilter),
+        countOpenVacancies(categorySlug, qParam, jobTypeFilter),
       ]);
       jobs = page.jobs;
       nextCursor = page.nextCursor;
       totalOpen = total;
     } else {
-      const page = await fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam);
+      const page = await fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam, jobTypeFilter);
       jobs = page.jobs;
       nextCursor = page.nextCursor;
     }

@@ -5,11 +5,70 @@ import { hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateLimit";
 import { isMvpTalentCategorySlug } from "../../../../src/shared/mvpCategories";
 import { parseCategorySlugForPatch } from "../../../../src/server/jobs/vacancyPayload";
-import { updateVacancyForOwner } from "../../../../src/server/jobs";
+import { getOpenVacancyById, updateVacancyForOwner } from "../../../../src/server/jobs";
 import { parseJobTypeRequired } from "../../../../src/shared/jobTypes";
 import { getClientKey } from "../../../../src/server/rateLimit";
 
 type RouteParams = Promise<{ id: string }>;
+
+export async function GET(request: NextRequest, context: { params: RouteParams }) {
+  const { id } = await context.params;
+  const trimmed = id?.trim();
+  if (!trimmed) {
+    return NextResponse.json({ error: "Invalid job id.", code: "BAD_REQUEST" }, { status: 400 });
+  }
+
+  const key = getClientKey(
+    request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip"),
+    `/api/jobs/${trimmed}#get`,
+  );
+  const rate = await enforceJobsApiRateLimit(key);
+
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please retry shortly." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rate.resetAt - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Backend": rate.backend,
+        },
+      },
+    );
+  }
+
+  if (!hasPostgresConfigured()) {
+    return NextResponse.json({ code: "POSTGRES_UNAVAILABLE" }, { status: 503 });
+  }
+
+  try {
+    const job = await getOpenVacancyById(trimmed);
+    if (!job) {
+      return NextResponse.json({ error: "Job not found.", code: "NOT_FOUND" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      { job },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          "X-RateLimit-Remaining": String(rate.remaining),
+          "X-RateLimit-Backend": rate.backend,
+        },
+      },
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message === "JOBS_POSTGRES_REQUIRED") {
+      return NextResponse.json(
+        { error: "Vacancy detail requires Postgres.", code: "JOBS_POSTGRES_REQUIRED" },
+        { status: 503 },
+      );
+    }
+    console.error("[GET /api/jobs/[id]]", error);
+    return NextResponse.json({ error: "Unable to fetch job." }, { status: 500 });
+  }
+}
 
 export async function PATCH(request: NextRequest, context: { params: RouteParams }) {
   const { id } = await context.params;

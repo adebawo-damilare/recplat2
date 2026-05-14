@@ -8,7 +8,7 @@ Use this after **Preview/staging** is already configured (`docs/DEPLOYMENT_ENV.m
 
 ## 0. Preconditions
 
-- [ ] **Staging** (Preview on `dev` + Neon branch) already behaves: listings, apply, dashboard, and API smoke (`SMOKE_EXPECT_POSTGRES_READY=1` against the Preview URL).
+- [ ] **Staging** (Preview on `dev` + Neon branch) already behaves: listings, apply, dashboard (**including Your Vacancies search** on **`/dashboard/company`**), and API smoke (`SMOKE_EXPECT_POSTGRES_READY=1` against the Preview URL).
 - [ ] **Vercel** production branch = **`main`** (Project → Settings → Git).
 - [ ] **Production** env vars in Vercel are prepared (next section)—you can set them before or right after merge; **`NEXT_PUBLIC_*`** requires a **redeploy** after you add or change it.
 
@@ -83,15 +83,16 @@ SMOKE_EXPECT_POSTGRES_READY=1 npm run release:prod:smoke
 Complete at least once on **production**:
 
 1. Sign in as **recruiter** (email/password via `/sign-in`): create or edit a vacancy; confirm it appears on **`/jobs`** with filters as expected.  
-2. Sign in as **candidate** (or same user if your roles allow): open a job, **apply**.  
-3. Confirm **`applications`** row in Postgres (Neon console or SQL) and **candidate dashboard** lists the application (`GET /api/applications/mine` path).
+2. On **`/dashboard/company`**, under **Your Vacancies**, use **Search your vacancies** (titles, company, location, salary, status, lane label, description text): confirm the list **narrows** while typing and **clears** when the field is emptied.  
+3. Sign in as **candidate** (or same user if your roles allow): open a job, **apply**.  
+4. Confirm **`applications`** row in Postgres (Neon console or SQL) and **candidate dashboard** lists the application (`GET /api/applications/mine` path).
 
 ---
 
 ## 6. After release
 
 - Watch Vercel/runtime logs and Neon for errors (**`JOBS_POSTGRES_REQUIRED`**, connection failures) for a short window.  
-- Continue with the next backbone track when ready (`docs/ROADMAP.md`—e.g. profile → Postgres, E2E, Phase B).
+- **Next backbone — Phase B–D (post–Jobs Slice v1):** execution stays in **`docs/ROADMAP.md`**, with product shape in **`docs/TALENTBRIDGE_MVP_PLAN.md`** (e.g. §4 **`category_fields`** / screening templates, richer candidate profiles) and P0 backlog cues in **`docs/ROADMAP_FROM_REFERENCE.md`**. Jobs Slice v1 deliberately stops short of invitations, full screening loops, and indexed marketplace search—promote those only when the team picks the next slice.
 
 ---
 
@@ -109,4 +110,4 @@ Complete at least once on **production**:
 - `docs/MVP_JOBS_SLICE_V1.md` — scope and env flags  
 - `docs/DEPLOYMENT_ENV.md` — Preview vs Production, smoke automation  
 - `database/README.md` — migrations detail  
-- `docs/CICD.md` — required checks before merge  
+- `docs/CICD.md` — required checks before merge (includes authenticated Playwright: recruiter dashboard, vacancies search, post/edit/close, pipeline **`PATCH`**, candidate flows—see **`e2e/authenticated/`**)  

@@ -97,13 +97,13 @@ export default function HomeFeaturedVacancies({
                     {job.salary}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate(AppView.FIND_JOBS)}
-                  className="w-full py-2 border border-neutral-100 rounded-lg text-sm font-bold hover:bg-neutral-900 hover:text-white transition-colors"
+                <a
+                  href={job.id ? `/jobs/${job.id}` : "/jobs"}
+                  className="w-full py-2 border border-neutral-100 rounded-lg text-sm font-bold hover:bg-neutral-900 hover:text-white transition-colors text-center block"
+                  data-testid="home-featured-view-details"
                 >
                   View Details
-                </button>
+                </a>
               </motion.div>
             ))
           ) : (
