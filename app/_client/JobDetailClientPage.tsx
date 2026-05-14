@@ -35,17 +35,18 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="job-detail-page">
-      <Link
-        href="/jobs"
-        className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 mb-8 hover:underline"
-        data-testid="job-detail-back"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to jobs
-      </Link>
+    <div className="pt-24 min-h-screen bg-neutral-50/50">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="job-detail-page">
+        <Link
+          href="/jobs"
+          className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 mb-8 hover:underline"
+          data-testid="job-detail-back"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to jobs
+        </Link>
 
-      <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
-        <div className="flex items-start gap-4 mb-8">
+        <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+          <div className="flex items-start gap-4 mb-8">
           <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center text-2xl font-bold text-neutral-300 shrink-0">
             {job.companyName.charAt(0)}
           </div>
@@ -103,6 +104,7 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
             {applying ? "Sending…" : applied ? "Application sent" : "Apply now"}
             {!applied && <ChevronRight className="w-5 h-5" />}
           </button>
+        </div>
         </div>
       </div>
     </div>
