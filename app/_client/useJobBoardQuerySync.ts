@@ -68,6 +68,14 @@ function serializeToQuery(lane: string, q: string, jt: "all" | JobType): string 
  * URL sync compares filter state to **`window.location.search`** (not only
  * `useSearchParams()`), so we do not call `router.replace` in a tight loop when
  * React’s search params briefly lag after a client navigation.
+ *
+ * **`lastPushedTriple` ref:** Before each `router.replace`, we store the query
+ * triple we intend. `useLayoutEffect` skips hydrating lane / jobType / `q` from
+ * the URL until **either** `window` **or** `useSearchParams()` matches that
+ * triple, so stale `searchParams` cannot overwrite **All** (or other choices)
+ * while the address bar is already updated — and we still apply **optimistic**
+ * `setLaneFilter` / `setJobTypeFilter` in the dropdown handlers so the UI does
+ * not flicker while waiting for the router.
  */
 export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQuery {
   const searchParams = useSearchParams();
@@ -81,11 +89,30 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
   const prevLaneJobTypeKey = useRef<string | null>(null);
   const routerRef = useRef(router);
   routerRef.current = router;
+  /** Triple we last `router.replace`d; until URL matches, ignore stale URL hydration. */
+  const lastPushedTriple = useRef<JobBoardQueryTriple | null>(null);
 
   useLayoutEffect(() => {
-    const lane = normalizeLaneFromParams(searchParams.get("category") || "all", lanes);
-    const jt = normalizeJobTypeFromParams(searchParams.get("jobType"));
-    const qUrl = qFromSearchParams(searchParams);
+    const fromWin =
+      typeof window !== "undefined"
+        ? tripleFromSearchParams(new URLSearchParams(window.location.search))
+        : null;
+    const fromSp = tripleFromSearchParams(searchParams);
+
+    if (lastPushedTriple.current !== null) {
+      const winOk = fromWin !== null && triplesEqual(fromWin, lastPushedTriple.current);
+      const spOk = triplesEqual(fromSp, lastPushedTriple.current);
+      if (!winOk && !spOk) {
+        return;
+      }
+      lastPushedTriple.current = null;
+    }
+
+    const spSource =
+      typeof window !== "undefined" ? new URLSearchParams(window.location.search) : searchParams;
+    const lane = normalizeLaneFromParams(spSource.get("category") || "all", lanes);
+    const jt = normalizeJobTypeFromParams(spSource.get("jobType"));
+    const qUrl = qFromSearchParams(spSource);
     const catJt = `${lane}|${jt}`;
 
     setLaneFilter(lane);
@@ -103,7 +130,7 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
       setSearchTerm(qUrl);
       setDebouncedSearch(qUrl.trim());
     }
-  }, [searchParams, lanes]);
+  }, [searchParams.toString(), lanes]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
@@ -116,6 +143,7 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
       typeof window !== "undefined" ? new URLSearchParams(window.location.search) : searchParams;
     const urlT = tripleFromSearchParams(urlSource);
     if (triplesEqual(stateT, urlT)) return;
+    lastPushedTriple.current = stateT;
     routerRef.current.replace(`${pathname}${serializeToQuery(laneFilter, debouncedSearch, jobTypeFilter)}`, {
       scroll: false,
     });
@@ -123,6 +151,7 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
 
   useEffect(() => {
     const syncFromWindow = () => {
+      lastPushedTriple.current = null;
       const sp = new URLSearchParams(window.location.search);
       const lane = normalizeLaneFromParams(sp.get("category") || "all", lanes);
       const jt = normalizeJobTypeFromParams(sp.get("jobType"));
@@ -138,10 +167,17 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
   }, [lanes]);
 
   const onLaneChange = (lane: string) => {
-    router.replace(`${pathname}${serializeToQuery(lane, debouncedSearch, jobTypeFilter)}`, { scroll: false });
+    const nextLane = lane === "all" ? "all" : normalizeLaneFromParams(lane, lanes);
+    const nextTriple = tripleFromFilters(nextLane, debouncedSearch, jobTypeFilter);
+    lastPushedTriple.current = nextTriple;
+    setLaneFilter(nextLane);
+    router.replace(`${pathname}${serializeToQuery(nextLane, debouncedSearch, jobTypeFilter)}`, { scroll: false });
   };
 
   const onJobTypeChange = (jt: "all" | JobType) => {
+    const nextTriple = tripleFromFilters(laneFilter, debouncedSearch, jt);
+    lastPushedTriple.current = nextTriple;
+    setJobTypeFilter(jt);
     router.replace(`${pathname}${serializeToQuery(laneFilter, debouncedSearch, jt)}`, { scroll: false });
   };
 
