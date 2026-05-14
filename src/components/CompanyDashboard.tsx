@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Briefcase, 
@@ -34,9 +34,28 @@ import VacancyForm from './VacancyForm';
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
+function vacancyMatchesSearch(v: Vacancy, qRaw: string): boolean {
+  const q = qRaw.trim().toLowerCase();
+  if (!q) return true;
+  const hay = [
+    v.jobTitle,
+    v.companyName,
+    v.location,
+    v.salary,
+    v.status,
+    v.category?.label ?? "",
+    v.description,
+    v.requirements,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(q);
+}
+
 export default function CompanyDashboard() {
   const { user } = useTalentBridgeUser();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [vacancySearchQuery, setVacancySearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
@@ -107,7 +126,12 @@ export default function CompanyDashboard() {
     setShowForm(true);
   };
 
-  const activeCount = vacancies.filter(v => v.status === 'open').length;
+  const activeCount = vacancies.filter((v) => v.status === "open").length;
+
+  const filteredVacancies = useMemo(
+    () => vacancies.filter((v) => vacancyMatchesSearch(v, vacancySearchQuery)),
+    [vacancies, vacancySearchQuery],
+  );
 
   const handlePipelineStatusChange = async (
     applicationId: string,
@@ -324,9 +348,13 @@ export default function CompanyDashboard() {
           <h3 className="font-black text-neutral-900">Your Vacancies</h3>
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
+            <input
+              type="search"
+              value={vacancySearchQuery}
+              onChange={(e) => setVacancySearchQuery(e.target.value)}
+              placeholder="Search titles, location…"
+              aria-label="Search your vacancies"
+              data-testid="recruiter-vacancies-search"
               className="pl-9 pr-4 py-2 bg-neutral-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none w-48 md:w-64"
             />
           </div>
@@ -344,7 +372,12 @@ export default function CompanyDashboard() {
               </div>
             ))
           ) : vacancies.length > 0 ? (
-            vacancies.map((v) => (
+            filteredVacancies.length === 0 ? (
+              <div className="p-12 text-center text-sm font-medium text-neutral-500">
+                No vacancies match your search.
+              </div>
+            ) : (
+            filteredVacancies.map((v) => (
               <div 
                 key={v.id} 
                 className="p-8 hover:bg-neutral-50/50 transition-colors flex flex-col md:flex-row md:items-center gap-6"
@@ -401,6 +434,7 @@ export default function CompanyDashboard() {
                 </div>
               </div>
             ))
+            )
           ) : (
             <div className="p-20 text-center">
               <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-6">

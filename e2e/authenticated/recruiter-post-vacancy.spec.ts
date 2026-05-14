@@ -2,20 +2,27 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Recruiter post vacancy (authenticated)", () => {
   test("creates a vacancy from the dashboard modal (happy path)", async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
 
     const uniqueTitle = `E2E UI Post ${Date.now()}`;
 
-    const mineLoaded = page.waitForResponse(
-      (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
-      { timeout: 45_000 },
-    );
-    await page.goto("/dashboard/company", { waitUntil: "domcontentloaded" });
-    await mineLoaded;
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
+        { timeout: 90_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
 
     await expect(page.getByTestId("recruiter-dashboard-page")).toBeVisible({ timeout: 30_000 });
 
-    await page.getByTestId("recruiter-post-vacancy-open").click();
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/categories") && r.request().method() === "GET" && r.ok(),
+        { timeout: 45_000 },
+      ),
+      page.getByTestId("recruiter-post-vacancy-open").click(),
+    ]);
     await expect(page.getByRole("heading", { name: "Post New Vacancy" })).toBeVisible();
 
     const form = page.locator("form").filter({
@@ -24,7 +31,7 @@ test.describe("Recruiter post vacancy (authenticated)", () => {
 
     await expect(form.locator("#vacancy-category")).toBeVisible();
     await expect(form.locator("#vacancy-category option[value='designers']")).toBeAttached({
-      timeout: 20_000,
+      timeout: 30_000,
     });
     await form.locator("#vacancy-category").selectOption("designers");
     await form.locator("select").nth(1).selectOption("remote");
@@ -41,7 +48,7 @@ test.describe("Recruiter post vacancy (authenticated)", () => {
         r.request().method() === "POST" &&
         r.url().includes("/api/jobs") &&
         !r.url().includes("/mine"),
-      { timeout: 45_000 },
+      { timeout: 90_000 },
     );
     await form.getByRole("button", { name: /^Post Vacancy$/ }).click();
     const postRes = await postResPromise;

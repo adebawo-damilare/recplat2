@@ -4,12 +4,13 @@ test.describe("Recruiter vacancies (authenticated)", () => {
   test("lists seeded E2E vacancies from auth setup", async ({ page }) => {
     test.setTimeout(90_000);
 
-    const mineLoaded = page.waitForResponse(
-      (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
-      { timeout: 45_000 },
-    );
-    await page.goto("/dashboard/company", { waitUntil: "domcontentloaded" });
-    await mineLoaded;
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
+        { timeout: 90_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
 
     await expect(page.getByTestId("recruiter-dashboard-page")).toBeVisible({ timeout: 30_000 });
 

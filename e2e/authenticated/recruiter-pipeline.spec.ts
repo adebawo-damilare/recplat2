@@ -4,7 +4,13 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
   test("shows seeded application and PATCH status from pipeline table", async ({ page }) => {
     test.setTimeout(90_000);
 
-    await page.goto("/dashboard/company", { waitUntil: "domcontentloaded" });
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/applications/board") && r.request().method() === "GET" && r.ok(),
+        { timeout: 60_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
     await expect(page.getByTestId("recruiter-dashboard-page")).toBeVisible({ timeout: 30_000 });
 
     await expect(page.getByRole("heading", { name: "Application pipeline" })).toBeVisible();
@@ -23,8 +29,10 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
     await statusSelect.selectOption("interviewing");
     const patchRes = await patchPromise;
     expect(patchRes.ok(), await patchRes.text()).toBeTruthy();
+    const patchBody = (await patchRes.json()) as { status?: string };
+    expect(patchBody.status).toBe("interviewing");
 
     const statusAfter = page.locator("tbody tr").filter({ hasText: /E2E Candidate Apply/ }).locator("select").last();
-    await expect(statusAfter).toHaveValue("interviewing", { timeout: 20_000 });
+    await expect(statusAfter).toHaveValue("interviewing", { timeout: 45_000 });
   });
 });

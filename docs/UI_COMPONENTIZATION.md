@@ -34,6 +34,7 @@ Added for stable e2e selectors:
 - `app-footer`
 - `job-board`, `talent-board`
 - `recruiter-post-vacancy-open` (company dashboard header CTA; modal submit stays role/label text)
+- `recruiter-vacancies-search` (Your Vacancies filter input)
 
 ## End-to-end tests
 

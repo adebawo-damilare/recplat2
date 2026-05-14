@@ -42,7 +42,7 @@ Four major areas—the **TalentBridge codebase today** implements only a **thin 
 ### Recruiter workspace
 
 - Company and roles (**vacancies** today), lane selection  
-- Search and review (**job board + dashboards** today)  
+- Search and review (**job board + dashboards** today); **Your Vacancies** client-side search on the company dashboard (owned listings only—not marketplace index search)  
 - Invites, pipeline, comparisons (later)
 
 ### Admin console
@@ -58,7 +58,7 @@ Four major areas—the **TalentBridge codebase today** implements only a **thin 
 ## 4. Category strategy
 
 - Launch with **few** lanes so each stays **deep**, not shallow across dozens of labels.  
-- **Implemented:** three MVP slugs (**marketers**, **designers**, **sales**) on **`vacancies`** via **`categories`** — see **`docs/CATEGORY_MODEL.md`**.  
+- **Implemented:** three MVP slugs (**marketers**, **designers**, **sales**) on **`vacancies`** via **`categories`** — see **`docs/CATEGORY_MODEL.md`**. Recruiters can narrow **their own** vacancy rows on **`/dashboard/company`** via the **Your Vacancies** search field (substring match on titles, company, location, etc.).  
 - **Next:** per-lane **`category_fields`** and **`category_screening_questions`** (reference: **`recruit/docs/database-api-outline.md`**), promoted through **`docs/ROADMAP.md`** when prioritized.
 
 ---

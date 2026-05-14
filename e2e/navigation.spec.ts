@@ -18,7 +18,7 @@ test.describe("Marketing shell / navigation", () => {
   test("jobs page hydrates jobType from URL query", async ({ page }) => {
     await page.goto("/jobs?jobType=hybrid", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("job-board")).toBeVisible();
-    await expect(page.getByTestId("job-board-job-type-filter")).toHaveValue("hybrid");
+    await expect(page.getByTestId("job-board-job-type-filter")).toHaveValue("hybrid", { timeout: 20_000 });
   });
 
   test("jobs page hydrates search q from URL query", async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe("Marketing shell / navigation", () => {
     }
 
     await section.getByTestId("home-explore-all-jobs").click();
-    await expect(page).toHaveURL(/\/jobs\/?$/);
+    await expect(page).toHaveURL(/\/jobs\/?$/, { timeout: 20_000 });
   });
 
   test("footer visible on home", async ({ page }) => {

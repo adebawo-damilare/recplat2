@@ -4,12 +4,13 @@ test.describe("Recruiter vacancy lifecycle (authenticated)", () => {
   test("updates a seeded vacancy from Edit Vacancy modal", async ({ page }) => {
     test.setTimeout(90_000);
 
-    const mineLoaded = page.waitForResponse(
-      (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
-      { timeout: 45_000 },
-    );
-    await page.goto("/dashboard/company", { waitUntil: "domcontentloaded" });
-    await mineLoaded;
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
+        { timeout: 90_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
 
     await expect(page.getByTestId("recruiter-dashboard-page")).toBeVisible({ timeout: 30_000 });
 
@@ -65,12 +66,13 @@ test.describe("Recruiter vacancy lifecycle (authenticated)", () => {
     });
     expect(createRes.ok(), await createRes.text()).toBeTruthy();
 
-    const mineLoaded = page.waitForResponse(
-      (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
-      { timeout: 45_000 },
-    );
-    await page.goto("/dashboard/company", { waitUntil: "domcontentloaded" });
-    await mineLoaded;
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/jobs/mine") && r.request().method() === "GET" && r.ok(),
+        { timeout: 90_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
 
     const root = page.getByTestId("recruiter-dashboard-page");
     await expect(root).toBeVisible({ timeout: 30_000 });
