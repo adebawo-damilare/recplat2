@@ -33,6 +33,7 @@ Added for stable e2e selectors:
 - `nav-find-candidates`, `nav-sign-in`
 - `app-footer`
 - `job-board`, `talent-board`
+- `recruiter-post-vacancy-open` (company dashboard header CTA; modal submit stays role/label text)
 
 ## End-to-end tests
 

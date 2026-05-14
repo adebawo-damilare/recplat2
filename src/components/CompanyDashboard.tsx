@@ -167,7 +167,9 @@ export default function CompanyDashboard() {
           </div>
           <p className="text-neutral-500 font-medium">Manage your job listings and track candidate interest</p>
         </div>
-        <button 
+        <button
+          type="button"
+          data-testid="recruiter-post-vacancy-open"
           onClick={() => {
             setEditingVacancy(null);
             setShowForm(true);
