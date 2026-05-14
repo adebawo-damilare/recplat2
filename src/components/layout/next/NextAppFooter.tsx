@@ -19,6 +19,7 @@ export default function NextAppFooter() {
             <h5 className="font-bold text-sm mb-6">Platform</h5>
             <ul className="space-y-3 text-sm text-neutral-500 font-medium">
               <li><Link href="/dashboard/profile" className="hover:text-blue-600 transition-colors">For Candidates</Link></li>
+              <li><Link href="/dashboard/applications" className="hover:text-blue-600 transition-colors">My applications</Link></li>
               <li><Link href="/dashboard/company" className="hover:text-blue-600 transition-colors">For Companies</Link></li>
               <li><Link href="/talent" className="hover:text-blue-600 transition-colors">Find Candidates</Link></li>
               <li><Link href="/jobs" className="hover:text-blue-600 transition-colors">Find Jobs</Link></li>

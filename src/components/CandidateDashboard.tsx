@@ -5,25 +5,20 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  User, 
-  Briefcase, 
-  Clock, 
-  MapPin, 
-  ChevronRight, 
+import {
+  User,
+  Briefcase,
   ExternalLink,
   Eye,
-  Code,
   FileText,
   Settings,
   Bell,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import type { CandidateProfile, Application } from "../lib/domainTypes";
 import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
 import { fetchMyCandidateProfile } from "../lib/candidatesApi";
-import { jobTypeLabel } from "../shared/jobTypes";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import {
   candidateHasDisplayableName,
@@ -31,20 +26,9 @@ import {
   formatCandidateGreetingFirst,
   getCandidateAvatarLetter,
 } from "../lib/candidateName";
-import ProfileCard from './ProfileCard';
-import CandidateForm from './CandidateForm';
-
-function formatAppliedDate(appliedAt: unknown): string {
-  if (!appliedAt) return "—";
-  if (typeof appliedAt === "string") {
-    return new Date(appliedAt).toLocaleDateString();
-  }
-  const sec = appliedAt as { seconds?: number };
-  if (typeof sec.seconds === "number") {
-    return new Date(sec.seconds * 1000).toLocaleDateString();
-  }
-  return "—";
-}
+import ProfileCard from "./ProfileCard";
+import CandidateForm from "./CandidateForm";
+import MyApplicationsBoard from "./MyApplicationsBoard";
 
 interface CandidateDashboardProps {
   onViewPortfolio: (candidate: CandidateProfile) => void;
@@ -142,67 +126,24 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
           )}
 
           {/* Applications List */}
-          <section>
-            <div className="flex items-center justify-between mb-6 px-2">
+          <section data-testid="candidate-dashboard-applications">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6 px-2">
               <h3 className="font-black text-xl text-neutral-900 flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-blue-600" /> Active Applications
+                <Briefcase className="w-5 h-5 text-blue-600" /> Active applications
               </h3>
-              <span className="text-sm font-bold text-neutral-400">{applications.length} TOTAL</span>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="font-bold text-neutral-400">{applications.length} total</span>
+                <a
+                  href="/dashboard/applications"
+                  className="font-bold text-blue-600 hover:underline"
+                  data-testid="candidate-dashboard-applications-full-list"
+                >
+                  My applications page
+                </a>
+              </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
-              {applications.length > 0 ? (
-                <div className="divide-y divide-neutral-50">
-                  {applications.map((app) => (
-                    <motion.div 
-                      key={app.id} 
-                      className="p-6 hover:bg-neutral-50/50 transition-colors flex items-center gap-6 group"
-                    >
-                      <div className="w-12 h-12 bg-neutral-100 rounded-2xl flex items-center justify-center font-black text-neutral-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        {app.vacancy?.companyName.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-black text-neutral-900">{app.vacancy?.jobTitle}</h4>
-                          <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-tighter ${
-                            app.status === "applied"
-                              ? "bg-blue-100 text-blue-600"
-                              : app.status === "viewed"
-                                ? "bg-amber-100 text-amber-700"
-                                : app.status === "interviewing"
-                                  ? "bg-violet-100 text-violet-700"
-                                  : app.status === "rejected"
-                                    ? "bg-red-100 text-red-600"
-                                    : app.status === "hired"
-                                      ? "bg-emerald-200 text-emerald-800"
-                                      : "bg-neutral-100 text-neutral-600"
-                          }`}>
-                            {app.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-neutral-500 font-medium">
-                          <span className="flex items-center gap-1"><Code className="w-3 h-3"/> {app.vacancy?.companyName}</span>
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {app.vacancy?.location}</span>
-                          {app.vacancy?.jobType ? (
-                            <span className="text-neutral-600 font-semibold">{jobTypeLabel(app.vacancy.jobType)}</span>
-                          ) : null}
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> Applied {formatAppliedDate(app.appliedAt)}</span>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-900 transition-colors" />
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-16 text-center">
-                  <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Briefcase className="w-8 h-8 text-neutral-200" />
-                  </div>
-                  <h4 className="text-lg font-black text-neutral-900 mb-2">No applications yet</h4>
-                  <p className="text-neutral-500 mb-0">Browse the job board to find your next opportunity.</p>
-                </div>
-              )}
-            </div>
+            <MyApplicationsBoard applications={applications} loading={loading} />
           </section>
 
           {/* Profile Recommendation */}
