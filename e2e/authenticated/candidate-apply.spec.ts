@@ -4,8 +4,10 @@ test.describe("Candidate apply flow (authenticated)", () => {
   test("candidate can apply from job board", async ({ page }) => {
     test.setTimeout(90_000);
 
-    page.on("dialog", async (dialog) => {
-      await dialog.accept();
+    page.on("dialog", (dialog) => {
+      void dialog.accept().catch(() => {
+        // Worker teardown or parallel runs can close the page while accept() is in flight.
+      });
     });
 
     await page.goto("/jobs", { waitUntil: "domcontentloaded" });
