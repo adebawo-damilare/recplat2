@@ -20,7 +20,29 @@ function normalizeJobTypeFromParams(jtRaw: string | null): "all" | JobType {
 }
 
 function qFromSearchParams(searchParams: { get: (k: string) => string | null }): string {
-  return (searchParams.get("q") || "").slice(0, 200);
+  return (searchParams.get("q") || "").trim().slice(0, 200);
+}
+
+type JobBoardQueryTriple = { cat: string; q: string; jt: string };
+
+function tripleFromSearchParams(searchParams: { get: (k: string) => string | null }): JobBoardQueryTriple {
+  return {
+    cat: (searchParams.get("category") || "").trim().toLowerCase(),
+    q: qFromSearchParams(searchParams),
+    jt: (searchParams.get("jobType") || "").trim().toLowerCase(),
+  };
+}
+
+function tripleFromFilters(lane: string, q: string, jt: "all" | JobType): JobBoardQueryTriple {
+  return {
+    cat: lane === "all" ? "" : lane.trim().toLowerCase(),
+    q: q.trim().slice(0, 200),
+    jt: jt === "all" ? "" : jt,
+  };
+}
+
+function triplesEqual(a: JobBoardQueryTriple, b: JobBoardQueryTriple): boolean {
+  return a.cat === b.cat && a.q === b.q && a.jt === b.jt;
 }
 
 /** Canonical query string for /jobs (category, q, jobType). */
@@ -34,28 +56,18 @@ function serializeToQuery(lane: string, q: string, jt: "all" | JobType): string 
   return s ? `?${s}` : "";
 }
 
-function queryTripleMatchesUrl(
-  lane: string,
-  q: string,
-  jt: "all" | JobType,
-  searchParams: { get: (k: string) => string | null },
-): boolean {
-  const wantCat = lane === "all" ? "" : lane;
-  const wantQ = q.trim().slice(0, 200);
-  const wantJt = jt === "all" ? "" : jt;
-  const haveCat = (searchParams.get("category") || "").trim().toLowerCase();
-  const haveQ = qFromSearchParams(searchParams);
-  const haveJt = (searchParams.get("jobType") || "").trim().toLowerCase();
-  return wantCat === haveCat && wantQ === haveQ && wantJt === haveJt;
-}
-
 /**
  * Keeps /jobs filters in the query string for shareable URLs (Next app only).
+ * Wired from `JobsClientPage` into `JobBoard` as `syncedQuery`.
  *
  * `q` is pushed on debounce. It is **not** read back from the URL when only `q`
  * changes (avoids clobbering in-progress typing while the address bar lags).
  * Full `q` sync happens on first hydration, when **category or jobType** in the
  * URL changes, or on **popstate** (browser back/forward).
+ *
+ * URL sync compares filter state to **`window.location.search`** (not only
+ * `useSearchParams()`), so we do not call `router.replace` in a tight loop when
+ * React’s search params briefly lag after a client navigation.
  */
 export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQuery {
   const searchParams = useSearchParams();
@@ -67,6 +79,8 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const prevLaneJobTypeKey = useRef<string | null>(null);
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   useLayoutEffect(() => {
     const lane = normalizeLaneFromParams(searchParams.get("category") || "all", lanes);
@@ -97,16 +111,22 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
   }, [searchTerm]);
 
   useEffect(() => {
-    if (queryTripleMatchesUrl(laneFilter, debouncedSearch, jobTypeFilter, searchParams)) return;
-    router.replace(`${pathname}${serializeToQuery(laneFilter, debouncedSearch, jobTypeFilter)}`, { scroll: false });
-  }, [debouncedSearch, laneFilter, jobTypeFilter, pathname, router, searchParams]);
+    const stateT = tripleFromFilters(laneFilter, debouncedSearch, jobTypeFilter);
+    const urlSource =
+      typeof window !== "undefined" ? new URLSearchParams(window.location.search) : searchParams;
+    const urlT = tripleFromSearchParams(urlSource);
+    if (triplesEqual(stateT, urlT)) return;
+    routerRef.current.replace(`${pathname}${serializeToQuery(laneFilter, debouncedSearch, jobTypeFilter)}`, {
+      scroll: false,
+    });
+  }, [debouncedSearch, laneFilter, jobTypeFilter, pathname, searchParams.toString()]);
 
   useEffect(() => {
     const syncFromWindow = () => {
       const sp = new URLSearchParams(window.location.search);
       const lane = normalizeLaneFromParams(sp.get("category") || "all", lanes);
       const jt = normalizeJobTypeFromParams(sp.get("jobType"));
-      const qUrl = (sp.get("q") || "").slice(0, 200);
+      const qUrl = qFromSearchParams(sp);
       prevLaneJobTypeKey.current = `${lane}|${jt}`;
       setLaneFilter(lane);
       setJobTypeFilter(jt);
