@@ -47,14 +47,29 @@ export default function NextAppNav() {
                       Recruiter Panel
                     </Link>
                   ) : (
-                    <Link
-                      href="/dashboard/profile"
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-                        pathname === "/dashboard/profile" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-neutral-500 hover:bg-neutral-100"
-                      }`}
-                    >
-                      My Profile
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href="/dashboard/applications"
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                          pathname === "/dashboard/applications"
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-100"
+                            : "text-neutral-500 hover:bg-neutral-100"
+                        }`}
+                        data-testid="nav-my-applications"
+                      >
+                        My applications
+                      </Link>
+                      <Link
+                        href="/dashboard/profile"
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                          pathname === "/dashboard/profile"
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-100"
+                            : "text-neutral-500 hover:bg-neutral-100"
+                        }`}
+                      >
+                        My Profile
+                      </Link>
+                    </div>
                   )}
                   <div className="flex items-center gap-2 px-3 py-1 bg-neutral-100 rounded-full">
                     <UserIcon className="w-4 h-4 text-neutral-500" />
