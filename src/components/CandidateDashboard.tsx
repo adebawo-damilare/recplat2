@@ -45,9 +45,9 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
     if (!user) return;
     setLoading(true);
     try {
-      const [profileData, appsData] = await Promise.all([fetchMyCandidateProfile(), fetchMyApplicationsWithFallback()]);
+      const [profileData, appsResult] = await Promise.all([fetchMyCandidateProfile(), fetchMyApplicationsWithFallback()]);
       setProfile(profileData);
-      setApplications(appsData || []);
+      setApplications(appsResult.applications);
     } catch (error) {
       console.error("Error fetching candidate data", error);
     } finally {
@@ -143,7 +143,11 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
               </div>
             </div>
 
-            <MyApplicationsBoard applications={applications} loading={loading} />
+            <MyApplicationsBoard
+              applications={applications}
+              loading={loading}
+              onRetry={() => void fetchData()}
+            />
           </section>
 
           {/* Profile Recommendation */}
