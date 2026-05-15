@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
       candidateUserId: r.candidateUserId,
       status: r.status,
       appliedAt: r.appliedAt.toISOString(),
+      statusUpdatedAt: r.statusUpdatedAt.toISOString(),
       vacancy: r.vacancy,
       candidate: r.candidate,
     })),

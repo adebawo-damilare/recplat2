@@ -14,6 +14,7 @@ function normalizeApplications(payload: unknown): Application[] {
     vacancyId: string;
     candidateId: string;
     appliedAt: string;
+    statusUpdatedAt?: string;
     status?: unknown;
     vacancy?: Application["vacancy"];
   }>;
@@ -23,6 +24,7 @@ function normalizeApplications(payload: unknown): Application[] {
     vacancyId: r.vacancyId,
     candidateId: r.candidateId,
     appliedAt: r.appliedAt,
+    statusUpdatedAt: r.statusUpdatedAt,
     vacancy: r.vacancy as Application["vacancy"],
     status: normalizeApplicationStatus(r.status),
   }));

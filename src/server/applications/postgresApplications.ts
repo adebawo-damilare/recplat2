@@ -9,7 +9,13 @@ import { applications, candidateProfiles, categories, vacancies } from "../schem
 export async function listApplicationsWithVacanciesForCandidate(candidateUserId: string) {
   const db = getDrizzleDb();
   const rows = await db
-    .select()
+    .select({
+      id: applications.id,
+      vacancyId: applications.vacancyId,
+      status: applications.status,
+      createdAt: applications.createdAt,
+      statusUpdatedAt: applications.statusUpdatedAt,
+    })
     .from(applications)
     .where(eq(applications.candidateUserId, candidateUserId))
     .orderBy(desc(applications.createdAt));
@@ -20,6 +26,7 @@ export async function listApplicationsWithVacanciesForCandidate(candidateUserId:
     candidateId: string;
     status: PipelineApplicationStatus;
     appliedAt: Date;
+    statusUpdatedAt: Date;
     vacancy: Awaited<ReturnType<typeof getVacancyById>>;
   }[] = [];
 
@@ -31,6 +38,7 @@ export async function listApplicationsWithVacanciesForCandidate(candidateUserId:
       candidateId: candidateUserId,
       status: normalizeApplicationStatus(r.status),
       appliedAt: r.createdAt,
+      statusUpdatedAt: r.statusUpdatedAt,
       vacancy: vacancy ?? null,
     });
   }
@@ -44,13 +52,25 @@ export type RecruiterBoardRow = {
   candidateUserId: string;
   status: PipelineApplicationStatus;
   appliedAt: Date;
+  statusUpdatedAt: Date;
   vacancy: {
     id: string;
     jobTitle: string;
     companyName: string;
     category: { slug: string; label: string } | null;
   };
-  candidate: { userId: string; firstName: string; lastName: string; email: string; headline: string };
+  candidate: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    headline: string;
+    summary: string;
+    skills: string;
+    experience: string;
+    portfolioUrl: string | null;
+    portfolioContent: string | null;
+  };
 };
 
 export type RecruiterBoardListFilters = {
@@ -77,6 +97,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
       candidateUserId: applications.candidateUserId,
       status: applications.status,
       appliedAt: applications.createdAt,
+      statusUpdatedAt: applications.statusUpdatedAt,
       vacancyJobTitle: vacancies.jobTitle,
       vacancyCompany: vacancies.companyNameDenorm,
       categorySlug: categories.slug,
@@ -85,6 +106,11 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
       candidateLastName: candidateProfiles.lastName,
       candidateEmailSnapshot: candidateProfiles.emailSnapshot,
       candidateHeadline: candidateProfiles.headline,
+      candidateSummary: candidateProfiles.summary,
+      candidateSkills: candidateProfiles.skills,
+      candidateExperience: candidateProfiles.experience,
+      candidatePortfolioUrl: candidateProfiles.portfolioUrl,
+      candidatePortfolioContent: candidateProfiles.portfolioContent,
     })
     .from(applications)
     .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
@@ -99,6 +125,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
     candidateUserId: r.candidateUserId,
     status: normalizeApplicationStatus(r.status),
     appliedAt: r.appliedAt,
+    statusUpdatedAt: r.statusUpdatedAt,
     vacancy: {
       id: r.vacancyId,
       jobTitle: r.vacancyJobTitle,
@@ -114,6 +141,11 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
       lastName: r.candidateLastName?.trim() ?? "",
       email: r.candidateEmailSnapshot?.trim() ? r.candidateEmailSnapshot : "",
       headline: r.candidateHeadline?.trim() ? r.candidateHeadline : "",
+      summary: r.candidateSummary?.trim() ?? "",
+      skills: r.candidateSkills?.trim() ?? "",
+      experience: r.candidateExperience?.trim() ?? "",
+      portfolioUrl: r.candidatePortfolioUrl?.trim() || null,
+      portfolioContent: r.candidatePortfolioContent?.trim() || null,
     },
   }));
 
@@ -136,6 +168,9 @@ export async function updateApplicationStatusForVacancyOwner(
   if (!row) return { ok: false, reason: "NOT_FOUND" };
   if (row.postedBy !== ownerUserId) return { ok: false, reason: "FORBIDDEN" };
 
-  await db.update(applications).set({ status }).where(eq(applications.id, applicationId));
+  await db
+    .update(applications)
+    .set({ status, statusUpdatedAt: new Date() })
+    .where(eq(applications.id, applicationId));
   return { ok: true };
 }

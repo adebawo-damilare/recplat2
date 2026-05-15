@@ -8,6 +8,7 @@ import { refreshTalentBridgeSession } from "../../src/lib/authBrowser";
 import { applyToVacancyWithFallback } from "../../src/lib/jobsApi";
 import { talentBridgeUiNotify } from "../../src/lib/talentBridgeUiNotify";
 import { jobTypeLabel } from "../../src/shared/jobTypes";
+import ApplicationSentBanner from "../../src/components/jobs/ApplicationSentBanner";
 
 export default function JobDetailClientPage({ job }: { job: Vacancy }) {
   const [applying, setApplying] = useState(false);
@@ -92,6 +93,8 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
           <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-3">Requirements</h2>
           <div className="text-neutral-700 leading-relaxed whitespace-pre-wrap">{job.requirements}</div>
         </section>
+
+        {applied ? <ApplicationSentBanner className="mb-6" /> : null}
 
         <div className="flex flex-col sm:flex-row gap-3">
           <button

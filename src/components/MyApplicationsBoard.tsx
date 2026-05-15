@@ -6,6 +6,7 @@
 import { motion } from "motion/react";
 import { Briefcase, Clock, Code, MapPin, ChevronRight } from "lucide-react";
 import type { Application } from "../lib/domainTypes";
+import { applicationStatusLabel, APPLICATION_STATUS_HINTS } from "../lib/applicationStatus";
 import { jobTypeLabel } from "../shared/jobTypes";
 
 function formatAppliedDate(appliedAt: unknown): string {
@@ -18,6 +19,18 @@ function formatAppliedDate(appliedAt: unknown): string {
     return new Date(sec.seconds * 1000).toLocaleDateString();
   }
   return "—";
+}
+
+function formatStatusUpdated(appliedAt: unknown, statusUpdatedAt?: string): string | null {
+  if (!statusUpdatedAt || typeof statusUpdatedAt !== "string") return null;
+  const applied =
+    typeof appliedAt === "string"
+      ? appliedAt.slice(0, 19)
+      : "";
+  if (applied && statusUpdatedAt.slice(0, 19) === applied) return null;
+  const d = new Date(statusUpdatedAt);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function statusClass(status: Application["status"]): string {
@@ -68,11 +81,15 @@ export default function MyApplicationsBoard({ applications, loading }: MyApplica
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <h4 className="font-black text-neutral-900 truncate">{app.vacancy?.jobTitle ?? "Role"}</h4>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-tighter shrink-0 ${statusClass(app.status)}`}>
-                        {app.status}
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold tracking-tight shrink-0 ${statusClass(app.status)}`}
+                        title={APPLICATION_STATUS_HINTS[app.status]}
+                      >
+                        {applicationStatusLabel(app.status)}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500 font-medium">
+                    <p className="text-xs text-neutral-500 mb-1">{APPLICATION_STATUS_HINTS[app.status]}</p>
+                    <motion.div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500 font-medium">
                       <span className="flex items-center gap-1 min-w-0">
                         <Code className="w-3 h-3 shrink-0" /> <span className="truncate">{app.vacancy?.companyName ?? "—"}</span>
                       </span>
@@ -85,7 +102,12 @@ export default function MyApplicationsBoard({ applications, loading }: MyApplica
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3 shrink-0" /> Applied {formatAppliedDate(app.appliedAt)}
                       </span>
-                    </div>
+                      {formatStatusUpdated(app.appliedAt, app.statusUpdatedAt) ? (
+                        <span className="text-neutral-400" data-testid={`my-application-updated-${app.vacancyId}`}>
+                          Updated {formatStatusUpdated(app.appliedAt, app.statusUpdatedAt)}
+                        </span>
+                      ) : null}
+                    </motion.div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-900 transition-colors shrink-0" aria-hidden />
                 </motion.div>

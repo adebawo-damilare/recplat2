@@ -31,16 +31,11 @@ import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import { formatCandidateFullName } from "../lib/candidateName";
 import { jobTypeLabel } from "../shared/jobTypes";
 import VacancyForm from './VacancyForm';
+import PipelineCandidatePanel from "./jobs/PipelineCandidatePanel";
+import PortfolioViewer from "./PortfolioViewer";
+import { applicationStatusLabel } from "../lib/applicationStatus";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
-
-const PIPELINE_STATUS_LABELS: Record<Application["status"], string> = {
-  applied: "Applied",
-  viewed: "Viewed",
-  interviewing: "Interviewing",
-  rejected: "Rejected",
-  hired: "Hired",
-};
 
 function vacancyMatchesSearch(v: Vacancy, qRaw: string): boolean {
   const q = qRaw.trim().toLowerCase();
@@ -76,6 +71,8 @@ export default function CompanyDashboard() {
   const [pipelineVacancyFilter, setPipelineVacancyFilter] = useState("");
   const [pipelineStatusFilter, setPipelineStatusFilter] = useState("");
   const [pipelineLaneFilter, setPipelineLaneFilter] = useState("");
+  const [selectedPipelineRow, setSelectedPipelineRow] = useState<RecruiterBoardApplication | null>(null);
+  const [portfolioRow, setPortfolioRow] = useState<RecruiterBoardApplication | null>(null);
 
   const fetchDataForUser = useCallback(async () => {
     if (!user) {
@@ -276,7 +273,20 @@ export default function CompanyDashboard() {
             </div>
             <div>
               <h3 className="font-black text-neutral-900">Application pipeline</h3>
-              <p className="text-sm text-neutral-500">Track candidates who applied to your listings and move them through stages.</p>
+              <p className="text-sm text-neutral-500">
+                Track candidates who applied to your listings and move them through stages. Sorted newest first.
+              </p>
+              {!pipelineLoading ? (
+                <p className="text-xs font-bold text-neutral-400 mt-2" data-testid="recruiter-pipeline-count">
+                  {pipelineRows.length === 0
+                    ? pipelineFiltersActive
+                      ? "0 applications match these filters"
+                      : "0 applications"
+                    : `${pipelineRows.length} application${pipelineRows.length === 1 ? "" : "s"}${
+                        pipelineFiltersActive ? " matching filters" : ""
+                      }`}
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -290,7 +300,7 @@ export default function CompanyDashboard() {
               <option value="">All stages</option>
               {PIPELINE_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {PIPELINE_STATUS_LABELS[s]}
+                  {applicationStatusLabel(s)}
                 </option>
               ))}
             </select>
@@ -325,6 +335,20 @@ export default function CompanyDashboard() {
                   </option>
                 ))}
             </select>
+            {pipelineFiltersActive ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPipelineStatusFilter("");
+                  setPipelineLaneFilter("");
+                  setPipelineVacancyFilter("");
+                }}
+                className="px-3 py-2 rounded-xl border border-neutral-200 text-sm font-bold text-blue-600 hover:bg-blue-50"
+                data-testid="recruiter-pipeline-clear-filters"
+              >
+                Clear filters
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => void fetchPipelineBoard()}
@@ -367,13 +391,25 @@ export default function CompanyDashboard() {
                 {pipelineRows.map((row) => (
                   <tr key={row.id} className="hover:bg-neutral-50/80">
                     <td className="py-3 pr-4 align-top">
-                      <div className="font-bold text-neutral-900">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPipelineRow(row)}
+                        className="text-left font-bold text-neutral-900 hover:text-blue-600 transition-colors"
+                        data-testid={`recruiter-pipeline-candidate-${row.id}`}
+                      >
                         {formatCandidateFullName(row.candidate.firstName, row.candidate.lastName) || "(No profile)"}
-                      </div>
+                      </button>
                       <div className="text-xs text-neutral-500 truncate max-w-[200px]">{row.candidate.email}</div>
                       {row.candidate.headline ? (
                         <div className="text-xs text-neutral-400 mt-0.5 line-clamp-2">{row.candidate.headline}</div>
                       ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPipelineRow(row)}
+                        className="mt-1 text-xs font-bold text-blue-600 hover:underline"
+                      >
+                        View profile
+                      </button>
                     </td>
                     <td className="py-3 pr-4 align-top">
                       <a
@@ -408,7 +444,7 @@ export default function CompanyDashboard() {
                       >
                         {PIPELINE_STATUSES.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {applicationStatusLabel(s)}
                           </option>
                         ))}
                       </select>
@@ -594,6 +630,27 @@ export default function CompanyDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PipelineCandidatePanel
+        row={selectedPipelineRow}
+        onClose={() => setSelectedPipelineRow(null)}
+        onViewPortfolio={(row) => {
+          setSelectedPipelineRow(null);
+          setPortfolioRow(row);
+        }}
+      />
+      {portfolioRow ? (
+        <PortfolioViewer
+          content={portfolioRow.candidate.portfolioContent ?? ""}
+          url={portfolioRow.candidate.portfolioUrl ?? ""}
+          candidateName={
+            formatCandidateFullName(portfolioRow.candidate.firstName, portfolioRow.candidate.lastName) ||
+            portfolioRow.candidate.email
+          }
+          candidateEmail={portfolioRow.candidate.email}
+          onClose={() => setPortfolioRow(null)}
+        />
+      ) : null}
     </div>
   );
 }

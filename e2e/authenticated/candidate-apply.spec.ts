@@ -22,5 +22,7 @@ test.describe("Candidate apply flow (authenticated)", () => {
     await applyBtn.click();
 
     await expect(applyBtn).toContainText(/Application Sent|Sending.../i, { timeout: 60_000 });
+    await expect(page.getByTestId("application-sent-banner")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("application-sent-view-mine")).toBeVisible();
   });
 });

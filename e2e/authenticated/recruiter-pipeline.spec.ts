@@ -59,5 +59,36 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
 
     await statusFilter.selectOption("rejected");
     await expect(row).toHaveCount(0, { timeout: 30_000 });
+
+    await page.getByTestId("recruiter-pipeline-clear-filters").click();
+    await expect(statusFilter).toHaveValue("");
+    await expect(row).toBeVisible({ timeout: 30_000 });
+
+    const pipelineTable = page.getByTestId("recruiter-pipeline-table");
+    const visibleRows = pipelineTable.locator("tbody tr");
+    const total = await visibleRows.count();
+    expect(total).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId("recruiter-pipeline-count")).toHaveText(
+      total === 1 ? "1 application" : `${total} applications`,
+    );
+  });
+
+  test("pipeline candidate name opens profile side panel", async ({ page }) => {
+    test.setTimeout(90_000);
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/applications/board") && r.request().method() === "GET" && r.ok(),
+        { timeout: 60_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
+    await expect(page.getByTestId("recruiter-pipeline-section")).toBeVisible({ timeout: 30_000 });
+
+    const row = page.locator("tbody tr").filter({ hasText: /E2E Candidate Apply/ });
+    await expect(row).toBeVisible({ timeout: 60_000 });
+    await row.getByRole("button", { name: /E2E Candidate Apply|View profile/i }).first().click();
+    await expect(page.getByTestId("recruiter-pipeline-candidate-panel")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("recruiter-pipeline-candidate-panel")).toContainText(/E2E Candidate Apply/i);
   });
 });

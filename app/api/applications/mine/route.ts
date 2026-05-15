@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     candidateId: r.candidateId,
     status: r.status,
     appliedAt: r.appliedAt.toISOString(),
+    statusUpdatedAt: r.statusUpdatedAt.toISOString(),
     vacancy: r.vacancy ?? undefined,
   }));
 

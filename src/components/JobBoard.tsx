@@ -14,6 +14,7 @@ import { useTalentCategories } from "./jobs/useTalentCategories";
 import type { JobBoardSyncedQuery } from "./jobs/jobBoardSyncedQueryTypes";
 import type { JobType } from "../shared/jobTypes";
 import { JOB_TYPE_OPTIONS, jobTypeLabel } from "../shared/jobTypes";
+import ApplicationSentBanner from "./jobs/ApplicationSentBanner";
 
 const PAGE_SIZE = 10;
 
@@ -326,6 +327,10 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
                     View full posting
                   </a>
                 </div>
+              ) : null}
+
+              {selectedJob.id && appliedJobs.has(selectedJob.id) ? (
+                <ApplicationSentBanner className="mt-8" />
               ) : null}
 
               <div className="mt-12 flex gap-4">
