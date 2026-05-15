@@ -276,7 +276,20 @@ export default function CompanyDashboard() {
             </div>
             <div>
               <h3 className="font-black text-neutral-900">Application pipeline</h3>
-              <p className="text-sm text-neutral-500">Track candidates who applied to your listings and move them through stages.</p>
+              <p className="text-sm text-neutral-500">
+                Track candidates who applied to your listings and move them through stages. Sorted newest first.
+              </p>
+              {!pipelineLoading ? (
+                <p className="text-xs font-bold text-neutral-400 mt-2" data-testid="recruiter-pipeline-count">
+                  {pipelineRows.length === 0
+                    ? pipelineFiltersActive
+                      ? "0 applications match these filters"
+                      : "0 applications"
+                    : `${pipelineRows.length} application${pipelineRows.length === 1 ? "" : "s"}${
+                        pipelineFiltersActive ? " matching filters" : ""
+                      }`}
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -325,6 +338,20 @@ export default function CompanyDashboard() {
                   </option>
                 ))}
             </select>
+            {pipelineFiltersActive ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPipelineStatusFilter("");
+                  setPipelineLaneFilter("");
+                  setPipelineVacancyFilter("");
+                }}
+                className="px-3 py-2 rounded-xl border border-neutral-200 text-sm font-bold text-blue-600 hover:bg-blue-50"
+                data-testid="recruiter-pipeline-clear-filters"
+              >
+                Clear filters
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => void fetchPipelineBoard()}

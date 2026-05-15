@@ -27,6 +27,19 @@ export default function NextAppNav() {
             <Link href="/jobs" className={`hover:text-blue-600 transition-colors ${pathname === "/jobs" || pathname.startsWith("/jobs/") ? activeClass : ""}`}>
               Find Jobs
             </Link>
+            {!loading && user?.role === "candidate" ? (
+              <Link
+                href="/dashboard/applications"
+                data-testid="nav-my-applications-main"
+                className={`hover:text-blue-600 transition-colors ${
+                  pathname === "/dashboard/applications" || pathname.startsWith("/dashboard/applications/")
+                    ? activeClass
+                    : ""
+                }`}
+              >
+                My applications
+              </Link>
+            ) : null}
             <Link href="/talent" data-testid="nav-find-candidates" className={`hover:text-blue-600 transition-colors ${pathname === "/talent" ? activeClass : ""}`}>
               Find Candidates
             </Link>

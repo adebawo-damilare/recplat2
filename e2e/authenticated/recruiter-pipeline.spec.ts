@@ -59,5 +59,10 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
 
     await statusFilter.selectOption("rejected");
     await expect(row).toHaveCount(0, { timeout: 30_000 });
+
+    await page.getByTestId("recruiter-pipeline-clear-filters").click();
+    await expect(statusFilter).toHaveValue("");
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("recruiter-pipeline-count")).toContainText(/1 application/);
   });
 });
