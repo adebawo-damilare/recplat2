@@ -3,7 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { normalizeApplicationStatus, type PipelineApplicationStatus } from "../../lib/applicationStatus";
 import { getDrizzleDb } from "../db/postgres";
 import { getVacancyById } from "../jobs/postgresVacancies";
-import { applications, candidateProfiles, vacancies } from "../schema";
+import { applications, candidateProfiles, categories, vacancies } from "../schema";
 
 /** Lists a candidate's applications with vacancy rows joined via lookup (Jobs Slice / Postgres path). */
 export async function listApplicationsWithVacanciesForCandidate(candidateUserId: string) {
@@ -44,16 +44,31 @@ export type RecruiterBoardRow = {
   candidateUserId: string;
   status: PipelineApplicationStatus;
   appliedAt: Date;
-  vacancy: { id: string; jobTitle: string; companyName: string };
+  vacancy: {
+    id: string;
+    jobTitle: string;
+    companyName: string;
+    category: { slug: string; label: string } | null;
+  };
   candidate: { userId: string; firstName: string; lastName: string; email: string; headline: string };
 };
 
-/** Applications across vacancies owned by this recruiter (optionally scoped to one vacancy). */
-export async function listApplicationsBoardForOwner(ownerUserId: string, vacancyIdFilter?: string | null) {
+export type RecruiterBoardListFilters = {
+  vacancyId?: string | null;
+  status?: PipelineApplicationStatus | null;
+  categorySlug?: string | null;
+};
+
+/** Applications across vacancies owned by this recruiter (optional vacancy, status, lane filters). */
+export async function listApplicationsBoardForOwner(ownerUserId: string, filtersIn?: RecruiterBoardListFilters) {
   const db = getDrizzleDb();
   const filters = [eq(vacancies.postedByUserId, ownerUserId)];
-  const vid = vacancyIdFilter?.trim();
+  const vid = filtersIn?.vacancyId?.trim();
   if (vid) filters.push(eq(applications.vacancyId, vid));
+  const status = filtersIn?.status;
+  if (status) filters.push(eq(applications.status, status));
+  const lane = filtersIn?.categorySlug?.trim().toLowerCase();
+  if (lane) filters.push(eq(categories.slug, lane));
 
   const rows = await db
     .select({
@@ -64,6 +79,8 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, vacancy
       appliedAt: applications.createdAt,
       vacancyJobTitle: vacancies.jobTitle,
       vacancyCompany: vacancies.companyNameDenorm,
+      categorySlug: categories.slug,
+      categoryLabel: categories.label,
       candidateFirstName: candidateProfiles.firstName,
       candidateLastName: candidateProfiles.lastName,
       candidateEmailSnapshot: candidateProfiles.emailSnapshot,
@@ -71,6 +88,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, vacancy
     })
     .from(applications)
     .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
     .leftJoin(candidateProfiles, sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`)
     .where(and(...filters)!)
     .orderBy(desc(applications.createdAt));
@@ -85,6 +103,10 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, vacancy
       id: r.vacancyId,
       jobTitle: r.vacancyJobTitle,
       companyName: r.vacancyCompany,
+      category:
+        r.categorySlug && r.categoryLabel
+          ? { slug: r.categorySlug, label: r.categoryLabel }
+          : null,
     },
     candidate: {
       userId: r.candidateUserId,

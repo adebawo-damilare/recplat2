@@ -34,6 +34,14 @@ import VacancyForm from './VacancyForm';
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
+const PIPELINE_STATUS_LABELS: Record<Application["status"], string> = {
+  applied: "Applied",
+  viewed: "Viewed",
+  interviewing: "Interviewing",
+  rejected: "Rejected",
+  hired: "Hired",
+};
+
 function vacancyMatchesSearch(v: Vacancy, qRaw: string): boolean {
   const q = qRaw.trim().toLowerCase();
   if (!q) return true;
@@ -66,6 +74,8 @@ export default function CompanyDashboard() {
   const [pipelineRows, setPipelineRows] = useState<RecruiterBoardApplication[]>([]);
   const [pipelineLoading, setPipelineLoading] = useState(false);
   const [pipelineVacancyFilter, setPipelineVacancyFilter] = useState("");
+  const [pipelineStatusFilter, setPipelineStatusFilter] = useState("");
+  const [pipelineLaneFilter, setPipelineLaneFilter] = useState("");
 
   const fetchDataForUser = useCallback(async () => {
     if (!user) {
@@ -95,8 +105,11 @@ export default function CompanyDashboard() {
     }
     setPipelineLoading(true);
     try {
-      const filter = pipelineVacancyFilter.trim() || undefined;
-      const data = await fetchRecruiterApplicationBoard(filter);
+      const data = await fetchRecruiterApplicationBoard({
+        vacancyId: pipelineVacancyFilter.trim() || undefined,
+        status: (pipelineStatusFilter.trim() || "all") as Application["status"] | "all",
+        category: pipelineLaneFilter.trim() || "all",
+      });
       setPipelineRows(data);
     } catch (e) {
       console.error("Pipeline board load failed", e);
@@ -104,7 +117,21 @@ export default function CompanyDashboard() {
     } finally {
       setPipelineLoading(false);
     }
-  }, [user, pipelineVacancyFilter]);
+  }, [user, pipelineVacancyFilter, pipelineStatusFilter, pipelineLaneFilter]);
+
+  const pipelineLaneOptions = useMemo(() => {
+    const bySlug = new Map<string, string>();
+    for (const v of vacancies) {
+      if (v.category?.slug && v.category?.label) {
+        bySlug.set(v.category.slug, v.category.label);
+      }
+    }
+    return Array.from(bySlug.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [vacancies]);
+
+  const pipelineFiltersActive = Boolean(
+    pipelineVacancyFilter.trim() || pipelineStatusFilter.trim() || pipelineLaneFilter.trim(),
+  );
 
   useEffect(() => {
     void fetchPipelineBoard();
@@ -241,7 +268,7 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Application pipeline */}
-      <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">
+      <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12" data-testid="recruiter-pipeline-section">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-violet-100 rounded-xl">
@@ -254,8 +281,39 @@ export default function CompanyDashboard() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
+              value={pipelineStatusFilter}
+              onChange={(e) => setPipelineStatusFilter(e.target.value)}
+              aria-label="Filter by application stage"
+              data-testid="recruiter-pipeline-status-filter"
+              className="px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-sm font-semibold outline-none"
+            >
+              <option value="">All stages</option>
+              {PIPELINE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {PIPELINE_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={pipelineLaneFilter}
+              onChange={(e) => setPipelineLaneFilter(e.target.value)}
+              aria-label="Filter by talent lane"
+              data-testid="recruiter-pipeline-lane-filter"
+              className="px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-sm font-semibold outline-none"
+              disabled={pipelineLaneOptions.length === 0}
+            >
+              <option value="">All lanes</option>
+              {pipelineLaneOptions.map(([slug, label]) => (
+                <option key={slug} value={slug}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <select
               value={pipelineVacancyFilter}
               onChange={(e) => setPipelineVacancyFilter(e.target.value)}
+              aria-label="Filter by job"
+              data-testid="recruiter-pipeline-vacancy-filter"
               className="px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-sm font-semibold outline-none"
             >
               <option value="">All jobs</option>
@@ -284,9 +342,18 @@ export default function CompanyDashboard() {
             <div className="h-10 bg-neutral-100 rounded-xl" />
           </div>
         ) : pipelineRows.length === 0 ? (
-          <p className="text-sm text-neutral-500 py-6 text-center">No applications yet for this filter.</p>
+          <div className="py-10 text-center" data-testid="recruiter-pipeline-empty">
+            <p className="text-sm font-semibold text-neutral-700 mb-1">
+              {pipelineFiltersActive ? "No applications match these filters" : "No applications yet"}
+            </p>
+            <p className="text-sm text-neutral-500 max-w-md mx-auto">
+              {pipelineFiltersActive
+                ? "Try clearing stage, lane, or job filters to see more candidates."
+                : "When candidates apply to your open listings, they will appear here so you can move them through stages."}
+            </p>
+          </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" data-testid="recruiter-pipeline-table">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
@@ -309,8 +376,19 @@ export default function CompanyDashboard() {
                       ) : null}
                     </td>
                     <td className="py-3 pr-4 align-top">
-                      <div className="font-semibold text-neutral-800">{row.vacancy.jobTitle}</div>
+                      <a
+                        href={`/jobs/${encodeURIComponent(row.vacancy.id)}`}
+                        className="font-semibold text-blue-600 hover:underline"
+                        data-testid={`recruiter-pipeline-job-link-${row.vacancyId}`}
+                      >
+                        {row.vacancy.jobTitle}
+                      </a>
                       <div className="text-xs text-neutral-500">{row.vacancy.companyName}</div>
+                      {row.vacancy.category?.label ? (
+                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
+                          {row.vacancy.category.label}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="py-3 pr-4 align-top text-neutral-600 whitespace-nowrap">
                       {new Date(row.appliedAt).toLocaleDateString()}
@@ -326,6 +404,7 @@ export default function CompanyDashboard() {
                           )
                         }
                         className="px-2 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-bold uppercase tracking-tight"
+                        aria-label={`Stage for ${row.vacancy.jobTitle}`}
                       >
                         {PIPELINE_STATUSES.map((s) => (
                           <option key={s} value={s}>

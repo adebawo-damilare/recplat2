@@ -115,6 +115,29 @@ async function run() {
     throw new Error(`GET /api/applications/board?vacancyId failed -> ${filterRes.res.status}`);
   }
 
+  const statusRes = await fetchJson("GET", "/api/applications/board?status=viewed", {
+    headers: { cookie: recruiter.cookie },
+  });
+  const viewed = Array.isArray(statusRes.body?.applications) ? statusRes.body.applications : [];
+  if (!statusRes.res.ok || !viewed.some((r) => r.id === applicationId)) {
+    throw new Error(`GET /api/applications/board?status=viewed failed -> ${statusRes.res.status}`);
+  }
+
+  const laneRes = await fetchJson("GET", "/api/applications/board?category=designers", {
+    headers: { cookie: recruiter.cookie },
+  });
+  const laneRows = Array.isArray(laneRes.body?.applications) ? laneRes.body.applications : [];
+  if (!laneRes.res.ok || !laneRows.some((r) => r.id === applicationId)) {
+    throw new Error(`GET /api/applications/board?category=designers failed -> ${laneRes.res.status}`);
+  }
+
+  const badStatus = await fetchJson("GET", "/api/applications/board?status=not_a_stage", {
+    headers: { cookie: recruiter.cookie },
+  });
+  if (badStatus.res.status !== 400) {
+    throw new Error(`GET /api/applications/board?status=invalid expected 400, got ${badStatus.res.status}`);
+  }
+
   const candBoard = await fetchJson("GET", "/api/applications/board", {
     headers: { cookie: candidate.cookie },
   });
