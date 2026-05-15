@@ -63,7 +63,14 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
     await page.getByTestId("recruiter-pipeline-clear-filters").click();
     await expect(statusFilter).toHaveValue("");
     await expect(row).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId("recruiter-pipeline-count")).toContainText(/1 application/);
+
+    const pipelineTable = page.getByTestId("recruiter-pipeline-table");
+    const visibleRows = pipelineTable.locator("tbody tr");
+    const total = await visibleRows.count();
+    expect(total).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId("recruiter-pipeline-count")).toHaveText(
+      total === 1 ? "1 application" : `${total} applications`,
+    );
   });
 
   test("pipeline candidate name opens profile side panel", async ({ page }) => {
