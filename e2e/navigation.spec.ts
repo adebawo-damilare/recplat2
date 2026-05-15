@@ -59,6 +59,15 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page).toHaveURL(/\/jobs\/?$/, { timeout: 20_000 });
   });
 
+  test("mobile nav menu opens and links to jobs", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("nav-mobile-menu-toggle").click();
+    await expect(page.getByTestId("nav-mobile-menu")).toBeVisible();
+    await page.getByTestId("nav-mobile-menu").getByRole("link", { name: "Find Jobs" }).click();
+    await expect(page).toHaveURL(/\/jobs/, { timeout: 20_000 });
+  });
+
   test("footer visible on home", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("app-footer")).toBeVisible();

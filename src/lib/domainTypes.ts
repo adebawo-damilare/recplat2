@@ -46,6 +46,8 @@ export interface Application {
   candidateId: string;
   status: "applied" | "viewed" | "interviewing" | "rejected" | "hired";
   appliedAt: unknown;
+  /** ISO timestamp when status last changed (Postgres `status_updated_at`). */
+  statusUpdatedAt?: string;
   vacancy?: Vacancy;
 }
 

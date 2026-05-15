@@ -11,13 +11,25 @@ export type RecruiterBoardApplication = {
   candidateUserId: string;
   status: Application["status"];
   appliedAt: string;
+  statusUpdatedAt?: string;
   vacancy: {
     id: string;
     jobTitle: string;
     companyName: string;
     category?: { slug: string; label: string } | null;
   };
-  candidate: { userId: string; firstName: string; lastName: string; email: string; headline: string };
+  candidate: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    headline: string;
+    summary?: string;
+    skills?: string;
+    experience?: string;
+    portfolioUrl?: string | null;
+    portfolioContent?: string | null;
+  };
 };
 
 export type RecruiterBoardFilters = {

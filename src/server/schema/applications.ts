@@ -11,6 +11,7 @@ export const applications = pgTable(
     candidateUserId: text("candidate_user_id").notNull(),
     status: text("status").notNull().default("applied"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    statusUpdatedAt: timestamp("status_updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqVacancyCandidate: unique().on(t.vacancyId, t.candidateUserId),

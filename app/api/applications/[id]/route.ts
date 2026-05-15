@@ -56,5 +56,5 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
     payload: { applicationId: id, status },
   });
 
-  return NextResponse.json({ id, status });
+  return NextResponse.json({ id, status, statusUpdatedAt: new Date().toISOString() });
 }

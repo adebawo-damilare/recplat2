@@ -65,4 +65,23 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
     await expect(row).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("recruiter-pipeline-count")).toContainText(/1 application/);
   });
+
+  test("pipeline candidate name opens profile side panel", async ({ page }) => {
+    test.setTimeout(90_000);
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/applications/board") && r.request().method() === "GET" && r.ok(),
+        { timeout: 60_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
+    await expect(page.getByTestId("recruiter-pipeline-section")).toBeVisible({ timeout: 30_000 });
+
+    const row = page.locator("tbody tr").filter({ hasText: /E2E Candidate Apply/ });
+    await expect(row).toBeVisible({ timeout: 60_000 });
+    await row.getByRole("button", { name: /E2E Candidate Apply|View profile/i }).first().click();
+    await expect(page.getByTestId("recruiter-pipeline-candidate-panel")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("recruiter-pipeline-candidate-panel")).toContainText(/E2E Candidate Apply/i);
+  });
 });
