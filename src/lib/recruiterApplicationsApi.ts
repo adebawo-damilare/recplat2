@@ -11,16 +11,36 @@ export type RecruiterBoardApplication = {
   candidateUserId: string;
   status: Application["status"];
   appliedAt: string;
-  vacancy: { id: string; jobTitle: string; companyName: string };
+  vacancy: {
+    id: string;
+    jobTitle: string;
+    companyName: string;
+    category?: { slug: string; label: string } | null;
+  };
   candidate: { userId: string; firstName: string; lastName: string; email: string; headline: string };
 };
 
-export async function fetchRecruiterApplicationBoard(vacancyId?: string | null): Promise<RecruiterBoardApplication[]> {
+export type RecruiterBoardFilters = {
+  vacancyId?: string | null;
+  status?: Application["status"] | "all" | null;
+  category?: string | "all" | null;
+};
+
+export async function fetchRecruiterApplicationBoard(
+  filters?: RecruiterBoardFilters,
+): Promise<RecruiterBoardApplication[]> {
   const u = await refreshTalentBridgeSession();
   if (!u || u.role !== "recruiter") return [];
 
-  const qs = vacancyId?.trim() ? `?vacancyId=${encodeURIComponent(vacancyId.trim())}` : "";
-  const res = await fetch(`/api/applications/board${qs}`, { credentials: "same-origin" });
+  const p = new URLSearchParams();
+  const vid = filters?.vacancyId?.trim();
+  if (vid) p.set("vacancyId", vid);
+  const st = filters?.status;
+  if (st && st !== "all") p.set("status", st);
+  const cat = filters?.category?.trim().toLowerCase();
+  if (cat && cat !== "all") p.set("category", cat);
+  const qs = p.toString();
+  const res = await fetch(`/api/applications/board${qs ? `?${qs}` : ""}`, { credentials: "same-origin" });
   const raw = (await res.json().catch(() => ({}))) as { applications?: RecruiterBoardApplication[] };
   if (!res.ok || !Array.isArray(raw.applications)) {
     return [];

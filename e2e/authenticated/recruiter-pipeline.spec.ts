@@ -35,4 +35,29 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
     const statusAfter = page.locator("tbody tr").filter({ hasText: /E2E Candidate Apply/ }).locator("select").last();
     await expect(statusAfter).toHaveValue("interviewing", { timeout: 45_000 });
   });
+
+  test("pipeline status filter hides non-matching rows", async ({ page }) => {
+    test.setTimeout(90_000);
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/applications/board") && r.request().method() === "GET" && r.ok(),
+        { timeout: 60_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
+    await expect(page.getByTestId("recruiter-pipeline-section")).toBeVisible({ timeout: 30_000 });
+
+    const row = page.locator("tbody tr").filter({ hasText: /E2E Candidate Apply/ });
+    await expect(row).toBeVisible({ timeout: 60_000 });
+
+    const statusFilter = page.getByTestId("recruiter-pipeline-status-filter");
+    const stageSelect = row.locator("select").last();
+    await stageSelect.selectOption("applied");
+    await statusFilter.selectOption("applied");
+    await expect(row).toBeVisible({ timeout: 30_000 });
+
+    await statusFilter.selectOption("rejected");
+    await expect(row).toHaveCount(0, { timeout: 30_000 });
+  });
 });
