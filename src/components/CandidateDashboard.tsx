@@ -30,6 +30,9 @@ import ProfileCard from "./ProfileCard";
 import CandidateForm from "./CandidateForm";
 import MyApplicationsBoard from "./MyApplicationsBoard";
 
+/** Recent applications shown on profile; full list lives on /dashboard/applications. */
+const PROFILE_APPLICATIONS_PREVIEW = 4;
+
 interface CandidateDashboardProps {
   onViewPortfolio: (candidate: CandidateProfile) => void;
 }
@@ -58,6 +61,9 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  const previewApplications = applications.slice(0, PROFILE_APPLICATIONS_PREVIEW);
+  const hasMoreApplications = applications.length > PROFILE_APPLICATIONS_PREVIEW;
 
   if (loading) {
     return (
@@ -131,20 +137,26 @@ export default function CandidateDashboard({ onViewPortfolio }: CandidateDashboa
               <h3 className="font-black text-xl text-neutral-900 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-600" /> Active applications
               </h3>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="font-bold text-neutral-400">{applications.length} total</span>
+              <motion.div className="flex items-center gap-4 text-sm">
+                {applications.length > 0 ? (
+                  <span className="font-bold text-neutral-400">
+                    {hasMoreApplications
+                      ? `Showing ${PROFILE_APPLICATIONS_PREVIEW} of ${applications.length}`
+                      : `${applications.length} total`}
+                  </span>
+                ) : null}
                 <a
                   href="/dashboard/applications"
                   className="font-bold text-blue-600 hover:underline"
-                  data-testid="candidate-dashboard-applications-full-list"
+                  data-testid="candidate-dashboard-applications-view-all"
                 >
-                  My applications page
+                  View all
                 </a>
-              </div>
+              </motion.div>
             </div>
 
             <MyApplicationsBoard
-              applications={applications}
+              applications={previewApplications}
               loading={loading}
               onRetry={() => void fetchData()}
             />
