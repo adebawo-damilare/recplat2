@@ -4,7 +4,8 @@ import type { Vacancy } from "../../lib/domainTypes";
 import type { JobType } from "../../shared/jobTypes";
 import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { resolveActiveCategoryIdBySlug } from "../categories/resolveActiveCategoryId";
-import { getDrizzleDb } from "../db/postgres";
+import { isMissingPgColumn } from "../db/pgColumnErrors";
+import { getDrizzleDb, getPostgresSql } from "../db/postgres";
 import { applications, categories, companies, vacancies } from "../schema";
 import { decodeVacancyCursor, encodeVacancyCursor } from "./cursor";
 import { mapPostgresVacancyRow } from "./vacancyMapper";
@@ -372,12 +373,23 @@ export async function getOpenVacancyByIdFromPostgres(id: string): Promise<Vacanc
   return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
 }
 
-function isMissingStatusUpdatedAtColumn(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /status_updated_at/i.test(msg);
-}
-
 export type RecordApplicationResult = { created: boolean; applicationId?: string };
+
+/** Insert without Drizzle when `status_updated_at` is not migrated yet (Drizzle still emits the column). */
+async function recordApplicationPostgresLegacyInsert(
+  vacancyId: string,
+  candidateUserId: string,
+): Promise<RecordApplicationResult> {
+  const sql = getPostgresSql();
+  const rows = await sql<{ id: string }[]>`
+    INSERT INTO applications (vacancy_id, candidate_user_id, status)
+    VALUES (${vacancyId}, ${candidateUserId}, 'applied')
+    ON CONFLICT (vacancy_id, candidate_user_id) DO NOTHING
+    RETURNING id
+  `;
+  if (rows[0]?.id) return { created: true, applicationId: rows[0].id };
+  return { created: false };
+}
 
 export async function recordApplicationPostgres(
   vacancyId: string,
@@ -385,24 +397,21 @@ export async function recordApplicationPostgres(
 ): Promise<RecordApplicationResult> {
   const db = getDrizzleDb();
 
-  const insertWithReturning = async (includeStatusUpdatedAt: boolean) => {
-    const values = includeStatusUpdatedAt
-      ? { vacancyId, candidateUserId, status: "applied" as const, statusUpdatedAt: new Date() }
-      : { vacancyId, candidateUserId, status: "applied" as const };
-    return db
+  try {
+    const rows = await db
       .insert(applications)
-      .values(values)
+      .values({
+        vacancyId,
+        candidateUserId,
+        status: "applied",
+        statusUpdatedAt: new Date(),
+      })
       .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] })
       .returning({ id: applications.id });
-  };
-
-  try {
-    const rows = await insertWithReturning(true);
     if (rows[0]?.id) return { created: true, applicationId: rows[0].id };
   } catch (err) {
-    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
-    const rows = await insertWithReturning(false);
-    if (rows[0]?.id) return { created: true, applicationId: rows[0].id };
+    if (!isMissingPgColumn(err, "status_updated_at")) throw err;
+    return recordApplicationPostgresLegacyInsert(vacancyId, candidateUserId);
   }
 
   return { created: false };

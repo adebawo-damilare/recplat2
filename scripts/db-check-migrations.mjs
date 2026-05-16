@@ -83,6 +83,10 @@ try {
       ) AS applications_status,
       EXISTS (
         SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='applications' AND column_name='status_updated_at'
+      ) AS applications_status_updated_at,
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='vacancies' AND column_name='job_type'
       ) AS vacancies_job_type
   `;
@@ -94,6 +98,7 @@ try {
   if (s.candidate_full_name) shapeIssues.push("candidate_profiles.full_name still present");
   if (!s.users_role) shapeIssues.push("users.role missing");
   if (!s.applications_status) shapeIssues.push("applications.status missing");
+  if (!s.applications_status_updated_at) shapeIssues.push("applications.status_updated_at missing");
   if (!s.vacancies_job_type) shapeIssues.push("vacancies.job_type missing");
 
   if (missing.length || checksumMismatch.length || shapeIssues.length) {
