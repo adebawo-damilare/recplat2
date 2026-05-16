@@ -8,5 +8,9 @@ test.describe("Candidate dashboard (authenticated)", () => {
     await expect(page.getByRole("heading", { name: "Candidate Dashboard", level: 2 })).toBeVisible({
       timeout: 90_000,
     });
+    await expect(page.getByTestId("candidate-dashboard-applications")).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId("candidate-dashboard-applications-view-all")).toBeVisible();
+    const previewRows = page.getByTestId("candidate-dashboard-applications").locator("[data-testid^='my-application-row-']");
+    expect(await previewRows.count()).toBeLessThanOrEqual(4);
   });
 });
