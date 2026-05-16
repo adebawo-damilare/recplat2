@@ -1,14 +1,10 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import { normalizeApplicationStatus, type PipelineApplicationStatus } from "../../lib/applicationStatus";
+import { isMissingPgColumn } from "../db/pgColumnErrors";
 import { getDrizzleDb } from "../db/postgres";
 import { getVacancyById } from "../jobs/postgresVacancies";
 import { applications, candidateProfiles, categories, vacancies } from "../schema";
-
-function isMissingStatusUpdatedAtColumn(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /status_updated_at/i.test(msg);
-}
 
 type CandidateApplicationRow = {
   id: string;
@@ -40,7 +36,7 @@ async function selectCandidateApplicationRows(candidateUserId: string): Promise<
       statusUpdatedAt: r.statusUpdatedAt,
     }));
   } catch (err) {
-    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    if (!isMissingPgColumn(err, "status_updated_at")) throw err;
     const rows = await db
       .select({
         id: applications.id,
@@ -188,7 +184,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
       .where(and(...filters)!)
       .orderBy(desc(applications.createdAt));
   } catch (err) {
-    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    if (!isMissingPgColumn(err, "status_updated_at")) throw err;
     const legacy = await db
       .select({
         applicationId: applications.id,
@@ -274,7 +270,7 @@ export async function updateApplicationStatusForVacancyOwner(
       .set({ status, statusUpdatedAt: new Date() })
       .where(eq(applications.id, applicationId));
   } catch (err) {
-    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    if (!isMissingPgColumn(err, "status_updated_at")) throw err;
     await db.update(applications).set({ status }).where(eq(applications.id, applicationId));
   }
   return { ok: true };

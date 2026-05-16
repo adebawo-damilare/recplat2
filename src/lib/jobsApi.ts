@@ -283,6 +283,23 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<App
       talentBridgeUiNotify(raw.error || "This job is not available to apply to.");
       return false;
     }
+    if (res.status === 429) {
+      talentBridgeUiNotify(raw.error || "Too many requests. Wait a moment and try again.");
+      return false;
+    }
+    if (res.status === 503) {
+      talentBridgeUiNotify(
+        raw.error ||
+          (raw.code === "JOBS_POSTGRES_REQUIRED"
+            ? "Applications are not configured on this deployment (DATABASE_URL missing)."
+            : "Database temporarily unavailable. Try again shortly."),
+      );
+      return false;
+    }
+    if (res.status >= 500) {
+      talentBridgeUiNotify(raw.error || "Server error while saving your application. Try again.");
+      return false;
+    }
     if (!shouldFallback(res.status, raw)) {
       talentBridgeUiNotify(raw.error || "Unable to apply right now.");
       return false;
@@ -292,7 +309,7 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<App
   }
 
   if (isBrowserJobsPostgresOnly()) {
-    talentBridgeUiNotify("Applications require Postgres + API.");
+    talentBridgeUiNotify("Could not reach the applications API. Check your connection and try again.");
     return false;
   }
 
