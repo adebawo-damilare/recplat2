@@ -372,11 +372,24 @@ export async function getOpenVacancyByIdFromPostgres(id: string): Promise<Vacanc
   return r ? mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)) : null;
 }
 
+function isMissingStatusUpdatedAtColumn(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /status_updated_at/i.test(msg);
+}
+
 export async function recordApplicationPostgres(vacancyId: string, candidateUserId: string) {
   const db = getDrizzleDb();
 
-  await db
-    .insert(applications)
-    .values({ vacancyId, candidateUserId, status: "applied" })
-    .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
+  try {
+    await db
+      .insert(applications)
+      .values({ vacancyId, candidateUserId, status: "applied", statusUpdatedAt: new Date() })
+      .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
+  } catch (err) {
+    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    await db
+      .insert(applications)
+      .values({ vacancyId, candidateUserId, status: "applied" })
+      .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
+  }
 }

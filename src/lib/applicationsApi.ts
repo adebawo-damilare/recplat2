@@ -30,22 +30,27 @@ function normalizeApplications(payload: unknown): Application[] {
   }));
 }
 
-export async function fetchMyApplicationsWithFallback(): Promise<Application[]> {
+export type MyApplicationsFetchResult = {
+  applications: Application[];
+  loadFailed: boolean;
+};
+
+export async function fetchMyApplicationsWithFallback(): Promise<MyApplicationsFetchResult> {
   const u = await refreshTalentBridgeSession();
-  if (!u) return [];
+  if (!u) return { applications: [], loadFailed: false };
 
   try {
     const res = await fetch("/api/applications/mine", { credentials: "same-origin" });
     const raw = (await res.json().catch(() => ({}))) as { applications?: unknown; code?: string };
-    if (res.ok && raw.applications) {
-      return normalizeApplications(raw.applications);
+    if (res.ok && Array.isArray(raw.applications)) {
+      return { applications: normalizeApplications(raw.applications), loadFailed: false };
     }
     if (!shouldFallbackToFirestoreForJobsApi(res.status, raw)) {
-      console.warn("[applicationsApi] unexpected /api/applications/mine", res.status);
+      console.warn("[applicationsApi] unexpected /api/applications/mine", res.status, raw);
     }
+    return { applications: [], loadFailed: true };
   } catch (e) {
     console.warn("[applicationsApi] /api/applications/mine failed", e);
+    return { applications: [], loadFailed: true };
   }
-
-  return [];
 }

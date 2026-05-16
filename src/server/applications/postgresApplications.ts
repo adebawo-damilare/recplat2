@@ -5,20 +5,65 @@ import { getDrizzleDb } from "../db/postgres";
 import { getVacancyById } from "../jobs/postgresVacancies";
 import { applications, candidateProfiles, categories, vacancies } from "../schema";
 
+function isMissingStatusUpdatedAtColumn(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /status_updated_at/i.test(msg);
+}
+
+type CandidateApplicationRow = {
+  id: string;
+  vacancyId: string;
+  status: string | null;
+  createdAt: Date;
+  statusUpdatedAt: Date;
+};
+
+async function selectCandidateApplicationRows(candidateUserId: string): Promise<CandidateApplicationRow[]> {
+  const db = getDrizzleDb();
+  try {
+    const rows = await db
+      .select({
+        id: applications.id,
+        vacancyId: applications.vacancyId,
+        status: applications.status,
+        createdAt: applications.createdAt,
+        statusUpdatedAt: applications.statusUpdatedAt,
+      })
+      .from(applications)
+      .where(eq(applications.candidateUserId, candidateUserId))
+      .orderBy(desc(applications.createdAt));
+    return rows.map((r) => ({
+      id: r.id,
+      vacancyId: r.vacancyId,
+      status: r.status,
+      createdAt: r.createdAt,
+      statusUpdatedAt: r.statusUpdatedAt,
+    }));
+  } catch (err) {
+    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    const rows = await db
+      .select({
+        id: applications.id,
+        vacancyId: applications.vacancyId,
+        status: applications.status,
+        createdAt: applications.createdAt,
+      })
+      .from(applications)
+      .where(eq(applications.candidateUserId, candidateUserId))
+      .orderBy(desc(applications.createdAt));
+    return rows.map((r) => ({
+      id: r.id,
+      vacancyId: r.vacancyId,
+      status: r.status,
+      createdAt: r.createdAt,
+      statusUpdatedAt: r.createdAt,
+    }));
+  }
+}
+
 /** Lists a candidate's applications with vacancy rows joined via lookup (Jobs Slice / Postgres path). */
 export async function listApplicationsWithVacanciesForCandidate(candidateUserId: string) {
-  const db = getDrizzleDb();
-  const rows = await db
-    .select({
-      id: applications.id,
-      vacancyId: applications.vacancyId,
-      status: applications.status,
-      createdAt: applications.createdAt,
-      statusUpdatedAt: applications.statusUpdatedAt,
-    })
-    .from(applications)
-    .where(eq(applications.candidateUserId, candidateUserId))
-    .orderBy(desc(applications.createdAt));
+  const rows = await selectCandidateApplicationRows(candidateUserId);
 
   const out: {
     id: string;
@@ -90,34 +135,89 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
   const lane = filtersIn?.categorySlug?.trim().toLowerCase();
   if (lane) filters.push(eq(categories.slug, lane));
 
-  const rows = await db
-    .select({
-      applicationId: applications.id,
-      vacancyId: applications.vacancyId,
-      candidateUserId: applications.candidateUserId,
-      status: applications.status,
-      appliedAt: applications.createdAt,
-      statusUpdatedAt: applications.statusUpdatedAt,
-      vacancyJobTitle: vacancies.jobTitle,
-      vacancyCompany: vacancies.companyNameDenorm,
-      categorySlug: categories.slug,
-      categoryLabel: categories.label,
-      candidateFirstName: candidateProfiles.firstName,
-      candidateLastName: candidateProfiles.lastName,
-      candidateEmailSnapshot: candidateProfiles.emailSnapshot,
-      candidateHeadline: candidateProfiles.headline,
-      candidateSummary: candidateProfiles.summary,
-      candidateSkills: candidateProfiles.skills,
-      candidateExperience: candidateProfiles.experience,
-      candidatePortfolioUrl: candidateProfiles.portfolioUrl,
-      candidatePortfolioContent: candidateProfiles.portfolioContent,
-    })
-    .from(applications)
-    .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
-    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
-    .leftJoin(candidateProfiles, sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`)
-    .where(and(...filters)!)
-    .orderBy(desc(applications.createdAt));
+  type BoardSelectRow = {
+    applicationId: string;
+    vacancyId: string;
+    candidateUserId: string;
+    status: string | null;
+    appliedAt: Date;
+    statusUpdatedAt: Date;
+    vacancyJobTitle: string;
+    vacancyCompany: string;
+    categorySlug: string | null;
+    categoryLabel: string | null;
+    candidateFirstName: string | null;
+    candidateLastName: string | null;
+    candidateEmailSnapshot: string | null;
+    candidateHeadline: string | null;
+    candidateSummary: string | null;
+    candidateSkills: string | null;
+    candidateExperience: string | null;
+    candidatePortfolioUrl: string | null;
+    candidatePortfolioContent: string | null;
+  };
+
+  let rows: BoardSelectRow[];
+  try {
+    rows = await db
+      .select({
+        applicationId: applications.id,
+        vacancyId: applications.vacancyId,
+        candidateUserId: applications.candidateUserId,
+        status: applications.status,
+        appliedAt: applications.createdAt,
+        statusUpdatedAt: applications.statusUpdatedAt,
+        vacancyJobTitle: vacancies.jobTitle,
+        vacancyCompany: vacancies.companyNameDenorm,
+        categorySlug: categories.slug,
+        categoryLabel: categories.label,
+        candidateFirstName: candidateProfiles.firstName,
+        candidateLastName: candidateProfiles.lastName,
+        candidateEmailSnapshot: candidateProfiles.emailSnapshot,
+        candidateHeadline: candidateProfiles.headline,
+        candidateSummary: candidateProfiles.summary,
+        candidateSkills: candidateProfiles.skills,
+        candidateExperience: candidateProfiles.experience,
+        candidatePortfolioUrl: candidateProfiles.portfolioUrl,
+        candidatePortfolioContent: candidateProfiles.portfolioContent,
+      })
+      .from(applications)
+      .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
+      .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+      .leftJoin(candidateProfiles, sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`)
+      .where(and(...filters)!)
+      .orderBy(desc(applications.createdAt));
+  } catch (err) {
+    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    const legacy = await db
+      .select({
+        applicationId: applications.id,
+        vacancyId: applications.vacancyId,
+        candidateUserId: applications.candidateUserId,
+        status: applications.status,
+        appliedAt: applications.createdAt,
+        vacancyJobTitle: vacancies.jobTitle,
+        vacancyCompany: vacancies.companyNameDenorm,
+        categorySlug: categories.slug,
+        categoryLabel: categories.label,
+        candidateFirstName: candidateProfiles.firstName,
+        candidateLastName: candidateProfiles.lastName,
+        candidateEmailSnapshot: candidateProfiles.emailSnapshot,
+        candidateHeadline: candidateProfiles.headline,
+        candidateSummary: candidateProfiles.summary,
+        candidateSkills: candidateProfiles.skills,
+        candidateExperience: candidateProfiles.experience,
+        candidatePortfolioUrl: candidateProfiles.portfolioUrl,
+        candidatePortfolioContent: candidateProfiles.portfolioContent,
+      })
+      .from(applications)
+      .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
+      .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+      .leftJoin(candidateProfiles, sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`)
+      .where(and(...filters)!)
+      .orderBy(desc(applications.createdAt));
+    rows = legacy.map((r) => ({ ...r, statusUpdatedAt: r.appliedAt }));
+  }
 
   const out: RecruiterBoardRow[] = rows.map((r) => ({
     id: r.applicationId,
@@ -168,9 +268,14 @@ export async function updateApplicationStatusForVacancyOwner(
   if (!row) return { ok: false, reason: "NOT_FOUND" };
   if (row.postedBy !== ownerUserId) return { ok: false, reason: "FORBIDDEN" };
 
-  await db
-    .update(applications)
-    .set({ status, statusUpdatedAt: new Date() })
-    .where(eq(applications.id, applicationId));
+  try {
+    await db
+      .update(applications)
+      .set({ status, statusUpdatedAt: new Date() })
+      .where(eq(applications.id, applicationId));
+  } catch (err) {
+    if (!isMissingStatusUpdatedAtColumn(err)) throw err;
+    await db.update(applications).set({ status }).where(eq(applications.id, applicationId));
+  }
   return { ok: true };
 }

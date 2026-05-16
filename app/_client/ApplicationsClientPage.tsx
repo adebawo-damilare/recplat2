@@ -14,6 +14,7 @@ export default function ApplicationsClientPage() {
   const { user, loading } = useTalentBridgeUser();
   const [applications, setApplications] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/sign-in");
@@ -24,8 +25,9 @@ export default function ApplicationsClientPage() {
     if (!user || user.role !== "candidate") return;
     setAppsLoading(true);
     try {
-      const apps = await fetchMyApplicationsWithFallback();
-      setApplications(apps ?? []);
+      const { applications: apps, loadFailed: failed } = await fetchMyApplicationsWithFallback();
+      setApplications(apps);
+      setLoadFailed(failed);
     } finally {
       setAppsLoading(false);
     }
@@ -33,6 +35,14 @@ export default function ApplicationsClientPage() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, [load]);
 
   if (loading || !user || user.role !== "candidate") {
@@ -64,7 +74,12 @@ export default function ApplicationsClientPage() {
           <p className="text-neutral-500 font-medium mt-2">Track roles you&apos;ve applied to and open the listing anytime.</p>
         </header>
 
-        <MyApplicationsBoard applications={applications} loading={appsLoading} />
+        <MyApplicationsBoard
+          applications={applications}
+          loading={appsLoading}
+          loadFailed={loadFailed}
+          onRetry={() => void load()}
+        />
       </div>
     </div>
   );
