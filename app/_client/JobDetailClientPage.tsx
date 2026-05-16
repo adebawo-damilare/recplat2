@@ -20,12 +20,18 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
       talentBridgeUiNotify("Please sign in to apply for jobs.");
       return;
     }
+    if (u.role !== "candidate") {
+      talentBridgeUiNotify("Only candidate accounts can apply. Use a candidate account or register as a candidate.");
+      return;
+    }
     if (!job.id) return;
     setApplying(true);
     try {
-      const ok = await applyToVacancyWithFallback(job.id);
-      if (ok) {
+      const result = await applyToVacancyWithFallback(job.id);
+      if (result === "created" || result === "already_applied") {
         setApplied(true);
+      }
+      if (result === "created") {
         talentBridgeUiNotify("Application sent successfully!");
       }
     } catch (e) {

@@ -377,19 +377,33 @@ function isMissingStatusUpdatedAtColumn(err: unknown): boolean {
   return /status_updated_at/i.test(msg);
 }
 
-export async function recordApplicationPostgres(vacancyId: string, candidateUserId: string) {
+export type RecordApplicationResult = { created: boolean; applicationId?: string };
+
+export async function recordApplicationPostgres(
+  vacancyId: string,
+  candidateUserId: string,
+): Promise<RecordApplicationResult> {
   const db = getDrizzleDb();
 
-  try {
-    await db
+  const insertWithReturning = async (includeStatusUpdatedAt: boolean) => {
+    const values = includeStatusUpdatedAt
+      ? { vacancyId, candidateUserId, status: "applied" as const, statusUpdatedAt: new Date() }
+      : { vacancyId, candidateUserId, status: "applied" as const };
+    return db
       .insert(applications)
-      .values({ vacancyId, candidateUserId, status: "applied", statusUpdatedAt: new Date() })
-      .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
+      .values(values)
+      .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] })
+      .returning({ id: applications.id });
+  };
+
+  try {
+    const rows = await insertWithReturning(true);
+    if (rows[0]?.id) return { created: true, applicationId: rows[0].id };
   } catch (err) {
     if (!isMissingStatusUpdatedAtColumn(err)) throw err;
-    await db
-      .insert(applications)
-      .values({ vacancyId, candidateUserId, status: "applied" })
-      .onConflictDoNothing({ target: [applications.vacancyId, applications.candidateUserId] });
+    const rows = await insertWithReturning(false);
+    if (rows[0]?.id) return { created: true, applicationId: rows[0].id };
   }
+
+  return { created: false };
 }
