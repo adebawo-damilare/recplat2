@@ -39,18 +39,37 @@ export async function POST(request: NextRequest) {
   }
 
   const vacancy = await getVacancyById(vacancyId);
-  if (!vacancy || vacancy.status !== "open") {
-    return NextResponse.json({ error: "Vacancy is not available." }, { status: 400 });
+  if (!vacancy) {
+    return NextResponse.json(
+      { error: "Job not found. It may have been removed.", code: "VACANCY_NOT_FOUND" },
+      { status: 404 },
+    );
+  }
+  if (vacancy.status !== "open") {
+    return NextResponse.json(
+      { error: "This job is no longer accepting applications.", code: "VACANCY_CLOSED" },
+      { status: 400 },
+    );
   }
 
-  await recordApplicationPostgres(vacancyId, authResult.user.userId);
-  await recordAiAudit({
-    actorUserId: authResult.user.userId,
-    eventType: "application.created",
-    payload: { vacancyId },
-    provider: "system",
-    model: null,
-  });
+  const recorded = await recordApplicationPostgres(vacancyId, authResult.user.userId);
+  if (recorded.created) {
+    await recordAiAudit({
+      actorUserId: authResult.user.userId,
+      eventType: "application.created",
+      payload: { vacancyId, applicationId: recorded.applicationId },
+      provider: "system",
+      model: null,
+    });
+  }
 
-  return NextResponse.json({ ok: true, vacancyId });
+  return NextResponse.json({
+    ok: true,
+    created: recorded.created,
+    applicationId: recorded.applicationId,
+    vacancyId,
+    ...(recorded.created
+      ? {}
+      : { message: "You have already applied to this job." }),
+  });
 }

@@ -244,7 +244,9 @@ export async function closeVacancyWithFallback(id: string) {
   throw new Error("Unable to close vacancy.");
 }
 
-export async function applyToVacancyWithFallback(vacancyId: string): Promise<boolean> {
+export type ApplyToVacancyResult = "created" | "already_applied" | false;
+
+export async function applyToVacancyWithFallback(vacancyId: string): Promise<ApplyToVacancyResult> {
   const signedIn = await ensureSignedIn();
   if (!signedIn) {
     talentBridgeUiNotify("Please sign in to apply for jobs.");
@@ -258,12 +260,31 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<boo
       credentials: "same-origin",
       body: JSON.stringify({ vacancyId }),
     });
-    const raw = (await res.json().catch(() => ({}))) as { code?: string };
+    const raw = (await res.json().catch(() => ({}))) as {
+      code?: string;
+      error?: string;
+      message?: string;
+      created?: boolean;
+    };
     if (res.ok) {
-      return true;
+      if (raw.created === false) {
+        talentBridgeUiNotify(raw.message || "You have already applied to this job.");
+        return "already_applied";
+      }
+      return "created";
+    }
+    if (res.status === 403 && raw.code === "FORBIDDEN_ROLE") {
+      talentBridgeUiNotify(
+        raw.error || "This action requires a candidate account. Sign in as a candidate or register a new account.",
+      );
+      return false;
+    }
+    if (res.status === 400 || res.status === 404) {
+      talentBridgeUiNotify(raw.error || "This job is not available to apply to.");
+      return false;
     }
     if (!shouldFallback(res.status, raw)) {
-      talentBridgeUiNotify("Unable to apply right now.");
+      talentBridgeUiNotify(raw.error || "Unable to apply right now.");
       return false;
     }
   } catch (error) {

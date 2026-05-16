@@ -8,7 +8,9 @@ import { motion } from "motion/react";
 import { Search, MapPin, Briefcase, DollarSign, ChevronRight, ChevronLeft, X } from "lucide-react";
 import type { Vacancy } from "../lib/domainTypes";
 import { refreshTalentBridgeSession } from "../lib/authBrowser";
+import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
 import { fetchPublicJobsPage, applyToVacancyWithFallback } from "../lib/jobsApi";
+import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import { talentBridgeUiNotify } from "../lib/talentBridgeUiNotify";
 import { useTalentCategories } from "./jobs/useTalentCategories";
 import type { JobBoardSyncedQuery } from "./jobs/jobBoardSyncedQueryTypes";
@@ -23,6 +25,7 @@ type JobBoardProps = {
 };
 
 export default function JobBoard({ syncedQuery }: JobBoardProps) {
+  const { user } = useTalentBridgeUser();
   const lanes = useTalentCategories();
   const [internalLane, setInternalLane] = useState<string>("all");
   const [internalJobType, setInternalJobType] = useState<"all" | JobType>("all");
@@ -93,19 +96,37 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     setSelectedJob(null);
   }, [pageIndex, debouncedSearch, laneFilter, jobTypeFilter]);
 
+  useEffect(() => {
+    if (!user || user.role !== "candidate") return;
+    let cancelled = false;
+    void fetchMyApplicationsWithFallback().then(({ applications: apps }) => {
+      if (cancelled) return;
+      setAppliedJobs(new Set(apps.map((a) => a.vacancyId).filter(Boolean)));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.role]);
+
   const handleApply = async () => {
     const u = await refreshTalentBridgeSession();
     if (!u) {
       talentBridgeUiNotify("Please sign in to apply for jobs.");
       return;
     }
+    if (u.role !== "candidate") {
+      talentBridgeUiNotify("Only candidate accounts can apply. Use a candidate account or register as a candidate.");
+      return;
+    }
     if (!selectedJob?.id) return;
 
     setApplying(true);
     try {
-      const ok = await applyToVacancyWithFallback(selectedJob.id);
-      if (ok) {
+      const result = await applyToVacancyWithFallback(selectedJob.id);
+      if (result === "created" || result === "already_applied") {
         setAppliedJobs((prev) => new Set(prev).add(selectedJob.id!));
+      }
+      if (result === "created") {
         talentBridgeUiNotify("Application sent successfully!");
       }
     } catch (error) {
