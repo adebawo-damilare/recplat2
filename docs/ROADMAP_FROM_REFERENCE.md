@@ -49,10 +49,10 @@ These are now explicitly promoted into **`docs/ROADMAP.md`** as useful ideas to 
 | **Pipeline notes + stage history** | Pipeline contract, `pipeline_stage_changes`, candidate notes | Auditable status changes and lightweight notes, not a full ATS replacement |
 | **Notification delivery ledger** | Notification contract includes in-app notification plus email delivery record | Observable workflow events and future email outbox support |
 | **Thin admin moderation + analytics cockpit** | Admin console, moderation queue, analytics dashboard | Minimal admin review and platform counts before deeper admin tooling |
-| **Candidate career toolkit** | Old `talentbridge` candidate dashboard exposed Resume Builder and Salary Insights | Candidate-development backlog after richer profiles and category fields |
+| **Candidate career toolkit** | Old reference candidate dashboard exposed Resume Builder and Salary Insights | Candidate-development backlog after richer profiles and category fields |
 | **Public pricing/contact page** | `recruit/docs/product-map.md` public surface | Paying/public milestone support page, separate from workflow screens |
 
-These are **product/workflow learnings only**. Do not reuse `talentbridge` Firebase/local seed machinery or `recruit` local JSON-store/backfill patterns.
+These are **product/workflow learnings only**. Do not reuse the removed reference app's Firebase/local seed machinery or `recruit` local JSON-store/backfill patterns.
 
 ---
 
@@ -115,7 +115,7 @@ From [`release-checklist.md`](../recruit/docs/release-checklist.md):
 
 From PRD **out of scope**: payroll, contracts, invoicing, full ATS replacement, live video, deep HRIS, automated hiring decisions, marketplace escrow.
 
-Infrastructure exclusions: do not adopt the old Firebase/local seed machinery from `talentbridge/`, and do not adopt `recruit/` local JSON-store or JSON backfill patterns. TalentBridge stays on its Postgres/API path.
+Infrastructure exclusions: do not adopt the old Firebase/local seed machinery from the removed reference app, and do not adopt `recruit/` local JSON-store or JSON backfill patterns. TalentBridge stays on its Postgres/API path.
 
 ---
 

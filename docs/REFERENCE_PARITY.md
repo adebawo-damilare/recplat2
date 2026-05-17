@@ -1,6 +1,6 @@
 # Reference app parity (nested `recruit/` vs TalentBridge)
 
-The nested **`recruit/`** tree is a **pattern reference only** (not a second product UI). This document tracks what we **adopted** in TalentBridge (`recruit2`) versus what the reference implements in full, so expectations stay clear as we add features.
+The nested **`recruit/`** tree is a **pattern reference only** (not a second product UI). This document tracks what we **adopted** in this repo versus what the reference implements in full, so expectations stay clear as we add features.
 
 **Last reviewed:** 2026-05-17 (promoted reference product/workflow learnings into roadmap; reaffirmed Firebase/local seed and JSON-store exclusions).
 
@@ -31,7 +31,7 @@ The nested **`recruit/`** tree is a **pattern reference only** (not a second pro
 | Full ERD: DB sessions, invitations, screening sessions, pipeline tables, moderation, search index, … | **Out of scope** for the first slice; add tables when product needs them (`docs/ROADMAP.md`). |
 | `recruit` cookie + scrypt + `getRequestUser()` | Not copied verbatim; this repo uses a JWT session-cookie flow with Postgres-backed users. |
 | `recruit` JSON file store + `db:backfill` from that world | Not used and should not be adopted; product ideas may be reused, but runtime data stays on Postgres-backed APIs. |
-| `talentbridge` Firebase/local seed machinery | Not used and should not be adopted; keep demo data on repo-specific Postgres seed scripts. |
+| Removed reference app Firebase/local seed machinery | Not used and should not be adopted; keep demo data on repo-specific Postgres seed scripts. |
 | Legacy migration tooling from non-Postgres stores | **Removed** — we standardize on SQL migrations plus app/API writes. |
 | Reference app’s `smoke-api` / `backfill` scripts verbatim | Replaced with repo-specific `scripts/smoke-api.mjs`, `scripts/db-apply.mjs`, `scripts/seed-neon-sample.ts`. |
 
@@ -48,10 +48,10 @@ These are **not adopted as code yet**, but are now named in **`docs/ROADMAP.md`*
 | Pipeline notes + stage history | Lightweight auditable pipeline trail, not a full ATS |
 | Notification contract with email delivery records | In-app notifications plus delivery ledger/outbox |
 | Admin moderation and analytics surfaces | Thin admin cockpit once workflow events exist |
-| Old TalentBridge candidate toolkit affordances | Resume builder and salary insights backlog |
+| Old reference candidate toolkit affordances | Resume builder and salary insights backlog |
 | Public pricing/contact page | Launch support surface for paying/public milestone |
 
-Adopt these as product/workflow lessons only; do not import `talentbridge` Firebase/local seed code or `recruit` JSON-store patterns.
+Adopt these as product/workflow lessons only; do not import the removed reference app's Firebase/local seed code or `recruit` JSON-store patterns.
 
 ---
 

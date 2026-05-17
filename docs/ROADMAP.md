@@ -54,7 +54,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
    - **Pipeline notes + stage history:** keep application status changes auditable with recruiter notes/history, without growing into a full ATS.
    - **Notification delivery ledger:** add in-app notifications plus an email/outbox delivery record so workflow messages are observable even before real email sending is wired.
    - **Thin admin moderation + analytics cockpit:** category/template governance, moderation review, and basic platform/workflow counts as an early admin slice.
-   - **Candidate career toolkit:** promote the old TalentBridge “Resume Builder” and “Salary Insights” affordances into candidate-development backlog items after richer profiles land.
+   - **Candidate career toolkit:** promote the old reference-app “Resume Builder” and “Salary Insights” affordances into candidate-development backlog items after richer profiles land.
    - **Public pricing/contact page:** add a simple conversion/support page for the paying/public milestone, separate from product workflow.
 4. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.  
 5. Expand schema (pipeline tables, screenings storage, membership, notifications, moderation, analytics) only when a Phase B–D slice requires it—avoid premature tables.  
@@ -63,8 +63,8 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 ## Reference Boundaries
 
-- Adopt **product and workflow lessons** from `talentbridge/` and `recruit/`.
-- Do **not** adopt the old Firebase/local seed machinery from `talentbridge/`.
+- Adopt **product and workflow lessons** from archived reference material and `recruit/`.
+- Do **not** adopt the old Firebase/local seed machinery from the removed reference app.
 - Do **not** adopt the `recruit` local JSON-store or backfill patterns.
 - Keep TalentBridge runtime data on the current Postgres/API path, with demo data seeded through repo-specific Postgres scripts.
 
