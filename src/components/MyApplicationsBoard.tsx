@@ -44,9 +44,17 @@ export type MyApplicationsBoardProps = {
   loading?: boolean;
   loadFailed?: boolean;
   onRetry?: () => void;
+  /** applicationId → screening invitation id (pending only) */
+  pendingScreeningByApplicationId?: Record<string, string>;
 };
 
-export default function MyApplicationsBoard({ applications, loading, loadFailed, onRetry }: MyApplicationsBoardProps) {
+export default function MyApplicationsBoard({
+  applications,
+  loading,
+  loadFailed,
+  onRetry,
+  pendingScreeningByApplicationId = {},
+}: MyApplicationsBoardProps) {
   if (loading) {
     return (
       <motion.div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden p-8 animate-pulse" data-testid="my-applications-loading">
@@ -84,8 +92,10 @@ export default function MyApplicationsBoard({ applications, loading, loadFailed,
           {applications.map((app) => {
             const jobHref = app.vacancyId ? `/jobs/${encodeURIComponent(app.vacancyId)}` : "/jobs";
             const letter = app.vacancy?.companyName?.charAt(0) ?? "?";
+            const pendingScreeningId = app.id ? pendingScreeningByApplicationId[app.id] : undefined;
             return (
-              <a key={app.id ?? app.vacancyId} href={jobHref} className="block group" data-testid={`my-application-row-${app.vacancyId}`}>
+              <div key={app.id ?? app.vacancyId} className="relative" data-testid={`my-application-row-${app.vacancyId}`}>
+              <a href={jobHref} className="block group">
                 <motion.div
                   className="p-6 hover:bg-neutral-50/50 transition-colors flex items-center gap-6"
                   whileHover={{ x: 2 }}
@@ -128,6 +138,18 @@ export default function MyApplicationsBoard({ applications, loading, loadFailed,
                   <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-900 transition-colors shrink-0" aria-hidden />
                 </motion.div>
               </a>
+              {pendingScreeningId ? (
+                <div className="px-6 pb-4 -mt-2">
+                  <a
+                    href={`/dashboard/screenings/${encodeURIComponent(pendingScreeningId)}`}
+                    className="inline-flex text-xs font-bold text-violet-700 hover:text-violet-900 bg-violet-50 px-3 py-1.5 rounded-lg border border-violet-100"
+                    data-testid={`my-application-screening-cta-${app.vacancyId}`}
+                  >
+                    Complete Marketers screening →
+                  </a>
+                </div>
+              ) : null}
+              </div>
             );
           })}
         </motion.div>

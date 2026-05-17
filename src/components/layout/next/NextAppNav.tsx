@@ -67,6 +67,17 @@ export default function NextAppNav() {
                         My applications
                       </Link>
                       <Link
+                        href="/dashboard/screenings"
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                          pathname === "/dashboard/screenings" || pathname.startsWith("/dashboard/screenings/")
+                            ? "bg-violet-600 text-white shadow-lg shadow-violet-100"
+                            : "text-neutral-500 hover:bg-neutral-100"
+                        }`}
+                        data-testid="nav-screenings"
+                      >
+                        Screenings
+                      </Link>
+                      <Link
                         href="/dashboard/profile"
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
                           pathname === "/dashboard/profile"
@@ -149,6 +160,14 @@ export default function NextAppNav() {
                         className="block w-full text-center py-3 rounded-xl bg-blue-600 text-white font-bold text-sm"
                       >
                         My applications
+                      </Link>
+                      <Link
+                        href="/dashboard/screenings"
+                        onClick={closeMobile}
+                        className="block w-full text-center py-3 rounded-xl bg-violet-600 text-white font-bold text-sm"
+                        data-testid="nav-mobile-screenings"
+                      >
+                        Screenings
                       </Link>
                       <Link
                         href="/dashboard/profile"

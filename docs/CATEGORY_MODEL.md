@@ -28,6 +28,13 @@ This document captures how we applied the **“categories as templates”** idea
 - **`VacancyCategoryField`** — recruiter vacancy form lane selector.
 - **Job board** — lane + work-arrangement dropdowns + badges on listings; on Next **`/jobs`**, **`category`**, **`jobType`**, and **`q`** sync to the URL via **`app/_client/useJobBoardQuerySync.ts`** (shareable links; debounced **`q`**; compares to **`window.location.search`** for sync; **`lastPushedTriple`** + optimistic dropdown state so stale **`useSearchParams()`** cannot fight **`router.replace`** after **All** or other filter changes).
 
-## Next steps (not built here)
+## Screening pilot (Marketers lane)
 
-Per synthesis + **`docs/TALENTBRIDGE_MVP_PLAN.md`** + **`docs/ROADMAP_FROM_REFERENCE.md`**: **`category_fields`**, **`category_screening_questions`**, denormalized **search docs**, **`candidate_profiles`**, invitations/screenings — promote into **`docs/ROADMAP.md`** when prioritized.
+- Migration **`0009_marketers_screening.sql`**: `category_screening_questions`, `screening_invitations`, `screening_answers` (seeded questions for **`marketers`** only).
+- Recruiter: **Invite to screening** on pipeline candidate panel when the vacancy lane is **Marketers**.
+- Candidate: **`/dashboard/screenings`**, answer form, submit via **`POST /api/screenings/[id]/submit`**.
+- Other lanes: API returns **`NOT_PILOT_LANE`** until question templates are added and the server gate is extended.
+
+## Next steps
+
+Per synthesis: extend screening to **designers** + **sales**, then **`category_fields`**, denormalized **search docs**, richer **`candidate_profiles`**.

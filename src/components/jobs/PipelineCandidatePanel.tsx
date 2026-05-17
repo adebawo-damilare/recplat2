@@ -3,11 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Mail, Eye, Briefcase } from "lucide-react";
+import { X, Mail, Eye, Briefcase, ClipboardList, Loader2 } from "lucide-react";
 import type { RecruiterBoardApplication } from "../../lib/recruiterApplicationsApi";
 import { formatCandidateFullName } from "../../lib/candidateName";
 import { applicationStatusLabel } from "../../lib/applicationStatus";
+import {
+  fetchScreeningByApplication,
+  fetchScreeningDetail,
+  inviteToScreening,
+  type ScreeningInvitationDetail,
+  type ScreeningInvitationSummary,
+} from "../../lib/screeningsApi";
+import {
+  isScreeningPilotCategorySlug,
+  screeningInvitationStatusLabel,
+} from "../../shared/screeningPilot";
+import { talentBridgeUiNotify } from "../../lib/talentBridgeUiNotify";
 
 type PipelineCandidatePanelProps = {
   row: RecruiterBoardApplication | null;
@@ -16,11 +29,61 @@ type PipelineCandidatePanelProps = {
 };
 
 export default function PipelineCandidatePanel({ row, onClose, onViewPortfolio }: PipelineCandidatePanelProps) {
+  const [screening, setScreening] = useState<ScreeningInvitationSummary | null>(null);
+  const [screeningDetail, setScreeningDetail] = useState<ScreeningInvitationDetail | null>(null);
+  const [screeningLoading, setScreeningLoading] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+
   const name = row
     ? formatCandidateFullName(row.candidate.firstName, row.candidate.lastName) || row.candidate.email || "Candidate"
     : "";
 
   const hasPortfolio = Boolean(row?.candidate.portfolioContent?.trim() || row?.candidate.portfolioUrl?.trim());
+  const pilotLane = isScreeningPilotCategorySlug(row?.vacancy.category?.slug);
+
+  const loadScreening = useCallback(async (applicationId: string) => {
+    setScreeningLoading(true);
+    try {
+      const inv = await fetchScreeningByApplication(applicationId);
+      setScreening(inv);
+      if (inv?.status === "submitted") {
+        setScreeningDetail(await fetchScreeningDetail(inv.id));
+      } else {
+        setScreeningDetail(null);
+      }
+    } finally {
+      setScreeningLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!row?.id || !pilotLane) {
+      setScreening(null);
+      setScreeningDetail(null);
+      return;
+    }
+    void loadScreening(row.id);
+  }, [row?.id, pilotLane, loadScreening]);
+
+  const handleInvite = async () => {
+    if (!row) return;
+    setInviteLoading(true);
+    try {
+      const result = await inviteToScreening(row.id);
+      if (!result.ok) {
+        talentBridgeUiNotify(result.error || "Could not send screening invitation.");
+        return;
+      }
+      talentBridgeUiNotify(
+        result.invitation?.status === "submitted"
+          ? "Candidate already completed this screening."
+          : "Screening invitation sent.",
+      );
+      await loadScreening(row.id);
+    } finally {
+      setInviteLoading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -108,6 +171,56 @@ export default function PipelineCandidatePanel({ row, onClose, onViewPortfolio }
 
               {!row.candidate.summary && !row.candidate.skills && !row.candidate.experience && !hasPortfolio ? (
                 <p className="text-sm text-neutral-500">This candidate has not completed a detailed profile yet.</p>
+              ) : null}
+
+              {pilotLane ? (
+                <section
+                  className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4"
+                  data-testid="recruiter-pipeline-screening"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <ClipboardList className="w-4 h-4 text-violet-700" />
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-violet-800">Marketers screening</h5>
+                  </div>
+                  {screeningLoading ? (
+                    <p className="text-sm text-neutral-500 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                    </p>
+                  ) : screening ? (
+                    <motion.div className="space-y-3">
+                      <p className="text-sm font-semibold text-neutral-800">
+                        {screeningInvitationStatusLabel(screening.status)}
+                      </p>
+                      {screening.status === "submitted" && screeningDetail?.answers.length ? (
+                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                          {screeningDetail.answers.map((a) => (
+                            <div key={a.questionId} className="text-sm">
+                              <p className="font-semibold text-neutral-800 mb-1">{a.prompt}</p>
+                              <p className="text-neutral-600 whitespace-pre-wrap line-clamp-4">{a.answerText}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : screening.status === "pending" ? (
+                        <p className="text-sm text-neutral-600">Waiting for the candidate to submit responses.</p>
+                      ) : null}
+                    </motion.div>
+                  ) : (
+                    <p className="text-sm text-neutral-600 mb-3">
+                      Send async screening questions tailored to Marketers roles.
+                    </p>
+                  )}
+                  {!screening && !screeningLoading ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleInvite()}
+                      disabled={inviteLoading}
+                      className="w-full py-2.5 bg-violet-700 text-white rounded-xl text-sm font-bold hover:bg-violet-800 disabled:opacity-60"
+                      data-testid="recruiter-pipeline-invite-screening"
+                    >
+                      {inviteLoading ? "Sending…" : "Invite to screening"}
+                    </button>
+                  ) : null}
+                </section>
               ) : null}
             </div>
 

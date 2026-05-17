@@ -24,6 +24,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - Client bridges `src/lib/jobsApi.ts`, **`src/lib/applicationsApi.ts`**.
 - UI uses `jobsApi` for list / seed / apply / recruiter CRUD (TalentBridge components only).
 - **Recruiter company dashboard:** **Your Vacancies** client-side search over owned rows (substring on title, company, location, salary, status, lane label, description, requirements); **`e2e/authenticated/recruiter-vacancies-search.spec.ts`**.
+- **Marketers screening pilot (Phase B slice):** `category_screening_questions`, `screening_invitations`, `screening_answers` (`database/migrations/0009_marketers_screening.sql`); recruiter **Invite to screening** on pipeline panel for **Marketers** vacancies only; candidate **`/dashboard/screenings`** + submit flow; APIs under **`/api/screenings/*`**.
 
 ## Tooling
 
@@ -46,7 +47,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 **Authenticated E2E (Playwright):** run locally with **`npm run test:e2e:auth`** when **`.env.local`** has **`DATABASE_URL`** + **`TALENTBRIDGE_AUTH_SECRET`** (Next loads them for **`npm run dev`**). CI runs the same path in **`smoke-postgres`** after **`E2E_RUN_AUTH=1`** (see **`docs/CICD.md`**). Specs live under **`e2e/authenticated/`** (candidate apply/board/detail/dashboard; recruiter dashboard, **`recruiter-vacancies`**, **`recruiter-vacancies-search`**, **`recruiter-pipeline`** including **`PATCH /api/applications/[id]`**, **`recruiter-post-vacancy`** UI **`POST /api/jobs`**, **`recruiter-vacancy-lifecycle`** edit **`PATCH /api/jobs/[id]`** + close **`confirm()`** + **`PATCH` status closed**). Session seeding is **`e2e/auth.setup.ts`**: two vacancies plus a candidate **`POST /api/applications`** against the “apply” vacancy so the recruiter pipeline table is non-empty.
 
 1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is green (merge **`dev` → `main`**, prod migrations, **`release:prod:smoke`**, manual gate—including **Your Vacancies** search on **`/dashboard/company`**).  
-2. **Phase B–D (next backbone):** promote **`recruit/docs/`** structural work—**`category_fields`**, screening templates, richer **candidate profiles**, invitations / screening UX, recruiter pipeline depth—per **`docs/TALENTBRIDGE_MVP_PLAN.md`** (especially §4 categories + §3 surfaces) and P0 cues in **`docs/ROADMAP_FROM_REFERENCE.md`**. Track concrete tasks only in **`docs/ROADMAP.md`** once a slice is chosen (avoid schema sprawl until product needs it).  
+2. **Phase B–D (next backbone):** extend **screening pilot** to **designers** + **sales** (duplicate question seeds + remove lane gate), then **`category_fields`**, richer **candidate profiles**, in-app notifications—per **`docs/TALENTBRIDGE_MVP_PLAN.md`** and **`docs/ROADMAP_FROM_REFERENCE.md`**.  
 3. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.  
 4. Expand schema (pipeline tables, screenings storage) only when a Phase B–D slice requires it—avoid premature tables.  
 5. Dedicated **search index / workers** stay deferred until discovery scale (**`docs/TALENTBRIDGE_MVP_PLAN.md`** §6).  
