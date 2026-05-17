@@ -5,3 +5,6 @@ export { applications } from "./applications";
 export { aiAuditEvents } from "./aiAudit";
 export { users } from "./users";
 export { candidateProfiles } from "./candidateProfiles";
+export { categoryScreeningQuestions } from "./categoryScreeningQuestions";
+export { screeningInvitations } from "./screeningInvitations";
+export { screeningAnswers } from "./screeningAnswers";

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 import { fetchMyApplicationsWithFallback } from "../../src/lib/applicationsApi";
+import { fetchMyScreenings } from "../../src/lib/screeningsApi";
 import type { Application } from "../../src/lib/domainTypes";
 import MyApplicationsBoard from "../../src/components/MyApplicationsBoard";
 
@@ -15,6 +16,7 @@ export default function ApplicationsClientPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [pendingScreeningByApplicationId, setPendingScreeningByApplicationId] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!loading && !user) router.replace("/sign-in");
@@ -25,9 +27,17 @@ export default function ApplicationsClientPage() {
     if (!user || user.role !== "candidate") return;
     setAppsLoading(true);
     try {
-      const { applications: apps, loadFailed: failed } = await fetchMyApplicationsWithFallback();
+      const [{ applications: apps, loadFailed: failed }, screenings] = await Promise.all([
+        fetchMyApplicationsWithFallback(),
+        fetchMyScreenings(),
+      ]);
       setApplications(apps);
       setLoadFailed(failed);
+      const pending: Record<string, string> = {};
+      for (const s of screenings) {
+        if (s.status === "pending") pending[s.applicationId] = s.id;
+      }
+      setPendingScreeningByApplicationId(pending);
     } finally {
       setAppsLoading(false);
     }
@@ -79,6 +89,7 @@ export default function ApplicationsClientPage() {
           loading={appsLoading}
           loadFailed={loadFailed}
           onRetry={() => void load()}
+          pendingScreeningByApplicationId={pendingScreeningByApplicationId}
         />
       </div>
     </div>
