@@ -26,9 +26,15 @@ type PipelineCandidatePanelProps = {
   row: RecruiterBoardApplication | null;
   onClose: () => void;
   onViewPortfolio: (row: RecruiterBoardApplication) => void;
+  onScreeningChange?: () => void;
 };
 
-export default function PipelineCandidatePanel({ row, onClose, onViewPortfolio }: PipelineCandidatePanelProps) {
+export default function PipelineCandidatePanel({
+  row,
+  onClose,
+  onViewPortfolio,
+  onScreeningChange,
+}: PipelineCandidatePanelProps) {
   const [screening, setScreening] = useState<ScreeningInvitationSummary | null>(null);
   const [screeningDetail, setScreeningDetail] = useState<ScreeningInvitationDetail | null>(null);
   const [screeningLoading, setScreeningLoading] = useState(false);
@@ -80,6 +86,7 @@ export default function PipelineCandidatePanel({ row, onClose, onViewPortfolio }
           : "Screening invitation sent.",
       );
       await loadScreening(row.id);
+      onScreeningChange?.();
     } finally {
       setInviteLoading(false);
     }

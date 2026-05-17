@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import {
   SCREENING_PILOT_CATEGORY_SLUG,
@@ -7,6 +7,7 @@ import {
 import { getDrizzleDb } from "../db/postgres";
 import {
   applications,
+  candidateProfiles,
   categories,
   categoryScreeningQuestions,
   screeningAnswers,
@@ -362,4 +363,119 @@ export async function submitScreeningInvitation(
   const summary = await getInvitationByApplicationId(inv.applicationId);
   if (!summary) return { ok: false, reason: "NOT_FOUND" };
   return { ok: true, invitation: summary };
+}
+
+export type ScreeningMatrixRow = {
+  applicationId: string;
+  candidateUserId: string;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  vacancyId: string;
+  screeningStatus: "not_invited" | "pending" | "submitted";
+  invitationId: string | null;
+  answersByQuestionId: Record<string, string | null>;
+};
+
+export type ScreeningMatrix = {
+  questions: ScreeningQuestionDto[];
+  rows: ScreeningMatrixRow[];
+};
+
+/** All applicants on Marketers vacancies owned by recruiter, with screening answers (blank when missing). */
+export async function listMarketersScreeningMatrixForOwner(
+  ownerUserId: string,
+  vacancyId?: string | null,
+): Promise<ScreeningMatrix> {
+  const questions = await listActiveQuestionsForPilotCategory();
+  if (questions.length === 0) {
+    return { questions: [], rows: [] };
+  }
+
+  const db = getDrizzleDb();
+  const filters = [
+    eq(vacancies.postedByUserId, ownerUserId),
+    eq(categories.slug, SCREENING_PILOT_CATEGORY_SLUG),
+  ];
+  const vid = vacancyId?.trim();
+  if (vid) filters.push(eq(applications.vacancyId, vid));
+
+  const appRows = await db
+    .select({
+      applicationId: applications.id,
+      candidateUserId: applications.candidateUserId,
+      vacancyId: applications.vacancyId,
+      jobTitle: vacancies.jobTitle,
+      firstName: candidateProfiles.firstName,
+      lastName: candidateProfiles.lastName,
+      emailSnapshot: candidateProfiles.emailSnapshot,
+      invitationId: screeningInvitations.id,
+      invitationStatus: screeningInvitations.status,
+    })
+    .from(applications)
+    .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
+    .innerJoin(categories, eq(vacancies.categoryId, categories.id))
+    .leftJoin(candidateProfiles, sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`)
+    .leftJoin(screeningInvitations, eq(screeningInvitations.applicationId, applications.id))
+    .where(and(...filters)!)
+    .orderBy(desc(applications.createdAt));
+
+  const invitationIds = appRows
+    .map((r) => r.invitationId)
+    .filter((id): id is string => Boolean(id));
+
+  const answersByInvitation = new Map<string, Map<string, string>>();
+  if (invitationIds.length > 0) {
+    const answerRows = await db
+      .select({
+        invitationId: screeningAnswers.invitationId,
+        questionId: screeningAnswers.questionId,
+        answerText: screeningAnswers.answerText,
+      })
+      .from(screeningAnswers)
+      .where(inArray(screeningAnswers.invitationId, invitationIds));
+
+    for (const a of answerRows) {
+      if (!answersByInvitation.has(a.invitationId)) {
+        answersByInvitation.set(a.invitationId, new Map());
+      }
+      answersByInvitation.get(a.invitationId)!.set(a.questionId, a.answerText);
+    }
+  }
+
+  const rows: ScreeningMatrixRow[] = appRows.map((r) => {
+    const screeningStatus: ScreeningMatrixRow["screeningStatus"] = !r.invitationId
+      ? "not_invited"
+      : r.invitationStatus === "submitted"
+        ? "submitted"
+        : "pending";
+
+    const answerMap = r.invitationId ? answersByInvitation.get(r.invitationId) : undefined;
+    const answersByQuestionId: Record<string, string | null> = {};
+    for (const q of questions) {
+      if (screeningStatus === "submitted" && answerMap?.has(q.id)) {
+        answersByQuestionId[q.id] = answerMap.get(q.id) ?? null;
+      } else if (screeningStatus === "pending") {
+        answersByQuestionId[q.id] = null;
+      } else {
+        answersByQuestionId[q.id] = null;
+      }
+    }
+
+    const name = [r.firstName?.trim(), r.lastName?.trim()].filter(Boolean).join(" ");
+
+    return {
+      applicationId: r.applicationId,
+      candidateUserId: r.candidateUserId,
+      candidateName: name || "(No profile)",
+      candidateEmail: r.emailSnapshot?.trim() || "",
+      jobTitle: r.jobTitle,
+      vacancyId: r.vacancyId,
+      screeningStatus,
+      invitationId: r.invitationId,
+      answersByQuestionId,
+    };
+  });
+
+  return { questions, rows };
 }
