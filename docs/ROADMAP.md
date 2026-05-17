@@ -48,10 +48,25 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is green (merge **`dev` → `main`**, prod migrations, **`release:prod:smoke`**, manual gate—including **Your Vacancies** search on **`/dashboard/company`**).  
 2. **Phase B–D (next backbone):** extend **screening pilot** to **designers** + **sales** (duplicate question seeds + remove lane gate), then **`category_fields`**, richer **candidate profiles**, in-app notifications—per **`docs/TALENTBRIDGE_MVP_PLAN.md`** and **`docs/ROADMAP_FROM_REFERENCE.md`**.  
-3. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.  
-4. Expand schema (pipeline tables, screenings storage) only when a Phase B–D slice requires it—avoid premature tables.  
-5. Dedicated **search index / workers** stay deferred until discovery scale (**`docs/TALENTBRIDGE_MVP_PLAN.md`** §6).  
-6. Keep expanding **authenticated Playwright** for any new recruiter/candidate surfaces; baseline is **`e2e/authenticated/`** + **`e2e/auth.setup.ts`** (see **E2E note**).
+3. **Promoted reference learnings to schedule as named slices** (reuse product/workflow ideas, not reference infrastructure):
+   - **Recruiter company onboarding + company membership:** create/claim company, invite or attach recruiters, and move beyond global recruiter role checks toward company-scoped permissions.
+   - **Recruiter follow-up queue:** collect pending screening invites, submitted screenings awaiting review, and copyable reminder nudges in one recruiter surface.
+   - **Pipeline notes + stage history:** keep application status changes auditable with recruiter notes/history, without growing into a full ATS.
+   - **Notification delivery ledger:** add in-app notifications plus an email/outbox delivery record so workflow messages are observable even before real email sending is wired.
+   - **Thin admin moderation + analytics cockpit:** category/template governance, moderation review, and basic platform/workflow counts as an early admin slice.
+   - **Candidate career toolkit:** promote the old TalentBridge “Resume Builder” and “Salary Insights” affordances into candidate-development backlog items after richer profiles land.
+   - **Public pricing/contact page:** add a simple conversion/support page for the paying/public milestone, separate from product workflow.
+4. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.  
+5. Expand schema (pipeline tables, screenings storage, membership, notifications, moderation, analytics) only when a Phase B–D slice requires it—avoid premature tables.  
+6. Dedicated **search index / workers** stay deferred until discovery scale (**`docs/TALENTBRIDGE_MVP_PLAN.md`** §6).  
+7. Keep expanding **authenticated Playwright** for any new recruiter/candidate/admin surfaces; baseline is **`e2e/authenticated/`** + **`e2e/auth.setup.ts`** (see **E2E note**).
+
+## Reference Boundaries
+
+- Adopt **product and workflow lessons** from `talentbridge/` and `recruit/`.
+- Do **not** adopt the old Firebase/local seed machinery from `talentbridge/`.
+- Do **not** adopt the `recruit` local JSON-store or backfill patterns.
+- Keep TalentBridge runtime data on the current Postgres/API path, with demo data seeded through repo-specific Postgres scripts.
 
 ## E2E note
 

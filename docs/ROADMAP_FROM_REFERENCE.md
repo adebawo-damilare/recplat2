@@ -38,6 +38,24 @@ Use this list to **prioritize** TalentBridge work—not everything belongs in v1
 
 ---
 
+## Promoted follow-up slices
+
+These are now explicitly promoted into **`docs/ROADMAP.md`** as useful ideas to adopt from the reference projects, while still deferring implementation until the team picks the next slice:
+
+| Slice | Source signal | TalentBridge adoption shape |
+|-------|---------------|-----------------------------|
+| **Recruiter company onboarding + company membership** | `recruit` product map and company-member schema | Company-scoped recruiter setup and permissions; no reference auth/session code copied |
+| **Recruiter follow-up queue** | `recruit/docs/api-contracts.md` follow-up contract and implemented feed | Pending invites, submitted screenings awaiting review, and recruiter nudges |
+| **Pipeline notes + stage history** | Pipeline contract, `pipeline_stage_changes`, candidate notes | Auditable status changes and lightweight notes, not a full ATS replacement |
+| **Notification delivery ledger** | Notification contract includes in-app notification plus email delivery record | Observable workflow events and future email outbox support |
+| **Thin admin moderation + analytics cockpit** | Admin console, moderation queue, analytics dashboard | Minimal admin review and platform counts before deeper admin tooling |
+| **Candidate career toolkit** | Old `talentbridge` candidate dashboard exposed Resume Builder and Salary Insights | Candidate-development backlog after richer profiles and category fields |
+| **Public pricing/contact page** | `recruit/docs/product-map.md` public surface | Paying/public milestone support page, separate from workflow screens |
+
+These are **product/workflow learnings only**. Do not reuse `talentbridge` Firebase/local seed machinery or `recruit` local JSON-store/backfill patterns.
+
+---
+
 ## P1 — AI assist (contracts worth implementing)
 
 From [`api-contracts.md`](../recruit/docs/api-contracts.md)—keep outputs **structured**, human-editable, audited:
@@ -96,6 +114,8 @@ From [`release-checklist.md`](../recruit/docs/release-checklist.md):
 ## Explicitly lower priority / out of scope for now
 
 From PRD **out of scope**: payroll, contracts, invoicing, full ATS replacement, live video, deep HRIS, automated hiring decisions, marketplace escrow.
+
+Infrastructure exclusions: do not adopt the old Firebase/local seed machinery from `talentbridge/`, and do not adopt `recruit/` local JSON-store or JSON backfill patterns. TalentBridge stays on its Postgres/API path.
 
 ---
 
