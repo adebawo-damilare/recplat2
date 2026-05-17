@@ -34,6 +34,9 @@ import VacancyForm from './VacancyForm';
 import PipelineCandidatePanel from "./jobs/PipelineCandidatePanel";
 import PortfolioViewer from "./PortfolioViewer";
 import { applicationStatusLabel } from "../lib/applicationStatus";
+import { fetchScreeningMatrix, type ScreeningMatrix } from "../lib/screeningsApi";
+import { SCREENING_PILOT_CATEGORY_SLUG } from "../shared/screeningPilot";
+import MarketersScreeningMatrix from "./jobs/MarketersScreeningMatrix";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
@@ -73,6 +76,9 @@ export default function CompanyDashboard() {
   const [pipelineLaneFilter, setPipelineLaneFilter] = useState("");
   const [selectedPipelineRow, setSelectedPipelineRow] = useState<RecruiterBoardApplication | null>(null);
   const [portfolioRow, setPortfolioRow] = useState<RecruiterBoardApplication | null>(null);
+  const [screeningMatrix, setScreeningMatrix] = useState<ScreeningMatrix>({ questions: [], rows: [] });
+  const [screeningMatrixLoading, setScreeningMatrixLoading] = useState(false);
+  const [screeningMatrixVacancyFilter, setScreeningMatrixVacancyFilter] = useState("");
 
   const fetchDataForUser = useCallback(async () => {
     if (!user) {
@@ -130,9 +136,50 @@ export default function CompanyDashboard() {
     pipelineVacancyFilter.trim() || pipelineStatusFilter.trim() || pipelineLaneFilter.trim(),
   );
 
+  const marketerVacancies = useMemo(
+    () =>
+      vacancies
+        .filter((v) => v.id && v.category?.slug === SCREENING_PILOT_CATEGORY_SLUG)
+        .map((v) => ({ id: v.id!, jobTitle: v.jobTitle })),
+    [vacancies],
+  );
+
+  const fetchScreeningMatrixData = useCallback(async () => {
+    if (!user || user.role !== "recruiter") {
+      setScreeningMatrix({ questions: [], rows: [] });
+      return;
+    }
+    setScreeningMatrixLoading(true);
+    try {
+      const data = await fetchScreeningMatrix(screeningMatrixVacancyFilter.trim() || undefined);
+      setScreeningMatrix(data);
+    } catch (e) {
+      console.error("Screening matrix load failed", e);
+      setScreeningMatrix({ questions: [], rows: [] });
+    } finally {
+      setScreeningMatrixLoading(false);
+    }
+  }, [user, screeningMatrixVacancyFilter]);
+
   useEffect(() => {
     void fetchPipelineBoard();
   }, [fetchPipelineBoard]);
+
+  useEffect(() => {
+    void fetchScreeningMatrixData();
+  }, [fetchScreeningMatrixData]);
+
+  const openPipelineApplicant = useCallback(
+    async (applicationId: string) => {
+      let row = pipelineRows.find((r) => r.id === applicationId);
+      if (!row) {
+        const rows = await fetchRecruiterApplicationBoard({ category: SCREENING_PILOT_CATEGORY_SLUG });
+        row = rows.find((r) => r.id === applicationId);
+      }
+      if (row) setSelectedPipelineRow(row);
+    },
+    [pipelineRows],
+  );
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to close this vacancy?")) return;
@@ -457,6 +504,16 @@ export default function CompanyDashboard() {
         )}
       </div>
 
+      <MarketersScreeningMatrix
+        matrix={screeningMatrix}
+        loading={screeningMatrixLoading}
+        vacancyFilter={screeningMatrixVacancyFilter}
+        marketerVacancies={marketerVacancies}
+        onVacancyFilterChange={setScreeningMatrixVacancyFilter}
+        onRefresh={() => void fetchScreeningMatrixData()}
+        onSelectApplicant={(applicationId) => void openPipelineApplicant(applicationId)}
+      />
+
       {/* Vacancies List */}
       <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden mb-12">
         <div className="px-8 py-6 border-b border-neutral-50 flex items-center justify-between">
@@ -638,6 +695,7 @@ export default function CompanyDashboard() {
           setSelectedPipelineRow(null);
           setPortfolioRow(row);
         }}
+        onScreeningChange={() => void fetchScreeningMatrixData()}
       />
       {portfolioRow ? (
         <PortfolioViewer

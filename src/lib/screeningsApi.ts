@@ -78,6 +78,39 @@ export async function fetchScreeningDetail(id: string): Promise<ScreeningInvitat
   return raw.invitation ?? null;
 }
 
+export type ScreeningMatrixRow = {
+  applicationId: string;
+  candidateUserId: string;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  vacancyId: string;
+  screeningStatus: "not_invited" | "pending" | "submitted";
+  invitationId: string | null;
+  answersByQuestionId: Record<string, string | null>;
+};
+
+export type ScreeningMatrix = {
+  questions: ScreeningQuestion[];
+  rows: ScreeningMatrixRow[];
+};
+
+export async function fetchScreeningMatrix(vacancyId?: string | null): Promise<ScreeningMatrix> {
+  const p = new URLSearchParams();
+  const vid = vacancyId?.trim();
+  if (vid) p.set("vacancyId", vid);
+  const qs = p.toString();
+  const res = await fetch(`/api/screenings/matrix${qs ? `?${qs}` : ""}`, {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  const raw = (await res.json().catch(() => ({}))) as ScreeningMatrix;
+  if (!res.ok || !Array.isArray(raw.questions) || !Array.isArray(raw.rows)) {
+    return { questions: [], rows: [] };
+  }
+  return raw;
+}
+
 export async function submitScreening(
   id: string,
   answers: { questionId: string; answerText: string }[],
