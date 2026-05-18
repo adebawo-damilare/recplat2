@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Download } from "lucide-react";
 import type { ScreeningMatrix } from "../../lib/screeningsApi";
+import { downloadScreeningMatrixCsv } from "../../lib/screeningMatrixCsv";
 import { screeningInvitationStatusLabel } from "../../shared/screeningPilot";
 
 function shortPrompt(prompt: string, max = 48): string {
@@ -55,6 +56,12 @@ export default function MarketersScreeningMatrix({
   onSelectApplicant,
 }: MarketersScreeningMatrixProps) {
   const { questions, rows } = matrix;
+  const canExport = !loading && questions.length > 0 && rows.length > 0;
+  const selectedVacancyTitle = marketerVacancies.find((v) => v.id === vacancyFilter)?.jobTitle;
+
+  const handleExportCsv = () => {
+    downloadScreeningMatrixCsv(matrix, { vacancyJobTitle: selectedVacancyTitle ?? null });
+  };
 
   return (
     <div
@@ -100,6 +107,16 @@ export default function MarketersScreeningMatrix({
             className="px-3 py-2 rounded-xl border border-neutral-200 text-sm font-bold text-neutral-600 hover:bg-neutral-50"
           >
             Refresh
+          </button>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={!canExport}
+            className="px-3 py-2 rounded-xl border border-violet-200 bg-violet-50 text-sm font-bold text-violet-800 hover:bg-violet-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+            data-testid="recruiter-screening-matrix-export-csv"
+          >
+            <Download className="w-4 h-4" aria-hidden />
+            Export CSV
           </button>
         </div>
       </div>
