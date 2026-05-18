@@ -76,6 +76,16 @@ export async function PATCH(request: NextRequest) {
   if (patch.portfolioContent === null || typeof patch.portfolioContent === "string") {
     mapped.portfolioContent = patch.portfolioContent as string | null;
   }
+  if (patch.primaryTalentLaneSlug === null || typeof patch.primaryTalentLaneSlug === "string") {
+    mapped.primaryTalentLaneSlug = patch.primaryTalentLaneSlug as string | null;
+  }
+  if (patch.categoryFieldValues && typeof patch.categoryFieldValues === "object") {
+    const values: Record<string, string> = {};
+    for (const [k, v] of Object.entries(patch.categoryFieldValues as Record<string, unknown>)) {
+      if (typeof v === "string") values[k] = v;
+    }
+    mapped.categoryFieldValues = values;
+  }
 
   const profile = await upsertCandidateProfileForUser(auth.user.userId, mapped);
   return NextResponse.json({ profile }, { headers: { "X-RateLimit-Remaining": String(rate.remaining) } });

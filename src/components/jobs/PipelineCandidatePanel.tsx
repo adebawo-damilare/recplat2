@@ -17,8 +17,9 @@ import {
   type ScreeningInvitationSummary,
 } from "../../lib/screeningsApi";
 import {
-  isScreeningPilotCategorySlug,
+  isScreeningEnabledCategorySlug,
   screeningInvitationStatusLabel,
+  screeningLaneLabel,
 } from "../../shared/screeningPilot";
 import { talentBridgeUiNotify } from "../../lib/talentBridgeUiNotify";
 
@@ -45,7 +46,8 @@ export default function PipelineCandidatePanel({
     : "";
 
   const hasPortfolio = Boolean(row?.candidate.portfolioContent?.trim() || row?.candidate.portfolioUrl?.trim());
-  const pilotLane = isScreeningPilotCategorySlug(row?.vacancy.category?.slug);
+  const screeningLane = isScreeningEnabledCategorySlug(row?.vacancy.category?.slug);
+  const laneLabel = screeningLaneLabel(row?.vacancy.category?.slug);
 
   const loadScreening = useCallback(async (applicationId: string) => {
     setScreeningLoading(true);
@@ -63,13 +65,13 @@ export default function PipelineCandidatePanel({
   }, []);
 
   useEffect(() => {
-    if (!row?.id || !pilotLane) {
+    if (!row?.id || !screeningLane) {
       setScreening(null);
       setScreeningDetail(null);
       return;
     }
     void loadScreening(row.id);
-  }, [row?.id, pilotLane, loadScreening]);
+  }, [row?.id, screeningLane, loadScreening]);
 
   const handleInvite = async () => {
     if (!row) return;
@@ -180,14 +182,30 @@ export default function PipelineCandidatePanel({
                 <p className="text-sm text-neutral-500">This candidate has not completed a detailed profile yet.</p>
               ) : null}
 
-              {pilotLane ? (
+              {row.candidate.categoryFieldValues && row.candidate.categoryFieldValues.length > 0 ? (
+                <section>
+                  <h5 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">Lane profile</h5>
+                  <div className="space-y-2">
+                    {row.candidate.categoryFieldValues.map((f) => (
+                      <div key={f.fieldId} className="text-sm">
+                        <p className="font-semibold text-neutral-800">{f.label}</p>
+                        <p className="text-neutral-600 whitespace-pre-wrap line-clamp-3">{f.value || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {screeningLane ? (
                 <section
                   className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4"
                   data-testid="recruiter-pipeline-screening"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <ClipboardList className="w-4 h-4 text-violet-700" />
-                    <h5 className="text-xs font-bold uppercase tracking-widest text-violet-800">Marketers screening</h5>
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-violet-800">
+                      {laneLabel} screening
+                    </h5>
                   </div>
                   {screeningLoading ? (
                     <p className="text-sm text-neutral-500 flex items-center gap-2">
@@ -213,7 +231,7 @@ export default function PipelineCandidatePanel({
                     </motion.div>
                   ) : (
                     <p className="text-sm text-neutral-600 mb-3">
-                      Send async screening questions tailored to Marketers roles.
+                      Send async screening questions for this {laneLabel} role.
                     </p>
                   )}
                   {!screening && !screeningLoading ? (

@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import {
-  SCREENING_PILOT_CATEGORY_SLUG,
+  isScreeningEnabledCategorySlug,
   type ScreeningInvitationStatus,
 } from "../../shared/screeningPilot";
 import { getDrizzleDb } from "../db/postgres";
@@ -71,7 +71,12 @@ async function loadApplicationContext(applicationId: string): Promise<Applicatio
   return r;
 }
 
-export async function listActiveQuestionsForPilotCategory(): Promise<ScreeningQuestionDto[]> {
+export async function listActiveQuestionsForCategorySlug(
+  categorySlug: string,
+): Promise<ScreeningQuestionDto[]> {
+  const slug = categorySlug.trim().toLowerCase();
+  if (!isScreeningEnabledCategorySlug(slug)) return [];
+
   const db = getDrizzleDb();
   const rows = await db
     .select({
@@ -82,12 +87,7 @@ export async function listActiveQuestionsForPilotCategory(): Promise<ScreeningQu
     })
     .from(categoryScreeningQuestions)
     .innerJoin(categories, eq(categoryScreeningQuestions.categoryId, categories.id))
-    .where(
-      and(
-        eq(categories.slug, SCREENING_PILOT_CATEGORY_SLUG),
-        eq(categoryScreeningQuestions.isActive, true),
-      ),
-    )
+    .where(and(eq(categories.slug, slug), eq(categoryScreeningQuestions.isActive, true)))
     .orderBy(asc(categoryScreeningQuestions.sortOrder));
 
   return rows.map((r) => ({
@@ -96,6 +96,11 @@ export async function listActiveQuestionsForPilotCategory(): Promise<ScreeningQu
     prompt: r.prompt,
     responseType: r.responseType,
   }));
+}
+
+/** @deprecated use listActiveQuestionsForCategorySlug */
+export async function listActiveQuestionsForPilotCategory(): Promise<ScreeningQuestionDto[]> {
+  return listActiveQuestionsForCategorySlug("marketers");
 }
 
 function mapInvitationSummary(
@@ -236,7 +241,8 @@ export async function getInvitationDetailForUser(
       : r.postedByUserId === userId;
   if (!allowed) return { ok: false, reason: "FORBIDDEN" };
 
-  const questions = await listActiveQuestionsForPilotCategory();
+  const lane = r.categorySlug?.trim().toLowerCase() ?? "";
+  const questions = lane ? await listActiveQuestionsForCategorySlug(lane) : [];
   const answers =
     r.status === "submitted" ? await loadAnswersForInvitation(invitationId) : [];
 
@@ -268,11 +274,11 @@ export async function createScreeningInvitation(
   const ctx = await loadApplicationContext(applicationId);
   if (!ctx) return { ok: false, reason: "NOT_FOUND" };
   if (ctx.postedByUserId !== recruiterUserId) return { ok: false, reason: "FORBIDDEN" };
-  if (ctx.categorySlug !== SCREENING_PILOT_CATEGORY_SLUG) {
+  if (!ctx.categorySlug || !isScreeningEnabledCategorySlug(ctx.categorySlug)) {
     return { ok: false, reason: "NOT_PILOT_LANE" };
   }
 
-  const questions = await listActiveQuestionsForPilotCategory();
+  const questions = await listActiveQuestionsForCategorySlug(ctx.categorySlug);
   if (questions.length === 0) return { ok: false, reason: "NO_QUESTIONS" };
 
   const existing = await getInvitationByApplicationId(applicationId);
@@ -322,6 +328,7 @@ export async function submitScreeningInvitation(
     .select({
       id: screeningInvitations.id,
       applicationId: screeningInvitations.applicationId,
+      vacancyId: screeningInvitations.vacancyId,
       candidateUserId: screeningInvitations.candidateUserId,
       status: screeningInvitations.status,
     })
@@ -333,7 +340,18 @@ export async function submitScreeningInvitation(
   if (inv.candidateUserId !== candidateUserId) return { ok: false, reason: "FORBIDDEN" };
   if (inv.status === "submitted") return { ok: false, reason: "ALREADY_SUBMITTED" };
 
-  const questions = await listActiveQuestionsForPilotCategory();
+  const vacRows = await db
+    .select({ categorySlug: categories.slug })
+    .from(vacancies)
+    .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .where(eq(vacancies.id, inv.vacancyId))
+    .limit(1);
+  const lane = vacRows[0]?.categorySlug?.trim().toLowerCase() ?? "";
+  if (!isScreeningEnabledCategorySlug(lane)) {
+    return { ok: false, reason: "INVALID_ANSWERS" };
+  }
+
+  const questions = await listActiveQuestionsForCategorySlug(lane);
   const questionIds = new Set(questions.map((q) => q.id));
   const byQuestion = new Map<string, string>();
 
@@ -372,32 +390,36 @@ export type ScreeningMatrixRow = {
   candidateEmail: string;
   jobTitle: string;
   vacancyId: string;
+  categorySlug: string;
   screeningStatus: "not_invited" | "pending" | "submitted";
   invitationId: string | null;
   answersByQuestionId: Record<string, string | null>;
 };
 
 export type ScreeningMatrix = {
+  categorySlug: string;
   questions: ScreeningQuestionDto[];
   rows: ScreeningMatrixRow[];
 };
 
-/** All applicants on Marketers vacancies owned by recruiter, with screening answers (blank when missing). */
-export async function listMarketersScreeningMatrixForOwner(
+/** Applicants on screening-enabled lanes; questions match selected lane. */
+export async function listScreeningMatrixForOwner(
   ownerUserId: string,
-  vacancyId?: string | null,
+  options?: { vacancyId?: string | null; categorySlug?: string | null },
 ): Promise<ScreeningMatrix> {
-  const questions = await listActiveQuestionsForPilotCategory();
+  const lane = options?.categorySlug?.trim().toLowerCase() || "marketers";
+  if (!isScreeningEnabledCategorySlug(lane)) {
+    return { categorySlug: lane, questions: [], rows: [] };
+  }
+
+  const questions = await listActiveQuestionsForCategorySlug(lane);
   if (questions.length === 0) {
-    return { questions: [], rows: [] };
+    return { categorySlug: lane, questions: [], rows: [] };
   }
 
   const db = getDrizzleDb();
-  const filters = [
-    eq(vacancies.postedByUserId, ownerUserId),
-    eq(categories.slug, SCREENING_PILOT_CATEGORY_SLUG),
-  ];
-  const vid = vacancyId?.trim();
+  const filters = [eq(vacancies.postedByUserId, ownerUserId), eq(categories.slug, lane)];
+  const vid = options?.vacancyId?.trim();
   if (vid) filters.push(eq(applications.vacancyId, vid));
 
   const appRows = await db
@@ -471,11 +493,44 @@ export async function listMarketersScreeningMatrixForOwner(
       candidateEmail: r.emailSnapshot?.trim() || "",
       jobTitle: r.jobTitle,
       vacancyId: r.vacancyId,
+      categorySlug: lane,
       screeningStatus,
       invitationId: r.invitationId,
       answersByQuestionId,
     };
   });
 
-  return { questions, rows };
+  return { categorySlug: lane, questions, rows };
+}
+
+export async function getScreeningNotificationTargets(
+  applicationId: string,
+): Promise<{
+  candidateUserId: string;
+  recruiterUserId: string;
+  jobTitle: string;
+  categorySlug: string | null;
+} | null> {
+  const ctx = await loadApplicationContext(applicationId);
+  if (!ctx) return null;
+  const db = getDrizzleDb();
+  const rows = await db
+    .select({ jobTitle: vacancies.jobTitle })
+    .from(vacancies)
+    .where(eq(vacancies.id, ctx.vacancyId))
+    .limit(1);
+  return {
+    candidateUserId: ctx.candidateUserId,
+    recruiterUserId: ctx.postedByUserId,
+    jobTitle: rows[0]?.jobTitle ?? "Role",
+    categorySlug: ctx.categorySlug,
+  };
+}
+
+/** @deprecated use listScreeningMatrixForOwner */
+export async function listMarketersScreeningMatrixForOwner(
+  ownerUserId: string,
+  vacancyId?: string | null,
+): Promise<ScreeningMatrix> {
+  return listScreeningMatrixForOwner(ownerUserId, { vacancyId, categorySlug: "marketers" });
 }

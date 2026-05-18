@@ -8,6 +8,7 @@ import { motion } from "motion/react";
 import { Mail, User, FileText, Code, ExternalLink, Edit3 } from "lucide-react";
 import { type CandidateProfile } from "../lib/domainTypes";
 import { formatCandidateFullName } from "../lib/candidateName";
+import { screeningLaneLabel } from "../shared/screeningPilot";
 
 interface ProfileCardProps {
   candidate: CandidateProfile;
@@ -72,6 +73,22 @@ export default function ProfileCard({ candidate, isOwnProfile, onEdit, onViewPor
         </div>
 
         <div className="space-y-10">
+          {candidate.primaryTalentLaneSlug && candidate.categoryFieldValues?.length ? (
+            <section>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4">
+                {screeningLaneLabel(candidate.primaryTalentLaneSlug)} profile
+              </h4>
+              <div className="space-y-3 bg-neutral-50 rounded-2xl border border-neutral-100 p-6">
+                {candidate.categoryFieldValues.map((f) => (
+                  <div key={f.fieldId}>
+                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide">{f.label}</p>
+                    <p className="text-sm text-neutral-800 mt-1 whitespace-pre-wrap">{f.value || "—"}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
               <Code className="w-4 h-4 text-blue-600" /> Key Skills

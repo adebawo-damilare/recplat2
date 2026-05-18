@@ -4,6 +4,13 @@
 
 import type { JobType } from "../shared/jobTypes";
 
+export type CandidateCategoryFieldValue = {
+  fieldId: string;
+  fieldKey: string;
+  label: string;
+  value: string;
+};
+
 export interface CandidateProfile {
   firstName: string;
   lastName: string;
@@ -15,6 +22,8 @@ export interface CandidateProfile {
   userId: string;
   portfolioUrl?: string | null;
   portfolioContent?: string | null;
+  primaryTalentLaneSlug?: string | null;
+  categoryFieldValues?: CandidateCategoryFieldValue[];
   createdAt?: string | unknown;
   updatedAt?: string | unknown;
 }

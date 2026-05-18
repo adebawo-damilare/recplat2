@@ -6,7 +6,11 @@
 import { ClipboardList, Download } from "lucide-react";
 import type { ScreeningMatrix } from "../../lib/screeningsApi";
 import { downloadScreeningMatrixCsv } from "../../lib/screeningMatrixCsv";
-import { screeningInvitationStatusLabel } from "../../shared/screeningPilot";
+import {
+  SCREENING_ENABLED_CATEGORY_SLUGS,
+  screeningInvitationStatusLabel,
+  screeningLaneLabel,
+} from "../../shared/screeningPilot";
 
 function shortPrompt(prompt: string, max = 48): string {
   const t = prompt.trim();
@@ -39,8 +43,10 @@ function screeningStatusLabel(status: ScreeningMatrix["rows"][0]["screeningStatu
 export type MarketersScreeningMatrixProps = {
   matrix: ScreeningMatrix;
   loading?: boolean;
+  laneFilter: string;
   vacancyFilter: string;
-  marketerVacancies: { id: string; jobTitle: string }[];
+  laneVacancies: { id: string; jobTitle: string }[];
+  onLaneFilterChange: (slug: string) => void;
   onVacancyFilterChange: (vacancyId: string) => void;
   onRefresh: () => void;
   onSelectApplicant?: (applicationId: string) => void;
@@ -49,15 +55,18 @@ export type MarketersScreeningMatrixProps = {
 export default function MarketersScreeningMatrix({
   matrix,
   loading,
+  laneFilter,
   vacancyFilter,
-  marketerVacancies,
+  laneVacancies,
+  onLaneFilterChange,
   onVacancyFilterChange,
   onRefresh,
   onSelectApplicant,
 }: MarketersScreeningMatrixProps) {
   const { questions, rows } = matrix;
+  const laneLabel = screeningLaneLabel(laneFilter);
   const canExport = !loading && questions.length > 0 && rows.length > 0;
-  const selectedVacancyTitle = marketerVacancies.find((v) => v.id === vacancyFilter)?.jobTitle;
+  const selectedVacancyTitle = laneVacancies.find((v) => v.id === vacancyFilter)?.jobTitle;
 
   const handleExportCsv = () => {
     downloadScreeningMatrixCsv(matrix, { vacancyJobTitle: selectedVacancyTitle ?? null });
@@ -74,9 +83,9 @@ export default function MarketersScreeningMatrix({
             <ClipboardList className="w-5 h-5 text-violet-600" />
           </div>
           <div>
-            <h3 className="font-black text-neutral-900">Marketers screening responses</h3>
+            <h3 className="font-black text-neutral-900">{laneLabel} screening responses</h3>
             <p className="text-sm text-neutral-500">
-              All applicants on Marketers roles — blank cells until invited or answered.
+              Applicants on {laneLabel} roles — blank cells until invited or answered.
             </p>
             {!loading ? (
               <p className="text-xs font-bold text-neutral-400 mt-2" data-testid="recruiter-screening-matrix-count">
@@ -88,14 +97,27 @@ export default function MarketersScreeningMatrix({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
+            value={laneFilter}
+            onChange={(e) => onLaneFilterChange(e.target.value)}
+            aria-label="Filter screening matrix by talent lane"
+            data-testid="recruiter-screening-matrix-lane-filter"
+            className="px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-sm font-semibold outline-none max-w-[160px]"
+          >
+            {SCREENING_ENABLED_CATEGORY_SLUGS.map((slug) => (
+              <option key={slug} value={slug}>
+                {screeningLaneLabel(slug)}
+              </option>
+            ))}
+          </select>
+          <select
             value={vacancyFilter}
             onChange={(e) => onVacancyFilterChange(e.target.value)}
             aria-label="Filter screening matrix by job"
             data-testid="recruiter-screening-matrix-vacancy-filter"
             className="px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 text-sm font-semibold outline-none max-w-[220px]"
           >
-            <option value="">All Marketers jobs</option>
-            {marketerVacancies.map((v) => (
+            <option value="">All {laneLabel} jobs</option>
+            {laneVacancies.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.jobTitle}
               </option>
@@ -130,7 +152,7 @@ export default function MarketersScreeningMatrix({
         <p className="text-sm text-neutral-500">Screening questions are not configured.</p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-neutral-500 py-8 text-center" data-testid="recruiter-screening-matrix-empty">
-          No applications on Marketers vacancies yet. When candidates apply, they will appear here.
+          No applications on {laneLabel} vacancies yet. When candidates apply, they will appear here.
         </p>
       ) : (
         <div className="overflow-x-auto border border-neutral-100 rounded-2xl" data-testid="recruiter-screening-matrix-table">

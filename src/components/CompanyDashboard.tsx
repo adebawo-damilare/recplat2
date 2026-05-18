@@ -35,7 +35,10 @@ import PipelineCandidatePanel from "./jobs/PipelineCandidatePanel";
 import PortfolioViewer from "./PortfolioViewer";
 import { applicationStatusLabel } from "../lib/applicationStatus";
 import { fetchScreeningMatrix, type ScreeningMatrix } from "../lib/screeningsApi";
-import { SCREENING_PILOT_CATEGORY_SLUG } from "../shared/screeningPilot";
+import {
+  SCREENING_ENABLED_CATEGORY_SLUGS,
+  type ScreeningEnabledCategorySlug,
+} from "../shared/screeningPilot";
 import MarketersScreeningMatrix from "./jobs/MarketersScreeningMatrix";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
@@ -76,8 +79,15 @@ export default function CompanyDashboard() {
   const [pipelineLaneFilter, setPipelineLaneFilter] = useState("");
   const [selectedPipelineRow, setSelectedPipelineRow] = useState<RecruiterBoardApplication | null>(null);
   const [portfolioRow, setPortfolioRow] = useState<RecruiterBoardApplication | null>(null);
-  const [screeningMatrix, setScreeningMatrix] = useState<ScreeningMatrix>({ questions: [], rows: [] });
+  const [screeningMatrix, setScreeningMatrix] = useState<ScreeningMatrix>({
+    categorySlug: SCREENING_ENABLED_CATEGORY_SLUGS[0],
+    questions: [],
+    rows: [],
+  });
   const [screeningMatrixLoading, setScreeningMatrixLoading] = useState(false);
+  const [screeningMatrixLaneFilter, setScreeningMatrixLaneFilter] = useState<ScreeningEnabledCategorySlug>(
+    SCREENING_ENABLED_CATEGORY_SLUGS[0],
+  );
   const [screeningMatrixVacancyFilter, setScreeningMatrixVacancyFilter] = useState("");
 
   const fetchDataForUser = useCallback(async () => {
@@ -136,30 +146,41 @@ export default function CompanyDashboard() {
     pipelineVacancyFilter.trim() || pipelineStatusFilter.trim() || pipelineLaneFilter.trim(),
   );
 
-  const marketerVacancies = useMemo(
+  const laneVacancies = useMemo(
     () =>
       vacancies
-        .filter((v) => v.id && v.category?.slug === SCREENING_PILOT_CATEGORY_SLUG)
+        .filter((v) => v.id && v.category?.slug === screeningMatrixLaneFilter)
         .map((v) => ({ id: v.id!, jobTitle: v.jobTitle })),
-    [vacancies],
+    [vacancies, screeningMatrixLaneFilter],
   );
 
   const fetchScreeningMatrixData = useCallback(async () => {
     if (!user || user.role !== "recruiter") {
-      setScreeningMatrix({ questions: [], rows: [] });
+      setScreeningMatrix({
+        categorySlug: screeningMatrixLaneFilter,
+        questions: [],
+        rows: [],
+      });
       return;
     }
     setScreeningMatrixLoading(true);
     try {
-      const data = await fetchScreeningMatrix(screeningMatrixVacancyFilter.trim() || undefined);
+      const data = await fetchScreeningMatrix({
+        vacancyId: screeningMatrixVacancyFilter.trim() || undefined,
+        categorySlug: screeningMatrixLaneFilter,
+      });
       setScreeningMatrix(data);
     } catch (e) {
       console.error("Screening matrix load failed", e);
-      setScreeningMatrix({ questions: [], rows: [] });
+      setScreeningMatrix({
+        categorySlug: screeningMatrixLaneFilter,
+        questions: [],
+        rows: [],
+      });
     } finally {
       setScreeningMatrixLoading(false);
     }
-  }, [user, screeningMatrixVacancyFilter]);
+  }, [user, screeningMatrixVacancyFilter, screeningMatrixLaneFilter]);
 
   useEffect(() => {
     void fetchPipelineBoard();
@@ -173,12 +194,12 @@ export default function CompanyDashboard() {
     async (applicationId: string) => {
       let row = pipelineRows.find((r) => r.id === applicationId);
       if (!row) {
-        const rows = await fetchRecruiterApplicationBoard({ category: SCREENING_PILOT_CATEGORY_SLUG });
+        const rows = await fetchRecruiterApplicationBoard({ category: screeningMatrixLaneFilter });
         row = rows.find((r) => r.id === applicationId);
       }
       if (row) setSelectedPipelineRow(row);
     },
-    [pipelineRows],
+    [pipelineRows, screeningMatrixLaneFilter],
   );
 
   const handleDelete = async (id: string) => {
@@ -507,8 +528,13 @@ export default function CompanyDashboard() {
       <MarketersScreeningMatrix
         matrix={screeningMatrix}
         loading={screeningMatrixLoading}
+        laneFilter={screeningMatrixLaneFilter}
         vacancyFilter={screeningMatrixVacancyFilter}
-        marketerVacancies={marketerVacancies}
+        laneVacancies={laneVacancies}
+        onLaneFilterChange={(slug) => {
+          setScreeningMatrixLaneFilter(slug as ScreeningEnabledCategorySlug);
+          setScreeningMatrixVacancyFilter("");
+        }}
         onVacancyFilterChange={setScreeningMatrixVacancyFilter}
         onRefresh={() => void fetchScreeningMatrixData()}
         onSelectApplicant={(applicationId) => void openPipelineApplicant(applicationId)}

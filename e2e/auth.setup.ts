@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 import { test as setup, expect } from "@playwright/test";
 
@@ -64,6 +64,26 @@ setup.describe("seed sessions", () => {
       },
     });
     expect(vacancyDetailRes.ok(), await vacancyDetailRes.text()).toBeTruthy();
+
+    const screeningJobTitle = `E2E Marketers Screening ${Date.now()}`;
+    const vacancyScreeningRes = await request.post("/api/jobs", {
+      headers: { "content-type": "application/json" },
+      data: {
+        jobTitle: screeningJobTitle,
+        companyName: "E2E Labs",
+        location: "Remote",
+        salary: "$100k-$120k",
+        description: "Automated E2E vacancy for screening flow",
+        requirements: "Playwright screening",
+        categorySlug: "marketers",
+        jobType: "remote",
+      },
+    });
+    expect(vacancyScreeningRes.ok(), await vacancyScreeningRes.text()).toBeTruthy();
+    const vacancyScreeningBody = (await vacancyScreeningRes.json()) as { job?: { id?: string } };
+    const seededScreeningVacancyId = vacancyScreeningBody.job?.id;
+    expect(seededScreeningVacancyId).toBeTruthy();
+
     await request.storageState({ path: recruiterStorage });
 
     const logoutRes = await request.post("/api/auth/logout", { headers: { "content-type": "application/json" } });
@@ -80,6 +100,21 @@ setup.describe("seed sessions", () => {
       data: { vacancyId: seededApplyVacancyId },
     });
     expect(applyRes.ok(), await applyRes.text()).toBeTruthy();
+
+    const applyScreeningRes = await request.post("/api/applications", {
+      headers: { "content-type": "application/json" },
+      data: { vacancyId: seededScreeningVacancyId },
+    });
+    expect(applyScreeningRes.ok(), await applyScreeningRes.text()).toBeTruthy();
+
+    await writeFile(
+      path.join(authDir, "seed.json"),
+      JSON.stringify({
+        screeningVacancyTitle: screeningJobTitle,
+        screeningVacancyId: seededScreeningVacancyId,
+      }),
+      "utf8",
+    );
 
     await request.storageState({ path: candidateStorage });
   });

@@ -2,7 +2,7 @@
  * Recruiter application pipeline: board list + status updates.
  */
 
-import type { Application } from "./domainTypes";
+import type { Application, CandidateCategoryFieldValue } from "./domainTypes";
 import { refreshTalentBridgeSession } from "./authBrowser";
 
 export type RecruiterBoardApplication = {
@@ -29,6 +29,8 @@ export type RecruiterBoardApplication = {
     experience?: string;
     portfolioUrl?: string | null;
     portfolioContent?: string | null;
+    primaryTalentLaneSlug?: string | null;
+    categoryFieldValues?: CandidateCategoryFieldValue[];
   };
 };
 

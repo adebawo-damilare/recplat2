@@ -4,7 +4,12 @@ import { requireTalentBridgeSession } from "../../../../../src/server/auth/requi
 import { requireRole } from "../../../../../src/server/auth/requireRole";
 import { hasPostgresConfigured } from "../../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../../src/server/distributedRateLimit";
-import { submitScreeningInvitation } from "../../../../../src/server/screenings";
+import { createNotification } from "../../../../../src/server/notifications/postgresNotifications";
+import {
+  getScreeningNotificationTargets,
+  submitScreeningInvitation,
+} from "../../../../../src/server/screenings";
+import { screeningLaneLabel } from "../../../../../src/shared/screeningPilot";
 import { getClientKey } from "../../../../../src/server/rateLimit";
 import { recordAiAudit } from "../../../../../src/server/ai/audit";
 
@@ -71,6 +76,19 @@ export async function POST(request: NextRequest, context: { params: RouteParams 
       model: null,
       payload: { invitationId: id, applicationId: result.invitation.applicationId },
     });
+
+    const targets = await getScreeningNotificationTargets(result.invitation.applicationId);
+    if (targets) {
+      const lane = screeningLaneLabel(targets.categorySlug);
+      await createNotification({
+        userId: targets.recruiterUserId,
+        eventType: "screening.submitted",
+        title: "Screening submitted",
+        body: `A candidate submitted ${lane} screening for ${targets.jobTitle}.`,
+        linkPath: "/dashboard/company",
+        payload: { applicationId: result.invitation.applicationId, invitationId: id },
+      });
+    }
 
     return NextResponse.json({ ok: true, invitation: result.invitation });
   } catch (err) {

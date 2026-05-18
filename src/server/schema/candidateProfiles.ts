@@ -14,6 +14,7 @@ export const candidateProfiles = pgTable("candidate_profiles", {
   experience: text("experience").notNull(),
   portfolioUrl: text("portfolio_url"),
   portfolioContent: text("portfolio_content"),
+  primaryTalentLaneSlug: text("primary_talent_lane_slug"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

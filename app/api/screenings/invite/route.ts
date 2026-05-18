@@ -4,7 +4,12 @@ import { requireTalentBridgeSession } from "../../../../src/server/auth/requireS
 import { requireRole } from "../../../../src/server/auth/requireRole";
 import { hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateLimit";
-import { createScreeningInvitation } from "../../../../src/server/screenings";
+import { createNotification } from "../../../../src/server/notifications/postgresNotifications";
+import {
+  createScreeningInvitation,
+  getScreeningNotificationTargets,
+} from "../../../../src/server/screenings";
+import { screeningLaneLabel } from "../../../../src/shared/screeningPilot";
 import { getClientKey } from "../../../../src/server/rateLimit";
 import { recordAiAudit } from "../../../../src/server/ai/audit";
 
@@ -45,8 +50,8 @@ export async function POST(request: NextRequest) {
       if (result.reason === "NOT_PILOT_LANE") {
         return NextResponse.json(
           {
-            error: "Screening invitations are only available for Marketers roles in this pilot.",
-            code: "NOT_PILOT_LANE",
+            error: "Screening is not enabled for this talent lane.",
+            code: "NOT_SCREENING_LANE",
           },
           { status: 400 },
         );
@@ -68,6 +73,18 @@ export async function POST(request: NextRequest) {
         model: null,
         payload: { applicationId, invitationId: result.invitation.id },
       });
+      const targets = await getScreeningNotificationTargets(applicationId);
+      if (targets) {
+        const lane = screeningLaneLabel(targets.categorySlug);
+        await createNotification({
+          userId: targets.candidateUserId,
+          eventType: "screening.invited",
+          title: "Screening invitation",
+          body: `Complete your ${lane} screening for ${targets.jobTitle}.`,
+          linkPath: `/dashboard/screenings/${result.invitation.id}`,
+          payload: { applicationId, invitationId: result.invitation.id },
+        });
+      }
     }
 
     return NextResponse.json({

@@ -1,12 +1,24 @@
 import { asc, count, eq, ilike, or, sql } from "drizzle-orm";
 
 import type { CandidateProfile } from "../../lib/domainTypes";
+import {
+  getCandidateFieldValuesForLane,
+  saveCandidateFieldValues,
+} from "../categoryFields/postgresCategoryFields";
 import { getDrizzleDb } from "../db/postgres";
 import { candidateProfiles, users } from "../schema";
 import { hashPassword } from "../auth/password";
 import { SAMPLE_CANDIDATE_SEEDS } from "./sampleCandidateSeeds";
 
-function mapCandidateRow(row: typeof candidateProfiles.$inferSelect): CandidateProfile {
+async function mapCandidateRow(
+  row: typeof candidateProfiles.$inferSelect,
+  includeFields = false,
+): Promise<CandidateProfile> {
+  const primaryTalentLaneSlug = row.primaryTalentLaneSlug?.trim() || null;
+  const categoryFieldValues =
+    includeFields && primaryTalentLaneSlug
+      ? await getCandidateFieldValuesForLane(row.userId, primaryTalentLaneSlug)
+      : undefined;
   return {
     userId: row.userId,
     firstName: row.firstName,
@@ -18,6 +30,8 @@ function mapCandidateRow(row: typeof candidateProfiles.$inferSelect): CandidateP
     experience: row.experience,
     portfolioUrl: row.portfolioUrl,
     portfolioContent: row.portfolioContent,
+    primaryTalentLaneSlug,
+    categoryFieldValues,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -29,7 +43,9 @@ export async function listAllCandidateProfiles(): Promise<CandidateProfile[]> {
     .select()
     .from(candidateProfiles)
     .orderBy(asc(candidateProfiles.lastName), asc(candidateProfiles.firstName));
-  return rows.map(mapCandidateRow);
+  const out: CandidateProfile[] = [];
+  for (const row of rows) out.push(await mapCandidateRow(row));
+  return out;
 }
 
 function escapeIlikeFragment(raw: string): string {
@@ -75,7 +91,9 @@ export async function listCandidateProfilesPaged(
         .limit(limit)
         .offset(offset);
 
-  return { candidates: rows.map(mapCandidateRow), total };
+  const candidates: CandidateProfile[] = [];
+  for (const row of rows) candidates.push(await mapCandidateRow(row));
+  return { candidates, total };
 }
 
 export async function getCandidateProfileByUserId(userId: string): Promise<CandidateProfile | null> {
@@ -86,7 +104,7 @@ export async function getCandidateProfileByUserId(userId: string): Promise<Candi
     .where(eq(candidateProfiles.userId, userId))
     .limit(1);
   const row = rows[0];
-  return row ? mapCandidateRow(row) : null;
+  return row ? await mapCandidateRow(row, true) : null;
 }
 
 export async function upsertCandidateProfileForUser(
@@ -103,8 +121,9 @@ export async function upsertCandidateProfileForUser(
       | "experience"
       | "portfolioUrl"
       | "portfolioContent"
+      | "primaryTalentLaneSlug"
     >
-  >,
+  > & { categoryFieldValues?: Record<string, string> },
 ): Promise<CandidateProfile> {
   const db = getDrizzleDb();
   const existing = await db
@@ -128,10 +147,14 @@ export async function upsertCandidateProfileForUser(
         experience: patch.experience ?? "",
         portfolioUrl: patch.portfolioUrl ?? null,
         portfolioContent: patch.portfolioContent ?? null,
+        primaryTalentLaneSlug: patch.primaryTalentLaneSlug ?? null,
         updatedAt: now,
       })
       .returning();
-    return mapCandidateRow(row);
+    if (patch.primaryTalentLaneSlug && patch.categoryFieldValues) {
+      await saveCandidateFieldValues(userId, patch.primaryTalentLaneSlug, patch.categoryFieldValues);
+    }
+    return await mapCandidateRow(row, true);
   }
 
   const cur = existing[0];
@@ -146,12 +169,40 @@ export async function upsertCandidateProfileForUser(
       skills: patch.skills !== undefined ? patch.skills : cur.skills,
       experience: patch.experience !== undefined ? patch.experience : cur.experience,
       portfolioUrl: patch.portfolioUrl !== undefined ? patch.portfolioUrl : cur.portfolioUrl,
-      portfolioContent: patch.portfolioContent !== undefined ? patch.portfolioContent : cur.portfolioContent,
+      portfolioContent:
+        patch.portfolioContent !== undefined ? patch.portfolioContent : cur.portfolioContent,
+      primaryTalentLaneSlug:
+        patch.primaryTalentLaneSlug !== undefined
+          ? patch.primaryTalentLaneSlug
+          : cur.primaryTalentLaneSlug,
       updatedAt: now,
     })
     .where(eq(candidateProfiles.userId, userId))
     .returning();
-  return mapCandidateRow(row);
+
+  const lane =
+    patch.primaryTalentLaneSlug !== undefined
+      ? patch.primaryTalentLaneSlug
+      : cur.primaryTalentLaneSlug;
+  if (lane && patch.categoryFieldValues) {
+    await saveCandidateFieldValues(userId, lane, patch.categoryFieldValues);
+  }
+
+  return await mapCandidateRow(row, true);
+}
+
+export async function getCandidateCategoryFieldsForRecruiterView(
+  candidateUserId: string,
+): Promise<CandidateProfile["categoryFieldValues"]> {
+  const db = getDrizzleDb();
+  const rows = await db
+    .select({ slug: candidateProfiles.primaryTalentLaneSlug })
+    .from(candidateProfiles)
+    .where(eq(candidateProfiles.userId, candidateUserId))
+    .limit(1);
+  const slug = rows[0]?.slug?.trim() || null;
+  if (!slug) return [];
+  return getCandidateFieldValuesForLane(candidateUserId, slug);
 }
 
 /** Inserts demo users + profiles for emails in SAMPLE_CANDIDATE_SEEDS that do not exist yet. */

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Briefcase, LogOut, Menu, User as UserIcon, X } from "lucide-react";
 import { useTalentBridgeUser } from "../../../lib/useTalentBridgeUser";
+import NotificationsNavLink from "../NotificationsNavLink";
 
 export default function NextAppNav() {
   const pathname = usePathname();
@@ -44,6 +45,7 @@ export default function NextAppNav() {
             <div className="flex items-center gap-3">
               {!loading && user ? (
                 <div className="flex items-center gap-4">
+                  <NotificationsNavLink />
                   {user.role === "recruiter" ? (
                     <Link
                       href="/dashboard/company"
@@ -144,6 +146,7 @@ export default function NextAppNav() {
             <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2">
               {!loading && user ? (
                 <>
+                  <NotificationsNavLink />
                   {user.role === "recruiter" ? (
                     <Link
                       href="/dashboard/company"

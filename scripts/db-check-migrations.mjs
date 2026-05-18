@@ -90,6 +90,18 @@ try {
         WHERE table_schema='public' AND table_name='screening_invitations'
       ) AS screening_invitations_table,
       EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema='public' AND table_name='category_fields'
+      ) AS category_fields_table,
+      EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema='public' AND table_name='notifications'
+      ) AS notifications_table,
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='candidate_profiles' AND column_name='primary_talent_lane_slug'
+      ) AS candidate_profiles_primary_lane,
+      EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='vacancies' AND column_name='job_type'
       ) AS vacancies_job_type
@@ -104,6 +116,9 @@ try {
   if (!s.applications_status) shapeIssues.push("applications.status missing");
   if (!s.applications_status_updated_at) shapeIssues.push("applications.status_updated_at missing");
   if (!s.screening_invitations_table) shapeIssues.push("screening_invitations table missing");
+  if (!s.category_fields_table) shapeIssues.push("category_fields table missing");
+  if (!s.notifications_table) shapeIssues.push("notifications table missing");
+  if (!s.candidate_profiles_primary_lane) shapeIssues.push("candidate_profiles.primary_talent_lane_slug missing");
   if (!s.vacancies_job_type) shapeIssues.push("vacancies.job_type missing");
 
   if (missing.length || checksumMismatch.length || shapeIssues.length) {

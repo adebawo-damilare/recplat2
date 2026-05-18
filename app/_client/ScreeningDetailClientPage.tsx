@@ -11,7 +11,7 @@ import {
   submitScreening,
   type ScreeningInvitationDetail,
 } from "../../src/lib/screeningsApi";
-import { screeningInvitationStatusLabel } from "../../src/shared/screeningPilot";
+import { screeningInvitationStatusLabel, screeningLaneLabel } from "../../src/shared/screeningPilot";
 import { talentBridgeUiNotify } from "../../src/lib/talentBridgeUiNotify";
 
 type ScreeningDetailClientPageProps = {
@@ -107,7 +107,9 @@ export default function ScreeningDetailClientPage({ invitationId }: ScreeningDet
         ) : (
           <>
             <header className="mb-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">Marketers screening</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">
+                {screeningLaneLabel(detail.vacancy.categorySlug)} screening
+              </p>
               <h1 className="text-2xl font-black text-neutral-900">{detail.vacancy.jobTitle}</h1>
               <p className="text-neutral-500 font-medium mt-1">{detail.vacancy.companyName}</p>
               <p className="text-sm mt-3">
