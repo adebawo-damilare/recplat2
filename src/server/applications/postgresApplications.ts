@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import { normalizeApplicationStatus, type PipelineApplicationStatus } from "../../lib/applicationStatus";
 import { isMissingPgColumn } from "../db/pgColumnErrors";
+import { getCandidateCategoryFieldsForRecruiterView } from "../candidates/postgresCandidates";
 import { getDrizzleDb } from "../db/postgres";
 import { getVacancyById } from "../jobs/postgresVacancies";
 import { applications, candidateProfiles, categories, vacancies } from "../schema";
@@ -111,6 +112,8 @@ export type RecruiterBoardRow = {
     experience: string;
     portfolioUrl: string | null;
     portfolioContent: string | null;
+    primaryTalentLaneSlug: string | null;
+    categoryFieldValues: Awaited<ReturnType<typeof getCandidateCategoryFieldsForRecruiterView>>;
   };
 };
 
@@ -151,6 +154,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
     candidateExperience: string | null;
     candidatePortfolioUrl: string | null;
     candidatePortfolioContent: string | null;
+    candidatePrimaryTalentLaneSlug: string | null;
   };
 
   let rows: BoardSelectRow[];
@@ -176,6 +180,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
         candidateExperience: candidateProfiles.experience,
         candidatePortfolioUrl: candidateProfiles.portfolioUrl,
         candidatePortfolioContent: candidateProfiles.portfolioContent,
+        candidatePrimaryTalentLaneSlug: candidateProfiles.primaryTalentLaneSlug,
       })
       .from(applications)
       .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
@@ -205,6 +210,7 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
         candidateExperience: candidateProfiles.experience,
         candidatePortfolioUrl: candidateProfiles.portfolioUrl,
         candidatePortfolioContent: candidateProfiles.portfolioContent,
+        candidatePrimaryTalentLaneSlug: candidateProfiles.primaryTalentLaneSlug,
       })
       .from(applications)
       .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
@@ -212,10 +218,22 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
       .leftJoin(candidateProfiles, sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`)
       .where(and(...filters)!)
       .orderBy(desc(applications.createdAt));
-    rows = legacy.map((r) => ({ ...r, statusUpdatedAt: r.appliedAt }));
+    rows = legacy.map((r) => ({
+      ...r,
+      statusUpdatedAt: r.appliedAt,
+      candidatePrimaryTalentLaneSlug: null,
+    }));
   }
 
-  const out: RecruiterBoardRow[] = rows.map((r) => ({
+  const fieldCache = new Map<string, Awaited<ReturnType<typeof getCandidateCategoryFieldsForRecruiterView>>>();
+  const out: RecruiterBoardRow[] = [];
+  for (const r of rows) {
+    let categoryFieldValues = fieldCache.get(r.candidateUserId);
+    if (!categoryFieldValues) {
+      categoryFieldValues = await getCandidateCategoryFieldsForRecruiterView(r.candidateUserId);
+      fieldCache.set(r.candidateUserId, categoryFieldValues);
+    }
+    out.push({
     id: r.applicationId,
     vacancyId: r.vacancyId,
     candidateUserId: r.candidateUserId,
@@ -242,8 +260,11 @@ export async function listApplicationsBoardForOwner(ownerUserId: string, filters
       experience: r.candidateExperience?.trim() ?? "",
       portfolioUrl: r.candidatePortfolioUrl?.trim() || null,
       portfolioContent: r.candidatePortfolioContent?.trim() || null,
+      primaryTalentLaneSlug: r.candidatePrimaryTalentLaneSlug?.trim() || null,
+      categoryFieldValues,
     },
-  }));
+    });
+  }
 
   return out;
 }

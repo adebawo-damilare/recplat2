@@ -60,9 +60,18 @@ export async function saveMyCandidateProfile(
   patch: Partial<
     Pick<
       CandidateProfile,
-      "firstName" | "lastName" | "email" | "headline" | "summary" | "skills" | "experience" | "portfolioUrl" | "portfolioContent"
+      | "firstName"
+      | "lastName"
+      | "email"
+      | "headline"
+      | "summary"
+      | "skills"
+      | "experience"
+      | "portfolioUrl"
+      | "portfolioContent"
+      | "primaryTalentLaneSlug"
     >
-  >,
+  > & { categoryFieldValues?: Record<string, string> },
 ): Promise<CandidateProfile | null> {
   await refreshTalentBridgeSession();
   try {

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Marketing shell / navigation", () => {
+  test.describe.configure({ mode: "serial" });
   test("home shows nav and hero", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("app-nav")).toBeVisible();
@@ -61,9 +62,12 @@ test.describe("Marketing shell / navigation", () => {
 
   test("mobile nav menu opens and links to jobs", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await page.getByTestId("nav-mobile-menu-toggle").click();
-    await expect(page.getByTestId("nav-mobile-menu")).toBeVisible();
+    await page.goto("/", { waitUntil: "load" });
+    const toggle = page.getByTestId("nav-mobile-menu-toggle");
+    await expect(toggle).toBeVisible({ timeout: 15_000 });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true", { timeout: 10_000 });
+    await expect(page.getByTestId("nav-mobile-menu")).toBeVisible({ timeout: 10_000 });
     await page.getByTestId("nav-mobile-menu").getByRole("link", { name: "Find Jobs" }).click();
     await expect(page).toHaveURL(/\/jobs/, { timeout: 20_000 });
   });

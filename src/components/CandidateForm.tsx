@@ -6,9 +6,11 @@
 import React, { useState } from 'react';
 import { motion } from "motion/react";
 import { User, Mail, Briefcase, FileText, Code, Clock, Save, ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
+import { fetchCategoryProfileFields, type CategoryFieldDefinition } from "../lib/categoryFieldsApi";
 import { fetchMyCandidateProfile, saveMyCandidateProfile } from "../lib/candidatesApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import { candidateHasDisplayableName } from "../lib/candidateName";
+import { MVP_TALENT_CATEGORIES } from "../shared/mvpCategories";
 
 interface CandidateFormProps {
   onSuccess: () => void;
@@ -29,7 +31,10 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
     experience: "",
     portfolioUrl: "",
     portfolioContent: "",
+    primaryTalentLaneSlug: "",
+    categoryFieldValues: {} as Record<string, string>,
   });
+  const [laneFields, setLaneFields] = useState<CategoryFieldDefinition[]>([]);
 
   React.useEffect(() => {
     const loadProfile = async () => {
@@ -50,6 +55,10 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
             experience: profile.experience || "",
             portfolioUrl: profile.portfolioUrl || "",
             portfolioContent: profile.portfolioContent || "",
+            primaryTalentLaneSlug: profile.primaryTalentLaneSlug || "",
+            categoryFieldValues: Object.fromEntries(
+              (profile.categoryFieldValues ?? []).map((f) => [f.fieldKey, f.value]),
+            ),
           });
         } else {
           setFormData((prev) => ({ ...prev, email: user.email || "" }));
@@ -62,6 +71,15 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
     };
     void loadProfile();
   }, [user]);
+
+  React.useEffect(() => {
+    const slug = formData.primaryTalentLaneSlug.trim();
+    if (!slug) {
+      setLaneFields([]);
+      return;
+    }
+    void fetchCategoryProfileFields(slug).then(setLaneFields);
+  }, [formData.primaryTalentLaneSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +97,8 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
         experience: formData.experience,
         portfolioUrl: formData.portfolioUrl || null,
         portfolioContent: formData.portfolioContent || null,
+        primaryTalentLaneSlug: formData.primaryTalentLaneSlug.trim() || null,
+        categoryFieldValues: formData.categoryFieldValues,
       });
       if (!saved) {
         alert("Failed to save profile. Check that you are signed in.");
@@ -170,6 +190,69 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
             />
           </div>
         </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-bold flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-blue-600" /> Primary talent lane
+          </label>
+          <select
+            value={formData.primaryTalentLaneSlug}
+            onChange={(e) =>
+              setFormData({ ...formData, primaryTalentLaneSlug: e.target.value, categoryFieldValues: {} })
+            }
+            className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            data-testid="candidate-profile-lane-select"
+          >
+            <option value="">Select a lane (optional)</option>
+            {MVP_TALENT_CATEGORIES.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {laneFields.length > 0 ? (
+          <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-800">Lane-specific details</p>
+            {laneFields.map((field) => (
+              <div key={field.id} className="space-y-2">
+                <label className="text-sm font-bold text-neutral-800">{field.label}</label>
+                {field.fieldType === "textarea" ? (
+                  <textarea
+                    rows={3}
+                    value={formData.categoryFieldValues[field.fieldKey] ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        categoryFieldValues: {
+                          ...formData.categoryFieldValues,
+                          [field.fieldKey]: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={formData.categoryFieldValues[field.fieldKey] ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        categoryFieldValues: {
+                          ...formData.categoryFieldValues,
+                          [field.fieldKey]: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <div className="space-y-2">
           <label className="text-sm font-bold flex items-center gap-2">

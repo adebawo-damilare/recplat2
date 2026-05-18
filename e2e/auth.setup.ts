@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 import { test as setup, expect } from "@playwright/test";
 
@@ -50,10 +50,30 @@ setup.describe("seed sessions", () => {
     const seededApplyVacancyId = vacancyApplyBody.job?.id;
     expect(seededApplyVacancyId).toBeTruthy();
 
+    const jobBoardApplyTitle = `E2E Job Board Apply ${Date.now()}`;
+    const vacancyBoardApplyRes = await request.post("/api/jobs", {
+      headers: { "content-type": "application/json" },
+      data: {
+        jobTitle: jobBoardApplyTitle,
+        companyName: "E2E Labs",
+        location: "Remote",
+        salary: "$115k-$135k",
+        description: "Automated E2E vacancy for job-board apply UI only",
+        requirements: "Playwright job board apply",
+        categorySlug: "designers",
+        jobType: "remote",
+      },
+    });
+    expect(vacancyBoardApplyRes.ok(), await vacancyBoardApplyRes.text()).toBeTruthy();
+    const vacancyBoardApplyBody = (await vacancyBoardApplyRes.json()) as { job?: { id?: string } };
+    const seededJobBoardApplyVacancyId = vacancyBoardApplyBody.job?.id;
+    expect(seededJobBoardApplyVacancyId).toBeTruthy();
+
+    const jobDetailTitle = `E2E Job Detail ${Date.now()}`;
     const vacancyDetailRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
       data: {
-        jobTitle: `E2E Job Detail ${Date.now()}`,
+        jobTitle: jobDetailTitle,
         companyName: "E2E Labs",
         location: "Hybrid",
         salary: "$110k-$130k",
@@ -64,6 +84,29 @@ setup.describe("seed sessions", () => {
       },
     });
     expect(vacancyDetailRes.ok(), await vacancyDetailRes.text()).toBeTruthy();
+    const vacancyDetailBody = (await vacancyDetailRes.json()) as { job?: { id?: string } };
+    const seededJobDetailVacancyId = vacancyDetailBody.job?.id;
+    expect(seededJobDetailVacancyId).toBeTruthy();
+
+    const screeningJobTitle = `E2E Marketers Screening ${Date.now()}`;
+    const vacancyScreeningRes = await request.post("/api/jobs", {
+      headers: { "content-type": "application/json" },
+      data: {
+        jobTitle: screeningJobTitle,
+        companyName: "E2E Labs",
+        location: "Remote",
+        salary: "$100k-$120k",
+        description: "Automated E2E vacancy for screening flow",
+        requirements: "Playwright screening",
+        categorySlug: "marketers",
+        jobType: "remote",
+      },
+    });
+    expect(vacancyScreeningRes.ok(), await vacancyScreeningRes.text()).toBeTruthy();
+    const vacancyScreeningBody = (await vacancyScreeningRes.json()) as { job?: { id?: string } };
+    const seededScreeningVacancyId = vacancyScreeningBody.job?.id;
+    expect(seededScreeningVacancyId).toBeTruthy();
+
     await request.storageState({ path: recruiterStorage });
 
     const logoutRes = await request.post("/api/auth/logout", { headers: { "content-type": "application/json" } });
@@ -80,6 +123,29 @@ setup.describe("seed sessions", () => {
       data: { vacancyId: seededApplyVacancyId },
     });
     expect(applyRes.ok(), await applyRes.text()).toBeTruthy();
+
+    const applyScreeningRes = await request.post("/api/applications", {
+      headers: { "content-type": "application/json" },
+      data: { vacancyId: seededScreeningVacancyId },
+    });
+    expect(applyScreeningRes.ok(), await applyScreeningRes.text()).toBeTruthy();
+    const applyScreeningBody = (await applyScreeningRes.json()) as { applicationId?: string };
+    const seededScreeningApplicationId = applyScreeningBody.applicationId;
+    expect(seededScreeningApplicationId).toBeTruthy();
+
+    await writeFile(
+      path.join(authDir, "seed.json"),
+      JSON.stringify({
+        jobBoardApplyVacancyTitle: jobBoardApplyTitle,
+        jobBoardApplyVacancyId: seededJobBoardApplyVacancyId,
+        jobDetailVacancyTitle: jobDetailTitle,
+        jobDetailVacancyId: seededJobDetailVacancyId,
+        screeningVacancyTitle: screeningJobTitle,
+        screeningVacancyId: seededScreeningVacancyId,
+        screeningApplicationId: seededScreeningApplicationId,
+      }),
+      "utf8",
+    );
 
     await request.storageState({ path: candidateStorage });
   });

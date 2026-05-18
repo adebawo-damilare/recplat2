@@ -4,7 +4,8 @@ import { requireTalentBridgeSession } from "../../../../src/server/auth/requireS
 import { requireRole } from "../../../../src/server/auth/requireRole";
 import { hasPostgresConfigured } from "../../../../src/server/db/postgres";
 import { enforceJobsApiRateLimit } from "../../../../src/server/distributedRateLimit";
-import { listMarketersScreeningMatrixForOwner } from "../../../../src/server/screenings";
+import { listScreeningMatrixForOwner } from "../../../../src/server/screenings";
+import { SCREENING_ENABLED_CATEGORY_SLUGS } from "../../../../src/shared/screeningPilot";
 import { getClientKey } from "../../../../src/server/rateLimit";
 
 export async function GET(request: NextRequest) {
@@ -27,11 +28,14 @@ export async function GET(request: NextRequest) {
   if (roleCheck.ok === false) return roleCheck.response;
 
   const vacancyId = request.nextUrl.searchParams.get("vacancyId");
+  const categorySlugParam = request.nextUrl.searchParams.get("categorySlug");
+  const categorySlug =
+    categorySlugParam?.trim().toLowerCase() || SCREENING_ENABLED_CATEGORY_SLUGS[0];
 
-  const matrix = await listMarketersScreeningMatrixForOwner(
-    authResult.user.userId,
+  const matrix = await listScreeningMatrixForOwner(authResult.user.userId, {
     vacancyId,
-  );
+    categorySlug,
+  });
 
   return NextResponse.json(matrix);
 }

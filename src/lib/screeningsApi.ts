@@ -91,14 +91,20 @@ export type ScreeningMatrixRow = {
 };
 
 export type ScreeningMatrix = {
+  categorySlug: string;
   questions: ScreeningQuestion[];
   rows: ScreeningMatrixRow[];
 };
 
-export async function fetchScreeningMatrix(vacancyId?: string | null): Promise<ScreeningMatrix> {
+export async function fetchScreeningMatrix(options?: {
+  vacancyId?: string | null;
+  categorySlug?: string | null;
+}): Promise<ScreeningMatrix> {
   const p = new URLSearchParams();
-  const vid = vacancyId?.trim();
+  const vid = options?.vacancyId?.trim();
   if (vid) p.set("vacancyId", vid);
+  const lane = options?.categorySlug?.trim().toLowerCase();
+  if (lane) p.set("categorySlug", lane);
   const qs = p.toString();
   const res = await fetch(`/api/screenings/matrix${qs ? `?${qs}` : ""}`, {
     credentials: "same-origin",
@@ -106,9 +112,13 @@ export async function fetchScreeningMatrix(vacancyId?: string | null): Promise<S
   });
   const raw = (await res.json().catch(() => ({}))) as ScreeningMatrix;
   if (!res.ok || !Array.isArray(raw.questions) || !Array.isArray(raw.rows)) {
-    return { questions: [], rows: [] };
+    return { categorySlug: lane || "marketers", questions: [], rows: [] };
   }
-  return raw;
+  return {
+    categorySlug: raw.categorySlug || lane || "marketers",
+    questions: raw.questions,
+    rows: raw.rows,
+  };
 }
 
 export async function submitScreening(

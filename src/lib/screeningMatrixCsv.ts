@@ -48,6 +48,7 @@ export function downloadScreeningMatrixCsv(
   const jobPart = options?.vacancyJobTitle
     ? `-${options.vacancyJobTitle.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}`
     : "";
-  const filename = `marketers-screening${jobPart}-${date}.csv`;
+  const lanePart = matrix.categorySlug ? `-${matrix.categorySlug}` : "";
+  const filename = `screening${lanePart}${jobPart}-${date}.csv`;
   downloadCsv(filename, buildScreeningMatrixCsv(matrix));
 }
