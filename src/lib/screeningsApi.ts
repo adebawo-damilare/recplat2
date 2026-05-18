@@ -96,6 +96,40 @@ export type ScreeningMatrix = {
   rows: ScreeningMatrixRow[];
 };
 
+export type ScreeningFollowUpKind = "needs_invite" | "awaiting_candidate" | "awaiting_review";
+
+export type ScreeningFollowUpItem = {
+  kind: ScreeningFollowUpKind;
+  applicationId: string;
+  invitationId: string | null;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  companyName: string;
+  vacancyId: string;
+  categorySlug: string;
+  invitedAt: string | null;
+  submittedAt: string | null;
+  reminderText: string;
+  linkPath: string | null;
+};
+
+export async function fetchScreeningFollowUp(options?: {
+  categorySlug?: string | null;
+}): Promise<ScreeningFollowUpItem[]> {
+  const p = new URLSearchParams();
+  const lane = options?.categorySlug?.trim().toLowerCase();
+  if (lane) p.set("categorySlug", lane);
+  const qs = p.toString();
+  const res = await fetch(`/api/screenings/follow-up${qs ? `?${qs}` : ""}`, {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  const raw = (await res.json().catch(() => ({}))) as { items?: ScreeningFollowUpItem[] };
+  if (!res.ok || !Array.isArray(raw.items)) return [];
+  return raw.items;
+}
+
 export async function fetchScreeningMatrix(options?: {
   vacancyId?: string | null;
   categorySlug?: string | null;

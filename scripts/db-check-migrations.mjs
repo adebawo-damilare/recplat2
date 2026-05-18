@@ -98,6 +98,10 @@ try {
         WHERE table_schema='public' AND table_name='notifications'
       ) AS notifications_table,
       EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema='public' AND table_name='notification_delivery_log'
+      ) AS notification_delivery_log_table,
+      EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='candidate_profiles' AND column_name='primary_talent_lane_slug'
       ) AS candidate_profiles_primary_lane,
@@ -118,6 +122,9 @@ try {
   if (!s.screening_invitations_table) shapeIssues.push("screening_invitations table missing");
   if (!s.category_fields_table) shapeIssues.push("category_fields table missing");
   if (!s.notifications_table) shapeIssues.push("notifications table missing");
+  if (!s.notification_delivery_log_table) {
+    shapeIssues.push("notification_delivery_log table missing");
+  }
   if (!s.candidate_profiles_primary_lane) shapeIssues.push("candidate_profiles.primary_talent_lane_slug missing");
   if (!s.vacancies_job_type) shapeIssues.push("vacancies.job_type missing");
 
