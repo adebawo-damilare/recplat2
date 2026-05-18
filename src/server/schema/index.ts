@@ -1,5 +1,6 @@
 export { categories } from "./categories";
 export { companies } from "./companies";
+export { companyMembers } from "./companyMembers";
 export { vacancies } from "./vacancies";
 export { applications } from "./applications";
 export { aiAuditEvents } from "./aiAudit";

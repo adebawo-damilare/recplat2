@@ -51,7 +51,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 1. **Jobs Slice v1 prod hygiene:** after each merge to **`main`**, run **`release:prod:db:apply`**, **`release:prod:db:check:migrations`**, **`release:prod:smoke`** (`SMOKE_EXPECT_POSTGRES_READY=1`); manual gate in **`docs/RELEASE_JOBS_SLICE_V1.md`** (pipeline, follow-up queue, matrix lanes, Alerts).  
 2. **Promoted reference learnings to schedule as named slices** (reuse product/workflow ideas, not reference infrastructure):
-   - **Recruiter company onboarding + company membership:** create/claim company, invite or attach recruiters, and move beyond global recruiter role checks toward company-scoped permissions.
+   - **Recruiter company onboarding + company membership:** shipped (`0014_company_members`, `/api/companies/*`, company workspace on dashboard); vacancies/pipeline/screening scoped by `company_id` membership.
    - **Pipeline notes + stage history:** keep application status changes auditable with recruiter notes/history, without growing into a full ATS.
    - **Email notification channel:** wire outbound email using the delivery ledger (`notification_delivery_log`); today only **`in_app`** rows are written.
    - **Thin admin moderation + analytics cockpit:** category/template governance, moderation review, and basic platform/workflow counts as an early admin slice.

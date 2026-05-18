@@ -46,6 +46,7 @@ import {
 } from "../shared/screeningPilot";
 import MarketersScreeningMatrix from "./jobs/MarketersScreeningMatrix";
 import RecruiterScreeningFollowUp from "./jobs/RecruiterScreeningFollowUp";
+import CompanyWorkspacePanel from "./jobs/CompanyWorkspacePanel";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
@@ -329,6 +330,8 @@ export default function CompanyDashboard() {
           <Plus className="w-5 h-5" /> Post Vacancy
         </button>
       </div>
+
+      <CompanyWorkspacePanel />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">

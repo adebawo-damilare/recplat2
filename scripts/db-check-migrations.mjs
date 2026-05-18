@@ -102,6 +102,10 @@ try {
         WHERE table_schema='public' AND table_name='notification_delivery_log'
       ) AS notification_delivery_log_table,
       EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema='public' AND table_name='company_members'
+      ) AS company_members_table,
+      EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='candidate_profiles' AND column_name='primary_talent_lane_slug'
       ) AS candidate_profiles_primary_lane,
@@ -125,6 +129,7 @@ try {
   if (!s.notification_delivery_log_table) {
     shapeIssues.push("notification_delivery_log table missing");
   }
+  if (!s.company_members_table) shapeIssues.push("company_members table missing");
   if (!s.candidate_profiles_primary_lane) shapeIssues.push("candidate_profiles.primary_talent_lane_slug missing");
   if (!s.vacancies_job_type) shapeIssues.push("vacancies.job_type missing");
 

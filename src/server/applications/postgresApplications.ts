@@ -1,4 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+
+import { listCompanyIdsForUser, userCanAccessApplication } from "../companies";
 
 import { normalizeApplicationStatus, type PipelineApplicationStatus } from "../../lib/applicationStatus";
 import { isMissingPgColumn } from "../db/pgColumnErrors";
@@ -125,8 +127,11 @@ export type RecruiterBoardListFilters = {
 
 /** Applications across vacancies owned by this recruiter (optional vacancy, status, lane filters). */
 export async function listApplicationsBoardForOwner(ownerUserId: string, filtersIn?: RecruiterBoardListFilters) {
+  const companyIds = await listCompanyIdsForUser(ownerUserId);
+  if (companyIds.length === 0) return [];
+
   const db = getDrizzleDb();
-  const filters = [eq(vacancies.postedByUserId, ownerUserId)];
+  const filters = [inArray(vacancies.companyId, companyIds)];
   const vid = filtersIn?.vacancyId?.trim();
   if (vid) filters.push(eq(applications.vacancyId, vid));
   const status = filtersIn?.status;
@@ -275,15 +280,14 @@ export async function updateApplicationStatusForVacancyOwner(
   status: PipelineApplicationStatus,
 ): Promise<{ ok: true } | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" }> {
   const db = getDrizzleDb();
-  const rows = await db
-    .select({ postedBy: vacancies.postedByUserId })
+  const exists = await db
+    .select({ id: applications.id })
     .from(applications)
-    .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
     .where(eq(applications.id, applicationId))
     .limit(1);
-  const row = rows[0];
-  if (!row) return { ok: false, reason: "NOT_FOUND" };
-  if (row.postedBy !== ownerUserId) return { ok: false, reason: "FORBIDDEN" };
+  if (!exists[0]?.id) return { ok: false, reason: "NOT_FOUND" };
+  const canAccess = await userCanAccessApplication(ownerUserId, applicationId);
+  if (!canAccess) return { ok: false, reason: "FORBIDDEN" };
 
   try {
     await db
