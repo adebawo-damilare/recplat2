@@ -31,23 +31,30 @@ Combined surface area over several releases:
 
 ## 3. Product surfaces (full platform map)
 
-Four major areas—the **TalentBridge codebase today** implements only a **thin slice** (jobs, applications, categories on vacancies—see §7).
+Four major areas—this codebase today implements only a **thin slice** (jobs, applications, categories on vacancies—see §7).
 
 ### Candidate workspace
 
 - Profile, lane selection, portfolio / proof-of-work  
 - Improvement suggestions and learning hooks (later)  
 - Screenings inbox, invites, prep (later)
+- Candidate-development toolkit items such as resume builder and salary insights (later; promote after richer profiles/category fields)
 
 ### Recruiter workspace
 
 - Company and roles (**vacancies** today), lane selection  
 - Search and review (**job board + dashboards** today); **Your Vacancies** client-side search on the company dashboard (owned listings only—not marketplace index search)  
 - Invites, pipeline, comparisons (later)
+- Company onboarding, company membership, follow-up queue, pipeline notes, and stage history (later; adopted as product ideas from references)
 
 ### Admin console
 
 - Category/template governance, moderation, catalogs, integrations, analytics (mostly later; **lane list** seeded in DB today)
+- Thin moderation + analytics cockpit is a good early admin slice once marketplace workflow events exist.
+
+### Public/commercial support
+
+- Jobs Slice v1 is product-first, but the paying/public milestone should include a simple pricing/contact surface when launch readiness needs it.
 
 ### AI and automation
 
@@ -93,6 +100,8 @@ Aligned with synthesis: **modular monolith** first—not microservices.
 | Async work | Queue + workers (notifications, scoring, AI batches) | **Deferred** beyond route-level calls |
 | Files | Portfolio storage | **Deferred** |
 | Analytics | Events/warehouse | **Deferred** |
+
+Reference infrastructure boundary: adopt product/workflow lessons from archived reference material and `recruit/`, but do **not** adopt the removed reference app's Firebase/local seed machinery or the `recruit` local JSON-store/backfill patterns. Runtime data stays on Postgres-backed APIs and repo-specific SQL/demo-data scripts.
 
 ---
 
@@ -148,6 +157,8 @@ Use this alongside **`docs/ROADMAP_FROM_REFERENCE.md`** P0/P1 buckets.
 | **C — Marketplace loop** | Invitations → screening sessions → pipeline tables | Core “who is worth contacting?” |
 | **D — Discovery scale** | Search index, workers, notifications depth | Modular monolith + async |
 
+Promoted reference learnings now tracked in **`docs/ROADMAP.md`**: recruiter company onboarding + membership, follow-up queue, pipeline notes/history, notification delivery ledger, thin admin moderation/analytics, candidate career toolkit, and public pricing/contact.
+
 Exact ordering is tightened in **`docs/ROADMAP.md`** (“Next”) as commits land.
 
 ---
@@ -162,7 +173,7 @@ Suggested order when writing **formal** artifacts (strategy session + reference 
 4. System design with AI (**`recruit/docs/system-design.md`**) once MVP stable  
 5. Database + API outline (**`recruit/docs/database-api-outline.md`**) finalized **after** MVP + system boundaries lock  
 
-TalentBridge **`docs/ROADMAP.md`** stays the **checklist for what we actually merge** next.
+`docs/ROADMAP.md` stays the **checklist for what we actually merge** next.
 
 ---
 
