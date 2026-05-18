@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
   const payload = body as Partial<{
     jobTitle: string;
     jobType: string;
+    companyId: string;
     companyName: string;
     location: string;
     salary: string;
@@ -168,9 +169,14 @@ export async function POST(request: NextRequest) {
     categorySlug: string;
   }>;
 
+  const companyId = payload.companyId?.trim();
+  const companyName = payload.companyName?.trim();
+  if (!companyId && !companyName) {
+    return NextResponse.json({ error: "companyId is required." }, { status: 400 });
+  }
+
   if (
     !payload.jobTitle?.trim() ||
-    !payload.companyName?.trim() ||
     !payload.location?.trim() ||
     !payload.salary?.trim() ||
     !payload.description?.trim() ||
@@ -196,7 +202,8 @@ export async function POST(request: NextRequest) {
   try {
     vacancy = await insertVacancyForOwner({
       ownerUserId: authResult.user.userId,
-      companyName: payload.companyName.trim(),
+      companyId: companyId || null,
+      companyName: companyName || null,
       jobTitle: payload.jobTitle.trim(),
       jobType: jobTypeParse.value,
       location: payload.location.trim(),
@@ -206,6 +213,12 @@ export async function POST(request: NextRequest) {
       categorySlug: catParse.slug,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "FORBIDDEN_COMPANY") {
+      return NextResponse.json({ error: "You do not have access to that company." }, { status: 403 });
+    }
+    if (error instanceof Error && error.message === "COMPANY_REQUIRED") {
+      return NextResponse.json({ error: "companyId is required." }, { status: 400 });
+    }
     if (error instanceof Error && error.message === "INVALID_CATEGORY_SLUG") {
       return NextResponse.json(
         { error: "Category is not provisioned yet. Apply migration 0002_categories.sql." },

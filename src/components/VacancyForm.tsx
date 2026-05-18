@@ -11,6 +11,7 @@ import type { JobType } from "../shared/jobTypes";
 import { persistVacancyWithFallback } from "../lib/jobsApi";
 import { VacancyCategoryField } from "./vacancies/VacancyCategoryField";
 import { JOB_TYPE_OPTIONS } from "../shared/jobTypes";
+import { useRecruiterCompanySelection } from "../lib/recruiterCompanySelection";
 
 interface VacancyFormProps {
   vacancy?: Vacancy;
@@ -19,10 +20,11 @@ interface VacancyFormProps {
 }
 
 export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFormProps) {
+  const { companies, activeCompanyId, activeCompany, loading: companiesLoading } =
+    useRecruiterCompanySelection();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     jobTitle: vacancy?.jobTitle || "",
-    companyName: vacancy?.companyName || "",
     location: vacancy?.location || "",
     salary: vacancy?.salary || "",
     description: vacancy?.description || "",
@@ -33,6 +35,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!vacancy && !activeCompanyId) return;
 
     setLoading(true);
     try {
@@ -49,7 +52,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
         {
           jobTitle: formData.jobTitle,
           jobType: formData.jobType,
-          companyName: formData.companyName,
+          companyId: vacancy ? undefined : activeCompanyId,
           location: formData.location,
           salary: formData.salary,
           description: formData.description,
@@ -66,6 +69,8 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
     }
   };
 
+  const canPost = Boolean(vacancy) || (Boolean(activeCompanyId) && companies.length > 0);
+
   return (
     <div className="bg-white rounded-3xl shadow-xl border border-neutral-200 overflow-hidden">
       <div className="px-8 py-6 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
@@ -81,7 +86,28 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="p-8 space-y-6" data-testid="recruiter-vacancy-form">
+        {!vacancy ? (
+          companiesLoading ? (
+            <p className="text-sm text-neutral-500">Loading companies…</p>
+          ) : companies.length === 0 ? (
+            <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+              Create a company in the workspace section above before posting a vacancy.
+            </p>
+          ) : (
+            <CompanyPostingField companyName={activeCompany?.name ?? ""} />
+          )
+        ) : (
+          <div className="space-y-2">
+            <label className="text-sm font-bold flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-blue-600" /> Company
+            </label>
+            <p className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50 text-sm font-medium">
+              {vacancy.companyName}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <VacancyCategoryField
             value={formData.categorySlug}
@@ -115,20 +141,6 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
               value={formData.jobTitle}
               onChange={(e) => setFormData({...formData, jobTitle: e.target.value})}
               placeholder="e.g. Senior Frontend Engineer"
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-bold flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" /> Company Name
-            </label>
-            <input
-              required
-              type="text"
-              value={formData.companyName}
-              onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-              placeholder="e.g. TechFlow Systems"
               className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
             />
           </div>
@@ -193,7 +205,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
         <div className="flex items-center gap-4 pt-4">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !canPost}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? 'Saving...' : vacancy ? 'Update Vacancy' : 'Post Vacancy'}
@@ -207,6 +219,25 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function CompanyPostingField({ companyName }: { companyName: string }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-bold flex items-center gap-2">
+        <Building2 className="w-4 h-4 text-blue-600" /> Posting for company
+      </label>
+      <p
+        className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50 text-sm font-semibold text-neutral-800"
+        data-testid="recruiter-vacancy-company"
+      >
+        {companyName || "Select a company above"}
+      </p>
+      <p className="text-xs text-neutral-500">
+        Change the active company in Company workspace before opening this form.
+      </p>
     </div>
   );
 }

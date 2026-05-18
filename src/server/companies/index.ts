@@ -2,6 +2,7 @@ export {
   addCompanyMemberByEmail,
   createCompanyForRecruiter,
   ensureCompanyForRecruiter,
+  getCompanyForMember,
   listCompaniesForUser,
   listCompanyIdsForUser,
   listMembersForCompany,

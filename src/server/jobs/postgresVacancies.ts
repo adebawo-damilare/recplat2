@@ -6,7 +6,12 @@ import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { resolveActiveCategoryIdBySlug } from "../categories/resolveActiveCategoryId";
 import { isMissingPgColumn } from "../db/pgColumnErrors";
 import { getDrizzleDb, getPostgresSql } from "../db/postgres";
-import { ensureCompanyForRecruiter, listCompanyIdsForUser, userHasCompanyAccess } from "../companies";
+import {
+  ensureCompanyForRecruiter,
+  getCompanyForMember,
+  listCompanyIdsForUser,
+  userHasCompanyAccess,
+} from "../companies";
 import { applications, categories, vacancies } from "../schema";
 import { decodeVacancyCursor, encodeVacancyCursor } from "./cursor";
 import { mapPostgresVacancyRow } from "./vacancyMapper";
@@ -164,7 +169,8 @@ export async function countOpenVacanciesFromPostgres(
 
 export async function insertVacancyForOwner(input: {
   ownerUserId: string;
-  companyName: string;
+  companyId?: string | null;
+  companyName?: string | null;
   jobTitle: string;
   jobType: JobType;
   location: string;
@@ -174,7 +180,17 @@ export async function insertVacancyForOwner(input: {
   categorySlug?: string | null;
 }) {
   const db = getDrizzleDb();
-  const company = await ensureCompanyForRecruiter(input.ownerUserId, input.companyName);
+  const companyId = input.companyId?.trim();
+  let company: { id: string; name: string };
+  if (companyId) {
+    const resolved = await getCompanyForMember(input.ownerUserId, companyId);
+    if (!resolved) throw new Error("FORBIDDEN_COMPANY");
+    company = resolved;
+  } else if (input.companyName?.trim()) {
+    company = await ensureCompanyForRecruiter(input.ownerUserId, input.companyName.trim());
+  } else {
+    throw new Error("COMPANY_REQUIRED");
+  }
   const id = crypto.randomUUID();
 
   let categoryId: string | null = null;
@@ -191,7 +207,7 @@ export async function insertVacancyForOwner(input: {
       id,
       companyId: company.id,
       categoryId,
-      companyNameDenorm: input.companyName,
+      companyNameDenorm: company.name,
       jobTitle: input.jobTitle,
       jobType: input.jobType,
       location: input.location,
@@ -238,12 +254,6 @@ export async function updateVacancyForOwner(
 
   let companyId = row.companyId;
   let companyNameDenorm = row.companyNameDenorm;
-
-  if (patch.companyName && patch.companyName !== row.companyNameDenorm) {
-    const company = await ensureCompanyForRecruiter(ownerUserId, patch.companyName);
-    companyId = company.id;
-    companyNameDenorm = patch.companyName;
-  }
 
   let nextCategoryId = row.categoryId;
   if ("categorySlug" in patch) {
