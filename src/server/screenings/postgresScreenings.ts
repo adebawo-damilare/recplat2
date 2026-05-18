@@ -6,6 +6,11 @@ import {
   screeningLaneLabel,
   type ScreeningInvitationStatus,
 } from "../../shared/screeningPilot";
+import {
+  listCompanyIdsForUser,
+  userCanAccessApplication,
+  userHasCompanyAccess,
+} from "../companies";
 import { getDrizzleDb } from "../db/postgres";
 import {
   applications,
@@ -48,6 +53,7 @@ export type ScreeningInvitationDetail = ScreeningInvitationSummary & {
 type ApplicationContext = {
   applicationId: string;
   vacancyId: string;
+  companyId: string;
   candidateUserId: string;
   postedByUserId: string;
   categorySlug: string | null;
@@ -60,6 +66,7 @@ async function loadApplicationContext(applicationId: string): Promise<Applicatio
       applicationId: applications.id,
       vacancyId: applications.vacancyId,
       candidateUserId: applications.candidateUserId,
+      companyId: vacancies.companyId,
       postedByUserId: vacancies.postedByUserId,
       categorySlug: categories.slug,
     })
@@ -227,6 +234,7 @@ export async function getInvitationDetailForUser(
       companyName: vacancies.companyNameDenorm,
       categorySlug: categories.slug,
       postedByUserId: vacancies.postedByUserId,
+      companyId: vacancies.companyId,
     })
     .from(screeningInvitations)
     .innerJoin(vacancies, eq(screeningInvitations.vacancyId, vacancies.id))
@@ -240,7 +248,7 @@ export async function getInvitationDetailForUser(
   const allowed =
     role === "candidate"
       ? r.candidateUserId === userId
-      : r.postedByUserId === userId;
+      : r.postedByUserId === userId || (await userHasCompanyAccess(userId, r.companyId));
   if (!allowed) return { ok: false, reason: "FORBIDDEN" };
 
   const lane = r.categorySlug?.trim().toLowerCase() ?? "";
@@ -275,7 +283,9 @@ export async function createScreeningInvitation(
 > {
   const ctx = await loadApplicationContext(applicationId);
   if (!ctx) return { ok: false, reason: "NOT_FOUND" };
-  if (ctx.postedByUserId !== recruiterUserId) return { ok: false, reason: "FORBIDDEN" };
+  if (!(await userCanAccessApplication(recruiterUserId, applicationId))) {
+    return { ok: false, reason: "FORBIDDEN" };
+  }
   if (!ctx.categorySlug || !isScreeningEnabledCategorySlug(ctx.categorySlug)) {
     return { ok: false, reason: "NOT_PILOT_LANE" };
   }
@@ -419,8 +429,13 @@ export async function listScreeningMatrixForOwner(
     return { categorySlug: lane, questions: [], rows: [] };
   }
 
+  const companyIds = await listCompanyIdsForUser(ownerUserId);
+  if (companyIds.length === 0) {
+    return { categorySlug: lane, questions: [], rows: [] };
+  }
+
   const db = getDrizzleDb();
-  const filters = [eq(vacancies.postedByUserId, ownerUserId), eq(categories.slug, lane)];
+  const filters = [inArray(vacancies.companyId, companyIds), eq(categories.slug, lane)];
   const vid = options?.vacancyId?.trim();
   if (vid) filters.push(eq(applications.vacancyId, vid));
 
@@ -587,6 +602,9 @@ export async function listRecruiterScreeningFollowUpForOwner(
       ? [laneFilter]
       : [...SCREENING_ENABLED_CATEGORY_SLUGS];
 
+  const companyIds = await listCompanyIdsForUser(ownerUserId);
+  if (companyIds.length === 0) return [];
+
   const db = getDrizzleDb();
   const appRows = await db
     .select({
@@ -612,7 +630,7 @@ export async function listRecruiterScreeningFollowUpForOwner(
       sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`,
     )
     .leftJoin(screeningInvitations, eq(screeningInvitations.applicationId, applications.id))
-    .where(and(eq(vacancies.postedByUserId, ownerUserId), inArray(categories.slug, laneSlugs))!)
+    .where(and(inArray(vacancies.companyId, companyIds), inArray(categories.slug, laneSlugs))!)
     .orderBy(desc(applications.createdAt));
 
   const items: ScreeningFollowUpItem[] = [];

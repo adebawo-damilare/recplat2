@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import type { Vacancy } from "../../lib/domainTypes";
 import type { JobType } from "../../shared/jobTypes";
@@ -6,7 +6,8 @@ import type { PaginatedVacanciesResult } from "./paginatedTypes";
 import { resolveActiveCategoryIdBySlug } from "../categories/resolveActiveCategoryId";
 import { isMissingPgColumn } from "../db/pgColumnErrors";
 import { getDrizzleDb, getPostgresSql } from "../db/postgres";
-import { applications, categories, companies, vacancies } from "../schema";
+import { ensureCompanyForRecruiter, listCompanyIdsForUser, userHasCompanyAccess } from "../companies";
+import { applications, categories, vacancies } from "../schema";
 import { decodeVacancyCursor, encodeVacancyCursor } from "./cursor";
 import { mapPostgresVacancyRow } from "./vacancyMapper";
 
@@ -161,33 +162,6 @@ export async function countOpenVacanciesFromPostgres(
   return Number(row?.n ?? 0);
 }
 
-async function findCompanyByOwnerAndName(ownerUserId: string, name: string) {
-  const db = getDrizzleDb();
-  const rows = await db
-    .select()
-    .from(companies)
-    .where(
-      and(
-        eq(companies.ownerUserId, ownerUserId),
-        sql`lower(${companies.name}) = lower(${name})`,
-      ),
-    )
-    .limit(1);
-  return rows[0] ?? null;
-}
-
-export async function ensureCompanyForOwner(ownerUserId: string, name: string) {
-  const existing = await findCompanyByOwnerAndName(ownerUserId, name);
-  if (existing) return existing;
-
-  const db = getDrizzleDb();
-  const inserted = await db
-    .insert(companies)
-    .values({ ownerUserId, name })
-    .returning();
-  return inserted[0];
-}
-
 export async function insertVacancyForOwner(input: {
   ownerUserId: string;
   companyName: string;
@@ -200,7 +174,7 @@ export async function insertVacancyForOwner(input: {
   categorySlug?: string | null;
 }) {
   const db = getDrizzleDb();
-  const company = await ensureCompanyForOwner(input.ownerUserId, input.companyName);
+  const company = await ensureCompanyForRecruiter(input.ownerUserId, input.companyName);
   const id = crypto.randomUUID();
 
   let categoryId: string | null = null;
@@ -254,7 +228,11 @@ export async function updateVacancyForOwner(
   const db = getDrizzleDb();
   const existing = await db.select().from(vacancies).where(eq(vacancies.id, vacancyId)).limit(1);
   const row = existing[0];
-  if (!row || row.postedByUserId !== ownerUserId) {
+  const canEdit =
+    row &&
+    (row.postedByUserId === ownerUserId ||
+      (await userHasCompanyAccess(ownerUserId, row.companyId)));
+  if (!canEdit) {
     return { ok: false as const, reason: "NOT_FOUND_OR_FORBIDDEN" as const };
   }
 
@@ -262,7 +240,7 @@ export async function updateVacancyForOwner(
   let companyNameDenorm = row.companyNameDenorm;
 
   if (patch.companyName && patch.companyName !== row.companyNameDenorm) {
-    const company = await ensureCompanyForOwner(ownerUserId, patch.companyName);
+    const company = await ensureCompanyForRecruiter(ownerUserId, patch.companyName);
     companyId = company.id;
     companyNameDenorm = patch.companyName;
   }
@@ -323,6 +301,9 @@ async function mapJoinedRowByVacancyId(id: string): Promise<Vacancy> {
 }
 
 export async function listVacanciesForOwner(ownerUserId: string) {
+  const companyIds = await listCompanyIdsForUser(ownerUserId);
+  if (companyIds.length === 0) return [];
+
   const db = getDrizzleDb();
   const rows = await db
     .select({
@@ -332,7 +313,7 @@ export async function listVacanciesForOwner(ownerUserId: string) {
     })
     .from(vacancies)
     .leftJoin(categories, eq(vacancies.categoryId, categories.id))
-    .where(eq(vacancies.postedByUserId, ownerUserId))
+    .where(inArray(vacancies.companyId, companyIds))
     .orderBy(desc(vacancies.updatedAt));
 
   return rows.map((r) => mapPostgresVacancyRow(r.v, catSummaryFromJoined(r.catSlug, r.catLabel)));
