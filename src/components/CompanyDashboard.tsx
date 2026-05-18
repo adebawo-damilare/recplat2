@@ -34,12 +34,18 @@ import VacancyForm from './VacancyForm';
 import PipelineCandidatePanel from "./jobs/PipelineCandidatePanel";
 import PortfolioViewer from "./PortfolioViewer";
 import { applicationStatusLabel } from "../lib/applicationStatus";
-import { fetchScreeningMatrix, type ScreeningMatrix } from "../lib/screeningsApi";
+import {
+  fetchScreeningFollowUp,
+  fetchScreeningMatrix,
+  type ScreeningFollowUpItem,
+  type ScreeningMatrix,
+} from "../lib/screeningsApi";
 import {
   SCREENING_ENABLED_CATEGORY_SLUGS,
   type ScreeningEnabledCategorySlug,
 } from "../shared/screeningPilot";
 import MarketersScreeningMatrix from "./jobs/MarketersScreeningMatrix";
+import RecruiterScreeningFollowUp from "./jobs/RecruiterScreeningFollowUp";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
@@ -89,6 +95,11 @@ export default function CompanyDashboard() {
     SCREENING_ENABLED_CATEGORY_SLUGS[0],
   );
   const [screeningMatrixVacancyFilter, setScreeningMatrixVacancyFilter] = useState("");
+  const [followUpItems, setFollowUpItems] = useState<ScreeningFollowUpItem[]>([]);
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [followUpLaneFilter, setFollowUpLaneFilter] = useState<ScreeningEnabledCategorySlug | "">(
+    "",
+  );
 
   const fetchDataForUser = useCallback(async () => {
     if (!user) {
@@ -189,6 +200,29 @@ export default function CompanyDashboard() {
   useEffect(() => {
     void fetchScreeningMatrixData();
   }, [fetchScreeningMatrixData]);
+
+  const fetchFollowUpData = useCallback(async () => {
+    if (!user || user.role !== "recruiter") {
+      setFollowUpItems([]);
+      return;
+    }
+    setFollowUpLoading(true);
+    try {
+      const items = await fetchScreeningFollowUp({
+        categorySlug: followUpLaneFilter.trim() || undefined,
+      });
+      setFollowUpItems(items);
+    } catch (e) {
+      console.error("Screening follow-up load failed", e);
+      setFollowUpItems([]);
+    } finally {
+      setFollowUpLoading(false);
+    }
+  }, [user, followUpLaneFilter]);
+
+  useEffect(() => {
+    void fetchFollowUpData();
+  }, [fetchFollowUpData]);
 
   const openPipelineApplicant = useCallback(
     async (applicationId: string) => {
@@ -525,6 +559,18 @@ export default function CompanyDashboard() {
         )}
       </div>
 
+      <RecruiterScreeningFollowUp
+        items={followUpItems}
+        loading={followUpLoading}
+        laneFilter={followUpLaneFilter}
+        onLaneFilterChange={setFollowUpLaneFilter}
+        onRefresh={() => {
+          void fetchFollowUpData();
+          void fetchScreeningMatrixData();
+        }}
+        onOpenApplicant={(applicationId) => void openPipelineApplicant(applicationId)}
+      />
+
       <MarketersScreeningMatrix
         matrix={screeningMatrix}
         loading={screeningMatrixLoading}
@@ -721,7 +767,10 @@ export default function CompanyDashboard() {
           setSelectedPipelineRow(null);
           setPortfolioRow(row);
         }}
-        onScreeningChange={() => void fetchScreeningMatrixData()}
+        onScreeningChange={() => {
+          void fetchScreeningMatrixData();
+          void fetchFollowUpData();
+        }}
       />
       {portfolioRow ? (
         <PortfolioViewer

@@ -11,3 +11,4 @@ export { screeningAnswers } from "./screeningAnswers";
 export { categoryFields } from "./categoryFields";
 export { candidateProfileFieldValues } from "./candidateProfileFieldValues";
 export { notifications } from "./notifications";
+export { notificationDeliveryLog } from "./notificationDeliveryLog";

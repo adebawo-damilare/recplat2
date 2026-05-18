@@ -2,6 +2,8 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import {
   isScreeningEnabledCategorySlug,
+  SCREENING_ENABLED_CATEGORY_SLUGS,
+  screeningLaneLabel,
   type ScreeningInvitationStatus,
 } from "../../shared/screeningPilot";
 import { getDrizzleDb } from "../db/postgres";
@@ -525,6 +527,154 @@ export async function getScreeningNotificationTargets(
     jobTitle: rows[0]?.jobTitle ?? "Role",
     categorySlug: ctx.categorySlug,
   };
+}
+
+export type ScreeningFollowUpKind = "needs_invite" | "awaiting_candidate" | "awaiting_review";
+
+export type ScreeningFollowUpItem = {
+  kind: ScreeningFollowUpKind;
+  applicationId: string;
+  invitationId: string | null;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  companyName: string;
+  vacancyId: string;
+  categorySlug: string;
+  invitedAt: string | null;
+  submittedAt: string | null;
+  reminderText: string;
+  linkPath: string | null;
+};
+
+function buildFollowUpReminderText(input: {
+  kind: ScreeningFollowUpKind;
+  candidateName: string;
+  jobTitle: string;
+  companyName: string;
+  categorySlug: string;
+}): string {
+  const name = input.candidateName.trim() || "there";
+  const role = input.jobTitle.trim() || "the role";
+  const company = input.companyName.trim() || "our team";
+  const lane = screeningLaneLabel(input.categorySlug);
+
+  if (input.kind === "needs_invite") {
+    return `Invite ${name} to the ${lane} screening for ${role} (${company}).`;
+  }
+  if (input.kind === "awaiting_candidate") {
+    return `Hi ${name}, please complete your ${lane} screening for ${role} at ${company}. You can finish it from your TalentBridge dashboard under Screenings.`;
+  }
+  return `Review ${name}'s submitted ${lane} screening for ${role} at ${company}.`;
+}
+
+const FOLLOW_UP_KIND_RANK: Record<ScreeningFollowUpKind, number> = {
+  awaiting_review: 0,
+  awaiting_candidate: 1,
+  needs_invite: 2,
+};
+
+/** Actionable screening items for a recruiter (invite, chase, review). */
+export async function listRecruiterScreeningFollowUpForOwner(
+  ownerUserId: string,
+  options?: { categorySlug?: string | null; limit?: number },
+): Promise<ScreeningFollowUpItem[]> {
+  const laneFilter = options?.categorySlug?.trim().toLowerCase();
+  const limit = Math.min(50, Math.max(1, options?.limit ?? 30));
+
+  const laneSlugs =
+    laneFilter && isScreeningEnabledCategorySlug(laneFilter)
+      ? [laneFilter]
+      : [...SCREENING_ENABLED_CATEGORY_SLUGS];
+
+  const db = getDrizzleDb();
+  const appRows = await db
+    .select({
+      applicationId: applications.id,
+      appliedAt: applications.createdAt,
+      vacancyId: applications.vacancyId,
+      jobTitle: vacancies.jobTitle,
+      companyName: vacancies.companyNameDenorm,
+      categorySlug: categories.slug,
+      firstName: candidateProfiles.firstName,
+      lastName: candidateProfiles.lastName,
+      emailSnapshot: candidateProfiles.emailSnapshot,
+      invitationId: screeningInvitations.id,
+      invitationStatus: screeningInvitations.status,
+      invitedAt: screeningInvitations.invitedAt,
+      submittedAt: screeningInvitations.submittedAt,
+    })
+    .from(applications)
+    .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
+    .innerJoin(categories, eq(vacancies.categoryId, categories.id))
+    .leftJoin(
+      candidateProfiles,
+      sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`,
+    )
+    .leftJoin(screeningInvitations, eq(screeningInvitations.applicationId, applications.id))
+    .where(and(eq(vacancies.postedByUserId, ownerUserId), inArray(categories.slug, laneSlugs))!)
+    .orderBy(desc(applications.createdAt));
+
+  const items: ScreeningFollowUpItem[] = [];
+
+  for (const r of appRows) {
+    const categorySlug = r.categorySlug?.trim().toLowerCase() ?? "";
+    if (!isScreeningEnabledCategorySlug(categorySlug)) continue;
+
+    const candidateName =
+      [r.firstName?.trim(), r.lastName?.trim()].filter(Boolean).join(" ") || "(No profile)";
+    const candidateEmail = r.emailSnapshot?.trim() || "";
+
+    let kind: ScreeningFollowUpKind;
+    if (!r.invitationId) {
+      kind = "needs_invite";
+    } else if (r.invitationStatus === "submitted") {
+      kind = "awaiting_review";
+    } else {
+      kind = "awaiting_candidate";
+    }
+
+    const linkPath =
+      kind === "awaiting_review" && r.invitationId
+        ? `/dashboard/screenings/${r.invitationId}`
+        : null;
+
+    items.push({
+      kind,
+      applicationId: r.applicationId,
+      invitationId: r.invitationId,
+      candidateName,
+      candidateEmail,
+      jobTitle: r.jobTitle,
+      companyName: r.companyName ?? "",
+      vacancyId: r.vacancyId,
+      categorySlug,
+      invitedAt: r.invitedAt ? r.invitedAt.toISOString() : null,
+      submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
+      reminderText: buildFollowUpReminderText({
+        kind,
+        candidateName,
+        jobTitle: r.jobTitle,
+        companyName: r.companyName ?? "",
+        categorySlug,
+      }),
+      linkPath,
+    });
+  }
+
+  items.sort((a, b) => {
+    const rank = FOLLOW_UP_KIND_RANK[a.kind] - FOLLOW_UP_KIND_RANK[b.kind];
+    if (rank !== 0) return rank;
+    if (a.kind === "awaiting_review") {
+      return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
+    }
+    if (a.kind === "awaiting_candidate") {
+      return (a.invitedAt ?? "").localeCompare(b.invitedAt ?? "");
+    }
+    return 0;
+  });
+
+  return items.slice(0, limit);
 }
 
 /** @deprecated use listScreeningMatrixForOwner */

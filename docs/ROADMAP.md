@@ -24,7 +24,10 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - Client bridges `src/lib/jobsApi.ts`, **`src/lib/applicationsApi.ts`**.
 - UI uses `jobsApi` for list / seed / apply / recruiter CRUD (TalentBridge components only).
 - **Recruiter company dashboard:** **Your Vacancies** client-side search over owned rows (substring on title, company, location, salary, status, lane label, description, requirements); **`e2e/authenticated/recruiter-vacancies-search.spec.ts`**.
-- **Marketers screening pilot (Phase B slice):** `category_screening_questions`, `screening_invitations`, `screening_answers` (`database/migrations/0009_marketers_screening.sql`); recruiter **Invite to screening** on pipeline panel for **Marketers** vacancies only; candidate **`/dashboard/screenings`** + submit flow; APIs under **`/api/screenings/*`**.
+- **Multi-lane screening (marketers, designers, sales):** question seeds (`0009`, `0012`), recruiter **Invite to screening** on pipeline panel, candidate **`/dashboard/screenings`** + submit, matrix + CSV export, **`GET /api/screenings/matrix`**, **`GET /api/screenings/follow-up`** (recruiter follow-up queue with copyable nudges).
+- **Category profile fields:** `category_fields`, `candidate_profile_field_values`, `primary_talent_lane_slug` (`0010`); **`GET /api/categories/[slug]/profile-fields`**, lane fields on candidate profile UI.
+- **In-app notifications + delivery ledger:** `notifications` (`0011`), `notification_delivery_log` (`0013`); Alerts nav + **`/dashboard/notifications`**; screening invite/submit events; in-app delivery recorded on create.
+- **Authenticated Playwright:** screening invite → submit → matrix (`recruiter-screening.spec.ts`), dedicated job-board apply vacancy, auth setup seed (`e2e/auth.setup.ts`); **`npm run test:e2e:auth`** (~30 specs with **`E2E_RUN_AUTH=1`**).
 
 ## Tooling
 
@@ -46,13 +49,11 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 **Authenticated E2E (Playwright):** run locally with **`npm run test:e2e:auth`** when **`.env.local`** has **`DATABASE_URL`** + **`TALENTBRIDGE_AUTH_SECRET`** (Next loads them for **`npm run dev`**). CI runs the same path in **`smoke-postgres`** after **`E2E_RUN_AUTH=1`** (see **`docs/CICD.md`**). Specs live under **`e2e/authenticated/`** (candidate apply/board/detail/dashboard; recruiter dashboard, **`recruiter-vacancies`**, **`recruiter-vacancies-search`**, **`recruiter-pipeline`** including **`PATCH /api/applications/[id]`**, **`recruiter-post-vacancy`** UI **`POST /api/jobs`**, **`recruiter-vacancy-lifecycle`** edit **`PATCH /api/jobs/[id]`** + close **`confirm()`** + **`PATCH` status closed**). Session seeding is **`e2e/auth.setup.ts`**: two vacancies plus a candidate **`POST /api/applications`** against the “apply” vacancy so the recruiter pipeline table is non-empty.
 
-1. **Ship Jobs Slice v1** using **`docs/RELEASE_JOBS_SLICE_V1.md`** when Preview is green (merge **`dev` → `main`**, prod migrations, **`release:prod:smoke`**, manual gate—including **Your Vacancies** search on **`/dashboard/company`**).  
-2. **Phase B–D (next backbone):** extend **screening pilot** to **designers** + **sales** (duplicate question seeds + remove lane gate), then **`category_fields`**, richer **candidate profiles**, in-app notifications—per **`docs/TALENTBRIDGE_MVP_PLAN.md`** and **`docs/ROADMAP_FROM_REFERENCE.md`**.  
-3. **Promoted reference learnings to schedule as named slices** (reuse product/workflow ideas, not reference infrastructure):
+1. **Jobs Slice v1 prod hygiene:** after each merge to **`main`**, run **`release:prod:db:apply`**, **`release:prod:db:check:migrations`**, **`release:prod:smoke`** (`SMOKE_EXPECT_POSTGRES_READY=1`); manual gate in **`docs/RELEASE_JOBS_SLICE_V1.md`** (pipeline, follow-up queue, matrix lanes, Alerts).  
+2. **Promoted reference learnings to schedule as named slices** (reuse product/workflow ideas, not reference infrastructure):
    - **Recruiter company onboarding + company membership:** create/claim company, invite or attach recruiters, and move beyond global recruiter role checks toward company-scoped permissions.
-   - **Recruiter follow-up queue:** collect pending screening invites, submitted screenings awaiting review, and copyable reminder nudges in one recruiter surface.
    - **Pipeline notes + stage history:** keep application status changes auditable with recruiter notes/history, without growing into a full ATS.
-   - **Notification delivery ledger:** add in-app notifications plus an email/outbox delivery record so workflow messages are observable even before real email sending is wired.
+   - **Email notification channel:** wire outbound email using the delivery ledger (`notification_delivery_log`); today only **`in_app`** rows are written.
    - **Thin admin moderation + analytics cockpit:** category/template governance, moderation review, and basic platform/workflow counts as an early admin slice.
    - **Candidate career toolkit:** promote the old reference-app “Resume Builder” and “Salary Insights” affordances into candidate-development backlog items after richer profiles land.
    - **Public pricing/contact page:** add a simple conversion/support page for the paying/public milestone, separate from product workflow.

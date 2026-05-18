@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { getDrizzleDb } from "../db/postgres";
-import { notifications } from "../schema";
+import { notificationDeliveryLog, notifications } from "../schema";
 
 export type NotificationDto = {
   id: string;
@@ -33,7 +33,17 @@ export async function createNotification(input: {
       payloadJson: input.payload ?? null,
     })
     .returning({ id: notifications.id });
-  return row?.id ?? null;
+
+  const notificationId = row?.id;
+  if (notificationId) {
+    await db.insert(notificationDeliveryLog).values({
+      notificationId,
+      channel: "in_app",
+      status: "delivered",
+      detail: null,
+    });
+  }
+  return notificationId ?? null;
 }
 
 export async function listNotificationsForUser(

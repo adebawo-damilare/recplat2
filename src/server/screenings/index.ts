@@ -5,11 +5,14 @@ export {
   getScreeningNotificationTargets,
   listInvitationsForCandidate,
   listMarketersScreeningMatrixForOwner,
+  listRecruiterScreeningFollowUpForOwner,
   listScreeningMatrixForOwner,
   submitScreeningInvitation,
 } from "./postgresScreenings";
 export type {
   ScreeningAnswerDto,
+  ScreeningFollowUpItem,
+  ScreeningFollowUpKind,
   ScreeningInvitationDetail,
   ScreeningInvitationSummary,
   ScreeningMatrix,
