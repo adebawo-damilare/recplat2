@@ -50,6 +50,25 @@ setup.describe("seed sessions", () => {
     const seededApplyVacancyId = vacancyApplyBody.job?.id;
     expect(seededApplyVacancyId).toBeTruthy();
 
+    const jobBoardApplyTitle = `E2E Job Board Apply ${Date.now()}`;
+    const vacancyBoardApplyRes = await request.post("/api/jobs", {
+      headers: { "content-type": "application/json" },
+      data: {
+        jobTitle: jobBoardApplyTitle,
+        companyName: "E2E Labs",
+        location: "Remote",
+        salary: "$115k-$135k",
+        description: "Automated E2E vacancy for job-board apply UI only",
+        requirements: "Playwright job board apply",
+        categorySlug: "designers",
+        jobType: "remote",
+      },
+    });
+    expect(vacancyBoardApplyRes.ok(), await vacancyBoardApplyRes.text()).toBeTruthy();
+    const vacancyBoardApplyBody = (await vacancyBoardApplyRes.json()) as { job?: { id?: string } };
+    const seededJobBoardApplyVacancyId = vacancyBoardApplyBody.job?.id;
+    expect(seededJobBoardApplyVacancyId).toBeTruthy();
+
     const jobDetailTitle = `E2E Job Detail ${Date.now()}`;
     const vacancyDetailRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
@@ -110,14 +129,20 @@ setup.describe("seed sessions", () => {
       data: { vacancyId: seededScreeningVacancyId },
     });
     expect(applyScreeningRes.ok(), await applyScreeningRes.text()).toBeTruthy();
+    const applyScreeningBody = (await applyScreeningRes.json()) as { applicationId?: string };
+    const seededScreeningApplicationId = applyScreeningBody.applicationId;
+    expect(seededScreeningApplicationId).toBeTruthy();
 
     await writeFile(
       path.join(authDir, "seed.json"),
       JSON.stringify({
+        jobBoardApplyVacancyTitle: jobBoardApplyTitle,
+        jobBoardApplyVacancyId: seededJobBoardApplyVacancyId,
         jobDetailVacancyTitle: jobDetailTitle,
         jobDetailVacancyId: seededJobDetailVacancyId,
         screeningVacancyTitle: screeningJobTitle,
         screeningVacancyId: seededScreeningVacancyId,
+        screeningApplicationId: seededScreeningApplicationId,
       }),
       "utf8",
     );

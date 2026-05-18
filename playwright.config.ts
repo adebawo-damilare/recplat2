@@ -6,7 +6,8 @@ const skipWebServer = process.env.PLAYWRIGHT_NO_WEBSERVER === "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  workers: runAuth ? 2 : undefined,
+  fullyParallel: !runAuth,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
