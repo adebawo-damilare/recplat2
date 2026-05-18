@@ -50,10 +50,11 @@ setup.describe("seed sessions", () => {
     const seededApplyVacancyId = vacancyApplyBody.job?.id;
     expect(seededApplyVacancyId).toBeTruthy();
 
+    const jobDetailTitle = `E2E Job Detail ${Date.now()}`;
     const vacancyDetailRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
       data: {
-        jobTitle: `E2E Job Detail ${Date.now()}`,
+        jobTitle: jobDetailTitle,
         companyName: "E2E Labs",
         location: "Hybrid",
         salary: "$110k-$130k",
@@ -64,6 +65,9 @@ setup.describe("seed sessions", () => {
       },
     });
     expect(vacancyDetailRes.ok(), await vacancyDetailRes.text()).toBeTruthy();
+    const vacancyDetailBody = (await vacancyDetailRes.json()) as { job?: { id?: string } };
+    const seededJobDetailVacancyId = vacancyDetailBody.job?.id;
+    expect(seededJobDetailVacancyId).toBeTruthy();
 
     const screeningJobTitle = `E2E Marketers Screening ${Date.now()}`;
     const vacancyScreeningRes = await request.post("/api/jobs", {
@@ -110,6 +114,8 @@ setup.describe("seed sessions", () => {
     await writeFile(
       path.join(authDir, "seed.json"),
       JSON.stringify({
+        jobDetailVacancyTitle: jobDetailTitle,
+        jobDetailVacancyId: seededJobDetailVacancyId,
         screeningVacancyTitle: screeningJobTitle,
         screeningVacancyId: seededScreeningVacancyId,
       }),

@@ -1,4 +1,11 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
+
 import { test, expect } from "@playwright/test";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const seedPath = path.join(__dirname, "..", ".auth", "seed.json");
 
 test.describe("Candidate job detail (authenticated)", () => {
   test("public job detail loads and apply works from the UI", async ({ page }) => {
@@ -8,18 +15,20 @@ test.describe("Candidate job detail (authenticated)", () => {
       (window as unknown as { __TALENTBRIDGE_E2E_NO_ALERTS?: boolean }).__TALENTBRIDGE_E2E_NO_ALERTS = true;
     });
 
-    await page.goto("/jobs", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("job-board")).toBeVisible({ timeout: 30_000 });
-
-    const detailCard = page.locator("[data-testid^='job-card-']").filter({ hasText: /E2E Job Detail/ }).first();
-    await expect(detailCard).toBeVisible({ timeout: 30_000 });
-    const tid = await detailCard.getAttribute("data-testid");
-    expect(tid).toMatch(/^job-card-[0-9a-f-]{36}$/i);
-    const vacancyId = tid!.slice("job-card-".length);
+    const seedRaw = await readFile(seedPath, "utf8");
+    const seed = JSON.parse(seedRaw) as {
+      jobDetailVacancyId?: string;
+      jobDetailVacancyTitle?: string;
+    };
+    expect(seed.jobDetailVacancyId).toBeTruthy();
+    const vacancyId = seed.jobDetailVacancyId!;
+    const titlePattern = new RegExp(
+      seed.jobDetailVacancyTitle?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") ?? "E2E Job Detail",
+    );
 
     await page.goto(`/jobs/${vacancyId}`, { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("job-detail-page")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole("heading", { level: 1, name: /E2E Job Detail/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: titlePattern })).toBeVisible();
     const applyBtn = page.getByTestId("job-detail-apply");
     await expect(applyBtn).toBeVisible();
     await expect(applyBtn).toBeEnabled();

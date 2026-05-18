@@ -1,4 +1,11 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
+
 import { test, expect } from "@playwright/test";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const seedPath = path.join(__dirname, "..", ".auth", "seed.json");
 
 test.describe("Candidate apply flow (authenticated)", () => {
   test("candidate can apply from job board", async ({ page }) => {
@@ -10,11 +17,17 @@ test.describe("Candidate apply flow (authenticated)", () => {
       });
     });
 
+    const seedRaw = await readFile(seedPath, "utf8");
+    const seed = JSON.parse(seedRaw) as { jobDetailVacancyId?: string; jobDetailVacancyTitle?: string };
+    expect(seed.jobDetailVacancyId).toBeTruthy();
+
     await page.goto("/jobs", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("job-board")).toBeVisible({ timeout: 30_000 });
 
-    // Auth setup applies to "E2E Candidate Apply"; use the other seeded vacancy for a fresh apply click.
-    const applyJobCard = page.locator("[data-testid^='job-card-']").filter({ hasText: /E2E Job Detail/ }).first();
+    // Paginated board may not show this run's vacancy on page 1; search narrows to the seeded job.
+    const search = page.getByTestId("job-board-search");
+    await search.fill("E2E Job Detail");
+    const applyJobCard = page.getByTestId(`job-card-${seed.jobDetailVacancyId}`);
     await expect(applyJobCard).toBeVisible({ timeout: 60_000 });
     await applyJobCard.click();
 

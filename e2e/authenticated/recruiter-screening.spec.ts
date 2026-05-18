@@ -7,6 +7,10 @@ import { test, expect } from "@playwright/test";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seedPath = path.join(__dirname, "..", ".auth", "seed.json");
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 test.describe("Recruiter screening flow (authenticated)", () => {
   test("invite → candidate submit → matrix row + CSV export", async ({ page, browser }) => {
     test.setTimeout(120_000);
@@ -14,6 +18,7 @@ test.describe("Recruiter screening flow (authenticated)", () => {
     const seedRaw = await readFile(seedPath, "utf8");
     const seed = JSON.parse(seedRaw) as { screeningVacancyTitle?: string };
     const jobTitleFragment = seed.screeningVacancyTitle ?? "E2E Marketers Screening";
+    const titlePattern = new RegExp(escapeRegExp(jobTitleFragment));
 
     await Promise.all([
       page.waitForResponse(
@@ -24,7 +29,11 @@ test.describe("Recruiter screening flow (authenticated)", () => {
     ]);
     await expect(page.getByTestId("recruiter-dashboard-page")).toBeVisible({ timeout: 30_000 });
 
-    const pipelineRow = page.locator("tbody tr").filter({ hasText: new RegExp(jobTitleFragment) });
+    const pipelineRow = page
+      .getByTestId("recruiter-pipeline-table")
+      .locator("tbody tr")
+      .filter({ hasText: titlePattern })
+      .first();
     await expect(pipelineRow).toBeVisible({ timeout: 60_000 });
     await pipelineRow.getByRole("button", { name: "View profile" }).click();
     await expect(page.getByTestId("recruiter-pipeline-candidate-panel")).toBeVisible();
@@ -45,7 +54,10 @@ test.describe("Recruiter screening flow (authenticated)", () => {
     await candidatePage.goto("/dashboard/screenings", { waitUntil: "domcontentloaded" });
     await expect(candidatePage.getByTestId("screenings-page")).toBeVisible({ timeout: 30_000 });
 
-    const screeningLink = candidatePage.getByTestId(/^screening-row-/).filter({ hasText: jobTitleFragment }).first();
+    const screeningLink = candidatePage
+      .getByTestId(/^screening-row-/)
+      .filter({ hasText: titlePattern })
+      .first();
     await expect(screeningLink).toBeVisible({ timeout: 30_000 });
     await screeningLink.click();
     await expect(candidatePage.getByTestId("screening-detail-page")).toBeVisible();
@@ -66,12 +78,14 @@ test.describe("Recruiter screening flow (authenticated)", () => {
     expect(submitRes.ok(), await submitRes.text()).toBeTruthy();
     await candidateContext.close();
 
-    await page.getByRole("button", { name: "Refresh" }).click();
-    await expect(page.getByTestId("recruiter-screening-matrix-section")).toBeVisible();
+    const matrixSection = page.getByTestId("recruiter-screening-matrix-section");
+    await matrixSection.getByRole("button", { name: "Refresh" }).click();
+    await expect(matrixSection).toBeVisible();
     const matrixRow = page
       .getByTestId("recruiter-screening-matrix-table")
       .locator("tbody tr")
-      .filter({ hasText: /e2e-candidate-.*@example\.test/i });
+      .filter({ hasText: /e2e-candidate-.*@example\.test/i })
+      .first();
     await expect(matrixRow).toBeVisible({ timeout: 60_000 });
     await expect(matrixRow.getByText("Submitted")).toBeVisible();
     await expect(matrixRow.getByText(/E2E answer 1/)).toBeVisible();
