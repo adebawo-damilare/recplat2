@@ -62,12 +62,55 @@ export async function fetchRecruiterApplicationBoard(
   return raw.applications;
 }
 
-export async function patchApplicationStatus(applicationId: string, status: Application["status"]): Promise<boolean> {
+export type ApplicationPipelineAudit = {
+  statusEvents: {
+    id: string;
+    fromStatus: Application["status"] | null;
+    toStatus: Application["status"];
+    note: string | null;
+    actorEmail: string;
+    createdAt: string;
+  }[];
+  notes: {
+    id: string;
+    body: string;
+    authorEmail: string;
+    createdAt: string;
+  }[];
+};
+
+export async function patchApplicationStatus(
+  applicationId: string,
+  status: Application["status"],
+  note?: string,
+): Promise<boolean> {
   const res = await fetch(`/api/applications/${applicationId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, note: note?.trim() || undefined }),
+  });
+  return res.ok;
+}
+
+export async function fetchApplicationPipelineAudit(
+  applicationId: string,
+): Promise<ApplicationPipelineAudit | null> {
+  const res = await fetch(`/api/applications/${encodeURIComponent(applicationId)}/audit`, {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  const raw = (await res.json().catch(() => ({}))) as ApplicationPipelineAudit;
+  if (!res.ok) return null;
+  return raw;
+}
+
+export async function postApplicationNote(applicationId: string, body: string): Promise<boolean> {
+  const res = await fetch(`/api/applications/${encodeURIComponent(applicationId)}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ body }),
   });
   return res.ok;
 }

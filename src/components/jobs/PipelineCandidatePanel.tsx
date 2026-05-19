@@ -10,6 +10,11 @@ import type { RecruiterBoardApplication } from "../../lib/recruiterApplicationsA
 import { formatCandidateFullName } from "../../lib/candidateName";
 import { applicationStatusLabel } from "../../lib/applicationStatus";
 import {
+  fetchApplicationPipelineAudit,
+  postApplicationNote,
+  type ApplicationPipelineAudit,
+} from "../../lib/recruiterApplicationsApi";
+import {
   fetchScreeningByApplication,
   fetchScreeningDetail,
   inviteToScreening,
@@ -40,6 +45,10 @@ export default function PipelineCandidatePanel({
   const [screeningDetail, setScreeningDetail] = useState<ScreeningInvitationDetail | null>(null);
   const [screeningLoading, setScreeningLoading] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [audit, setAudit] = useState<ApplicationPipelineAudit | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
 
   const name = row
     ? formatCandidateFullName(row.candidate.firstName, row.candidate.lastName) || row.candidate.email || "Candidate"
@@ -72,6 +81,40 @@ export default function PipelineCandidatePanel({
     }
     void loadScreening(row.id);
   }, [row?.id, screeningLane, loadScreening]);
+
+  const loadAudit = useCallback(async (applicationId: string) => {
+    setAuditLoading(true);
+    try {
+      setAudit(await fetchApplicationPipelineAudit(applicationId));
+    } finally {
+      setAuditLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!row?.id) {
+      setAudit(null);
+      setNoteText("");
+      return;
+    }
+    void loadAudit(row.id);
+  }, [row?.id, loadAudit]);
+
+  const handleAddNote = async () => {
+    if (!row || !noteText.trim()) return;
+    setNoteSaving(true);
+    try {
+      const ok = await postApplicationNote(row.id, noteText.trim());
+      if (!ok) {
+        talentBridgeUiNotify("Could not save note.");
+        return;
+      }
+      setNoteText("");
+      await loadAudit(row.id);
+    } finally {
+      setNoteSaving(false);
+    }
+  };
 
   const handleInvite = async () => {
     if (!row) return;
@@ -195,6 +238,62 @@ export default function PipelineCandidatePanel({
                   </div>
                 </section>
               ) : null}
+
+              <section
+                className="rounded-2xl border border-neutral-100 bg-neutral-50/80 p-4"
+                data-testid="recruiter-pipeline-audit"
+              >
+                <h5 className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">
+                  Pipeline history
+                </h5>
+                {auditLoading ? (
+                  <p className="text-sm text-neutral-500">Loading history…</p>
+                ) : (
+                  <div className="space-y-3 max-h-48 overflow-y-auto mb-4">
+                    {(audit?.statusEvents ?? []).map((e) => (
+                      <div key={e.id} className="text-xs text-neutral-600 border-l-2 border-blue-200 pl-3">
+                        <p className="font-semibold text-neutral-800">
+                          {e.fromStatus
+                            ? `${applicationStatusLabel(e.fromStatus)} → ${applicationStatusLabel(e.toStatus)}`
+                            : applicationStatusLabel(e.toStatus)}
+                        </p>
+                        {e.note ? <p className="mt-1 whitespace-pre-wrap">{e.note}</p> : null}
+                        <p className="text-neutral-400 mt-1">
+                          {e.actorEmail} · {new Date(e.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                    {(audit?.notes ?? []).map((n) => (
+                      <div key={n.id} className="text-xs text-neutral-600 border-l-2 border-neutral-300 pl-3">
+                        <p className="whitespace-pre-wrap">{n.body}</p>
+                        <p className="text-neutral-400 mt-1">
+                          Note · {n.authorEmail} · {new Date(n.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                    {!audit?.statusEvents.length && !audit?.notes.length ? (
+                      <p className="text-sm text-neutral-500">No history yet.</p>
+                    ) : null}
+                  </div>
+                )}
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Add an internal note for your team…"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm resize-none"
+                  data-testid="recruiter-pipeline-note-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleAddNote()}
+                  disabled={noteSaving || !noteText.trim()}
+                  className="mt-2 px-4 py-2 rounded-xl bg-neutral-900 text-white text-xs font-bold disabled:opacity-50"
+                  data-testid="recruiter-pipeline-note-submit"
+                >
+                  {noteSaving ? "Saving…" : "Add note"}
+                </button>
+              </section>
 
               {screeningLane ? (
                 <section

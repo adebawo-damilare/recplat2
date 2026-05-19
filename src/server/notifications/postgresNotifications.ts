@@ -2,6 +2,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { getDrizzleDb } from "../db/postgres";
 import { notificationDeliveryLog, notifications } from "../schema";
+import { deliverNotificationEmail } from "./emailDelivery";
 
 export type NotificationDto = {
   id: string;
@@ -41,6 +42,15 @@ export async function createNotification(input: {
       channel: "in_app",
       status: "delivered",
       detail: null,
+    });
+    void deliverNotificationEmail({
+      notificationId,
+      userId: input.userId,
+      title: input.title,
+      body: input.body,
+      linkPath: input.linkPath,
+    }).catch(() => {
+      /* ledger records failure/skipped */
     });
   }
   return notificationId ?? null;

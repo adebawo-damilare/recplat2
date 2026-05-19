@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { listCompanyIdsForUser, userCanAccessApplication } from "../companies";
 
 import { normalizeApplicationStatus, type PipelineApplicationStatus } from "../../lib/applicationStatus";
+import { recordApplicationStatusEvent } from "./postgresApplicationPipeline";
 import { isMissingPgColumn } from "../db/pgColumnErrors";
 import { getCandidateCategoryFieldsForRecruiterView } from "../candidates/postgresCandidates";
 import { getDrizzleDb } from "../db/postgres";
@@ -278,16 +279,19 @@ export async function updateApplicationStatusForVacancyOwner(
   applicationId: string,
   ownerUserId: string,
   status: PipelineApplicationStatus,
-): Promise<{ ok: true } | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" }> {
+  note?: string | null,
+): Promise<{ ok: true; previousStatus: PipelineApplicationStatus } | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" }> {
   const db = getDrizzleDb();
-  const exists = await db
-    .select({ id: applications.id })
+  const existing = await db
+    .select({ id: applications.id, status: applications.status })
     .from(applications)
     .where(eq(applications.id, applicationId))
     .limit(1);
-  if (!exists[0]?.id) return { ok: false, reason: "NOT_FOUND" };
+  if (!existing[0]?.id) return { ok: false, reason: "NOT_FOUND" };
   const canAccess = await userCanAccessApplication(ownerUserId, applicationId);
   if (!canAccess) return { ok: false, reason: "FORBIDDEN" };
+
+  const previousStatus = normalizeApplicationStatus(existing[0].status);
 
   try {
     await db
@@ -298,5 +302,16 @@ export async function updateApplicationStatusForVacancyOwner(
     if (!isMissingPgColumn(err, "status_updated_at")) throw err;
     await db.update(applications).set({ status }).where(eq(applications.id, applicationId));
   }
-  return { ok: true };
+
+  if (previousStatus !== status || (note?.trim() ?? "")) {
+    await recordApplicationStatusEvent({
+      applicationId,
+      actorUserId: ownerUserId,
+      fromStatus: previousStatus,
+      toStatus: status,
+      note,
+    });
+  }
+
+  return { ok: true, previousStatus };
 }

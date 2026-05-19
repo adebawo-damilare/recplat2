@@ -98,6 +98,21 @@ After updating these values, redeploy so runtime picks them up.
 
 ---
 
+## Optional: email notifications (Resend)
+
+When set, screening and other **`createNotification`** calls still write in-app delivery, then attempt outbound email and log **`notification_delivery_log`** with **`channel: email`** (`sent`, `failed`, or `skipped`).
+
+| Variable | Purpose |
+|----------|---------|
+| `TALENTBRIDGE_EMAIL_ENABLED` | Set to `1` to enable sends (still requires API key + from address). |
+| `RESEND_API_KEY` | [Resend](https://resend.com) API key. |
+| `TALENTBRIDGE_EMAIL_FROM` | Verified sender, e.g. `TalentBridge <notifications@yourdomain.com>`. |
+| `TALENTBRIDGE_APP_URL` or `NEXT_PUBLIC_APP_URL` | Optional base URL appended to notification links in email body. |
+
+Redeploy after changing these values.
+
+---
+
 ## Optional: distributed rate limiting
 
 Without these, `/api/jobs` uses an **in-process** sliding window limiter—fine for a single warm instance or local dev.

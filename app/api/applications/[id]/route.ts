@@ -39,7 +39,16 @@ export async function PATCH(request: NextRequest, context: { params: RouteParams
   }
 
   const status = normalizeApplicationStatus((body as { status?: unknown }).status);
-  const result = await updateApplicationStatusForVacancyOwner(id, authResult.user.userId, status);
+  const note =
+    typeof (body as { note?: unknown }).note === "string"
+      ? (body as { note: string }).note
+      : undefined;
+  const result = await updateApplicationStatusForVacancyOwner(
+    id,
+    authResult.user.userId,
+    status,
+    note,
+  );
 
   if (result.ok === false) {
     if (result.reason === "NOT_FOUND") {

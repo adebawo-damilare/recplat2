@@ -47,6 +47,7 @@ import {
 import MarketersScreeningMatrix from "./jobs/MarketersScreeningMatrix";
 import RecruiterScreeningFollowUp from "./jobs/RecruiterScreeningFollowUp";
 import CompanyWorkspacePanel from "./jobs/CompanyWorkspacePanel";
+import AdminCockpitPanel from "./jobs/AdminCockpitPanel";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
@@ -699,6 +700,8 @@ export default function CompanyDashboard() {
           )}
         </div>
       </div>
+
+      {user?.canManageUserRoles ? <AdminCockpitPanel /> : null}
 
       {user?.canManageUserRoles ? (
         <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">

@@ -89,10 +89,26 @@ Complete at least once on **production**:
 
 ---
 
-## 6. After release
+## 6. After release (every deploy)
 
-- Watch Vercel/runtime logs and Neon for errors (**`JOBS_POSTGRES_REQUIRED`**, connection failures) for a short window.  
-- **Next backbone — Phase B–D (post–Jobs Slice v1):** execution stays in **`docs/ROADMAP.md`**, with product shape in **`docs/TALENTBRIDGE_MVP_PLAN.md`** (e.g. §4 **`category_fields`** / screening templates, richer candidate profiles) and P0 backlog cues in **`docs/ROADMAP_FROM_REFERENCE.md`**. Jobs Slice v1 deliberately stops short of invitations, full screening loops, and indexed marketplace search—promote those only when the team picks the next slice.
+Run from a machine with **`.env.release`** (see **`docs/RELEASE_CREDENTIAL_FILLING.md`**):
+
+```bash
+npm run release:prod:db:check:migrations
+npm run release:prod:smoke
+# Optional strict Postgres assertions:
+SMOKE_EXPECT_POSTGRES_READY=1 npm run release:prod:smoke
+```
+
+Apply pending SQL only when **`db:check:migrations`** reports missing files:
+
+```bash
+npm run release:prod:db:apply
+```
+
+Record results in **`docs/SLICE_LOG.md`**. Watch Vercel/runtime logs and Neon for errors (**`JOBS_POSTGRES_REQUIRED`**, connection failures) for a short window.
+
+**Next backbone — Phase B–D:** execution in **`docs/ROADMAP.md`**; product shape in **`docs/TALENTBRIDGE_MVP_PLAN.md`** and P0 cues in **`docs/ROADMAP_FROM_REFERENCE.md`**.
 
 ---
 
