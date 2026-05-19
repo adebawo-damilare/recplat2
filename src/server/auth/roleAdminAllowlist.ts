@@ -1,5 +1,8 @@
 /** Same rules as `POST /api/admin/users/role` — used by session payload and that route. */
 export function canManageRolesForEmail(actorEmail: string): boolean {
+  if (process.env.TALENTBRIDGE_E2E_ADMIN_RECRUITERS === "1") {
+    return actorEmail.toLowerCase().endsWith("@example.test");
+  }
   if (process.env.TALENTBRIDGE_ENABLE_ROLE_ADMIN !== "1") return false;
   const configured = (process.env.TALENTBRIDGE_ROLE_ADMIN_EMAILS || "")
     .split(",")

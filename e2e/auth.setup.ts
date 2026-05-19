@@ -140,6 +140,7 @@ setup.describe("seed sessions", () => {
     await writeFile(
       path.join(authDir, "seed.json"),
       JSON.stringify({
+        recruiterEmail,
         jobBoardApplyVacancyTitle: jobBoardApplyTitle,
         jobBoardApplyVacancyId: seededJobBoardApplyVacancyId,
         jobDetailVacancyTitle: jobDetailTitle,
