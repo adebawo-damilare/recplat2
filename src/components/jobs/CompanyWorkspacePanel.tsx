@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from "react";
-import { Building2, UserPlus } from "lucide-react";
+import { Building2, Plus, UserPlus } from "lucide-react";
 
 import {
   createCompany,
@@ -37,6 +37,7 @@ export default function CompanyWorkspacePanel() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showAddCompany, setShowAddCompany] = useState(false);
   const companySelectRef = useRef<HTMLSelectElement>(null);
 
   const loadMembers = async (companyId: string) => {
@@ -71,9 +72,9 @@ export default function CompanyWorkspacePanel() {
       return;
     }
     setNewCompanyName("");
-    setMessage(`Created ${result.company?.name ?? name}.`);
-    await refreshCompanies();
-    if (result.company?.id) setActiveCompanyId(result.company.id);
+    setShowAddCompany(false);
+    setMessage(`Created ${result.company?.name ?? name}. You can post a vacancy using the button above.`);
+    await refreshCompanies(result.company?.id);
   };
 
   const handleInvite = async () => {
@@ -161,6 +162,61 @@ export default function CompanyWorkspacePanel() {
                 Only owners and managers can invite teammates.
               </p>
             )}
+
+            <p className="text-sm text-neutral-600 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+              Posting vacancies for{" "}
+              <span className="font-semibold text-neutral-900">{activeCompany?.name ?? "your company"}</span>.
+              Use <span className="font-semibold">Post Vacancy</span> at the top of this page.
+            </p>
+
+            <div className="pt-2 border-t border-neutral-100">
+              {!showAddCompany ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAddCompany(true)}
+                  className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700"
+                  data-testid="recruiter-company-add-another-toggle"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add another company
+                </button>
+              ) : (
+                <div className="space-y-3 mt-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
+                    New company
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={newCompanyName}
+                      onChange={(e) => setNewCompanyName(e.target.value)}
+                      placeholder="Company name"
+                      className="flex-1 px-4 py-3 rounded-xl border border-neutral-200"
+                      data-testid="recruiter-company-create-name"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleCreateCompany()}
+                      disabled={creating || !newCompanyName.trim()}
+                      className="px-5 py-3 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-50"
+                      data-testid="recruiter-company-create-submit"
+                    >
+                      {creating ? "Creating…" : "Create company"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddCompany(false);
+                        setNewCompanyName("");
+                      }}
+                      className="px-5 py-3 rounded-xl bg-neutral-100 text-neutral-700 font-bold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
