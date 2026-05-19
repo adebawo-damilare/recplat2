@@ -27,7 +27,8 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 - **Multi-lane screening (marketers, designers, sales):** question seeds (`0009`, `0012`), recruiter **Invite to screening** on pipeline panel, candidate **`/dashboard/screenings`** + submit, matrix + CSV export, **`GET /api/screenings/matrix`**, **`GET /api/screenings/follow-up`** (recruiter follow-up queue with copyable nudges).
 - **Category profile fields:** `category_fields`, `candidate_profile_field_values`, `primary_talent_lane_slug` (`0010`); **`GET /api/categories/[slug]/profile-fields`**, lane fields on candidate profile UI.
 - **In-app notifications + delivery ledger:** `notifications` (`0011`), `notification_delivery_log` (`0013`); Alerts nav + **`/dashboard/notifications`**; screening invite/submit events; in-app delivery recorded on create.
-- **Authenticated Playwright:** screening invite → submit → matrix (`recruiter-screening.spec.ts`), dedicated job-board apply vacancy, auth setup seed (`e2e/auth.setup.ts`); **`npm run test:e2e:auth`** (~30 specs with **`E2E_RUN_AUTH=1`**).
+- **Recruiter company onboarding + membership:** `0014_company_members`, `0015` (team role `manager`), `/api/companies/*`, company workspace on **`/dashboard/company`**, vacancies/pipeline/screening scoped by **`company_id`**; active company selection for **`POST /api/jobs`**; **`e2e/authenticated/recruiter-company.spec.ts`** (create company, invite teammate, post under **`companyId`**).
+- **Authenticated Playwright:** screening invite → submit → matrix (`recruiter-screening.spec.ts`), dedicated job-board apply vacancy, auth setup seeds **E2E Labs** + **`companyId`** on vacancies (`e2e/auth.setup.ts`); **`npm run test:e2e:auth`** (~31 specs with **`E2E_RUN_AUTH=1`**).
 
 ## Tooling
 
@@ -49,12 +50,11 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 
 **Authenticated E2E (Playwright):** run locally with **`npm run test:e2e:auth`** when **`.env.local`** has **`DATABASE_URL`** + **`TALENTBRIDGE_AUTH_SECRET`** (Next loads them for **`npm run dev`**). CI runs the same path in **`smoke-postgres`** after **`E2E_RUN_AUTH=1`** (see **`docs/CICD.md`**). Specs live under **`e2e/authenticated/`** (candidate apply/board/detail/dashboard; recruiter dashboard, **`recruiter-vacancies`**, **`recruiter-vacancies-search`**, **`recruiter-pipeline`** including **`PATCH /api/applications/[id]`**, **`recruiter-post-vacancy`** UI **`POST /api/jobs`**, **`recruiter-vacancy-lifecycle`** edit **`PATCH /api/jobs/[id]`** + close **`confirm()`** + **`PATCH` status closed**). Session seeding is **`e2e/auth.setup.ts`**: two vacancies plus a candidate **`POST /api/applications`** against the “apply” vacancy so the recruiter pipeline table is non-empty.
 
-1. **Jobs Slice v1 prod hygiene:** after each merge to **`main`**, run **`release:prod:db:apply`**, **`release:prod:db:check:migrations`**, **`release:prod:smoke`** (`SMOKE_EXPECT_POSTGRES_READY=1`); manual gate in **`docs/RELEASE_JOBS_SLICE_V1.md`** (pipeline, follow-up queue, matrix lanes, Alerts).  
-2. **Promoted reference learnings to schedule as named slices** (reuse product/workflow ideas, not reference infrastructure):
-   - **Recruiter company onboarding + company membership:** shipped (`0014_company_members`, `/api/companies/*`, company workspace on dashboard); vacancies/pipeline/screening scoped by `company_id` membership.
-   - **Pipeline notes + stage history:** keep application status changes auditable with recruiter notes/history, without growing into a full ATS.
-   - **Email notification channel:** wire outbound email using the delivery ledger (`notification_delivery_log`); today only **`in_app`** rows are written.
-   - **Thin admin moderation + analytics cockpit:** category/template governance, moderation review, and basic platform/workflow counts as an early admin slice.
+1. **Jobs Slice v1 prod hygiene:** after each merge to **`main`** and Vercel deploy, run **`npm run release:prod:db:check:migrations`** then **`npm run release:prod:smoke`** (add **`SMOKE_EXPECT_POSTGRES_READY=1`** when rehearsing strict Postgres); apply new SQL with **`release:prod:db:apply`** only when migrations are pending. Manual gate in **`docs/RELEASE_JOBS_SLICE_V1.md`**. Execution log: **`docs/SLICE_LOG.md`**.
+2. **Promoted reference learnings** (in progress — see **`docs/SLICE_LOG.md`**):
+   - **Email notification channel:** outbound email via Resend + **`notification_delivery_log`** (`channel: email`).
+   - **Pipeline notes + stage history:** auditable status changes + recruiter notes (`0016_application_pipeline_audit`).
+   - **Thin admin cockpit:** platform summary counts + category governance (`/api/admin/*`, allowlisted recruiters).
    - **Candidate career toolkit:** promote the old reference-app “Resume Builder” and “Salary Insights” affordances into candidate-development backlog items after richer profiles land.
    - **Public pricing/contact page:** add a simple conversion/support page for the paying/public milestone, separate from product workflow.
 4. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.  
