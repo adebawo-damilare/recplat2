@@ -1,8 +1,12 @@
 import { test, expect } from "@playwright/test";
 
+import { resetPipelineApplicationToApplied } from "../helpers/pipelineSeed";
+
 test.describe("Recruiter pipeline audit (authenticated)", () => {
   test("adds note and records status change in pipeline history", async ({ page }) => {
     test.setTimeout(120_000);
+
+    await resetPipelineApplicationToApplied(page.request);
 
     const noteText = `E2E pipeline note ${Date.now()}`;
 
@@ -48,5 +52,7 @@ test.describe("Recruiter pipeline audit (authenticated)", () => {
     await expect(page.getByTestId("recruiter-pipeline-audit")).toContainText(/Under review/i, {
       timeout: 15_000,
     });
+
+    await resetPipelineApplicationToApplied(page.request);
   });
 });

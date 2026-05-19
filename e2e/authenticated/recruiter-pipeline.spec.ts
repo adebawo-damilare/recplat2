@@ -1,16 +1,18 @@
 import { test, expect } from "@playwright/test";
 
+import { resetPipelineApplicationToApplied } from "../helpers/pipelineSeed";
+
 test.describe("Recruiter application pipeline (authenticated)", () => {
   test("shows seeded application and PATCH status from pipeline table", async ({ page }) => {
     test.setTimeout(90_000);
 
-    await Promise.all([
-      page.waitForResponse(
-        (r) => r.url().includes("/api/applications/board") && r.request().method() === "GET" && r.ok(),
-        { timeout: 60_000 },
-      ),
-      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
-    ]);
+    await resetPipelineApplicationToApplied(page.request);
+
+    await page.goto("/dashboard/company", { waitUntil: "domcontentloaded" });
+    await page.waitForResponse(
+      (r) => r.url().includes("/api/applications/board") && r.request().method() === "GET" && r.ok(),
+      { timeout: 60_000 },
+    );
     await expect(page.getByTestId("recruiter-dashboard-page")).toBeVisible({ timeout: 30_000 });
 
     await expect(page.getByRole("heading", { name: "Application pipeline" })).toBeVisible();
@@ -20,7 +22,7 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
     await expect(row.getByText(/e2e-candidate-.*@example\.test/)).toBeVisible();
 
     const statusSelect = row.locator("select").last();
-    await expect(statusSelect).toHaveValue("applied");
+    await expect(statusSelect).toHaveValue("applied", { timeout: 15_000 });
 
     const patchPromise = page.waitForResponse(
       (res) => res.request().method() === "PATCH" && res.url().includes("/api/applications/"),
@@ -38,6 +40,8 @@ test.describe("Recruiter application pipeline (authenticated)", () => {
 
   test("pipeline status filter hides non-matching rows", async ({ page }) => {
     test.setTimeout(90_000);
+
+    await resetPipelineApplicationToApplied(page.request);
 
     await Promise.all([
       page.waitForResponse(

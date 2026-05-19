@@ -127,6 +127,9 @@ setup.describe("seed sessions", () => {
       data: { vacancyId: seededApplyVacancyId },
     });
     expect(applyRes.ok(), await applyRes.text()).toBeTruthy();
+    const applyBody = (await applyRes.json()) as { applicationId?: string };
+    const seededPipelineApplicationId = applyBody.applicationId;
+    expect(seededPipelineApplicationId).toBeTruthy();
 
     const applyScreeningRes = await request.post("/api/applications", {
       headers: { "content-type": "application/json" },
@@ -148,6 +151,7 @@ setup.describe("seed sessions", () => {
         screeningVacancyTitle: screeningJobTitle,
         screeningVacancyId: seededScreeningVacancyId,
         screeningApplicationId: seededScreeningApplicationId,
+        pipelineApplicationId: seededPipelineApplicationId,
       }),
       "utf8",
     );

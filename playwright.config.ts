@@ -6,7 +6,8 @@ const skipWebServer = process.env.PLAYWRIGHT_NO_WEBSERVER === "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  workers: runAuth ? 2 : undefined,
+  // Authenticated specs share one Postgres seed (pipeline application, etc.); parallel files race.
+  workers: runAuth ? 1 : undefined,
   fullyParallel: !runAuth,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
