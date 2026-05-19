@@ -49,6 +49,11 @@ export async function deliverNotificationEmail(input: {
   body: string;
   linkPath?: string | null;
 }): Promise<EmailDeliveryStatus> {
+  if (process.env.TALENTBRIDGE_E2E_FAKE_EMAIL === "1") {
+    await recordEmailDelivery(input.notificationId, "sent", "e2e_fake");
+    return "sent";
+  }
+
   if (!emailEnabled()) {
     await recordEmailDelivery(input.notificationId, "skipped", "email_disabled");
     return "skipped";

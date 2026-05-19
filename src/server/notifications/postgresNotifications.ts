@@ -1,8 +1,13 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { getDrizzleDb } from "../db/postgres";
 import { notificationDeliveryLog, notifications } from "../schema";
 import { deliverNotificationEmail } from "./emailDelivery";
+
+export type NotificationDeliveryDto = {
+  channel: string;
+  status: string;
+};
 
 export type NotificationDto = {
   id: string;
@@ -12,6 +17,7 @@ export type NotificationDto = {
   linkPath: string | null;
   readAt: string | null;
   createdAt: string;
+  delivery?: NotificationDeliveryDto[];
 };
 
 export async function createNotification(input: {
@@ -56,9 +62,43 @@ export async function createNotification(input: {
   return notificationId ?? null;
 }
 
+function exposeDeliveryInApi(): boolean {
+  return process.env.TALENTBRIDGE_E2E_EXPOSE_NOTIFICATION_DELIVERY === "1";
+}
+
+async function attachDelivery(
+  items: NotificationDto[],
+): Promise<NotificationDto[]> {
+  if (!exposeDeliveryInApi() || items.length === 0) return items;
+
+  const db = getDrizzleDb();
+  const ids = items.map((n) => n.id);
+  const deliveryRows = await db
+    .select({
+      notificationId: notificationDeliveryLog.notificationId,
+      channel: notificationDeliveryLog.channel,
+      status: notificationDeliveryLog.status,
+    })
+    .from(notificationDeliveryLog)
+    .where(inArray(notificationDeliveryLog.notificationId, ids));
+
+  const byNotification = new Map<string, NotificationDeliveryDto[]>();
+  for (const row of deliveryRows) {
+    const list = byNotification.get(row.notificationId) ?? [];
+    list.push({ channel: row.channel, status: row.status });
+    byNotification.set(row.notificationId, list);
+  }
+
+  return items.map((n) => ({
+    ...n,
+    delivery: byNotification.get(n.id) ?? [],
+  }));
+}
+
 export async function listNotificationsForUser(
   userId: string,
   limit = 30,
+  options?: { includeDelivery?: boolean },
 ): Promise<NotificationDto[]> {
   const db = getDrizzleDb();
   const cap = Math.max(1, Math.min(50, limit));
@@ -69,7 +109,7 @@ export async function listNotificationsForUser(
     .orderBy(desc(notifications.createdAt))
     .limit(cap);
 
-  return rows.map((r) => ({
+  const mapped = rows.map((r) => ({
     id: r.id,
     eventType: r.eventType,
     title: r.title,
@@ -78,6 +118,11 @@ export async function listNotificationsForUser(
     readAt: r.readAt ? r.readAt.toISOString() : null,
     createdAt: r.createdAt.toISOString(),
   }));
+
+  if (options?.includeDelivery && exposeDeliveryInApi()) {
+    return attachDelivery(mapped);
+  }
+  return mapped;
 }
 
 export async function countUnreadNotifications(userId: string): Promise<number> {

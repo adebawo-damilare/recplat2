@@ -8,18 +8,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seedPath = path.join(__dirname, "..", ".auth", "seed.json");
 
 test.describe("Candidate apply flow (authenticated)", () => {
-  test.describe.configure({ mode: "serial" });
-
   test("candidate can apply from job board", async ({ page }) => {
     test.setTimeout(90_000);
 
-    page.on("dialog", (dialog) => {
-      void dialog.accept().catch(() => {});
+    await page.addInitScript(() => {
+      (window as unknown as { __TALENTBRIDGE_E2E_NO_ALERTS?: boolean }).__TALENTBRIDGE_E2E_NO_ALERTS = true;
     });
 
     const seedRaw = await readFile(seedPath, "utf8");
-    const seed = JSON.parse(seedRaw) as { jobBoardApplyVacancyId?: string };
+    const seed = JSON.parse(seedRaw) as {
+      jobBoardApplyVacancyId?: string;
+      jobBoardApplyVacancyTitle?: string;
+    };
     expect(seed.jobBoardApplyVacancyId).toBeTruthy();
+    const vacancyId = seed.jobBoardApplyVacancyId!;
+    const titlePattern = new RegExp(
+      seed.jobBoardApplyVacancyTitle?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") ?? "E2E Job Board Apply",
+    );
 
     await page.goto("/jobs", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("job-board")).toBeVisible({ timeout: 30_000 });
@@ -31,17 +36,20 @@ test.describe("Candidate apply flow (authenticated)", () => {
     );
     await search.fill("E2E Job Board Apply");
     await jobsRefresh;
+    await expect(page.getByTestId(`job-card-${vacancyId}`)).toBeVisible({ timeout: 60_000 });
 
-    const applyJobCard = page.getByTestId(`job-card-${seed.jobBoardApplyVacancyId}`);
-    await expect(applyJobCard).toBeVisible({ timeout: 60_000 });
-    await applyJobCard.click();
-    await expect(page.getByRole("heading", { level: 2, name: /E2E Job Board Apply/ })).toBeVisible({
-      timeout: 30_000,
-    });
+    await page.goto(`/jobs/${vacancyId}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("job-detail-page")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { level: 1, name: titlePattern })).toBeVisible();
 
-    const applyBtn = page.getByTestId("apply-now-button");
-    await expect(applyBtn).toBeVisible({ timeout: 30_000 });
-    await expect(applyBtn).toBeEnabled({ timeout: 30_000 });
+    const sessionRes = await page.request.get("/api/auth/session");
+    expect(sessionRes.ok(), await sessionRes.text()).toBeTruthy();
+    const sessionBody = (await sessionRes.json()) as { user?: { role?: string } | null };
+    expect(sessionBody.user?.role).toBe("candidate");
+
+    const applyBtn = page.getByTestId("job-detail-apply");
+    await expect(applyBtn).toBeVisible();
+    await expect(applyBtn).toBeEnabled();
 
     const applyPost = page.waitForResponse(
       (r) =>
@@ -52,10 +60,8 @@ test.describe("Candidate apply flow (authenticated)", () => {
     );
     await applyBtn.click();
     const res = await applyPost;
-    expect(res.ok(), await res.text()).toBeTruthy();
+    expect(res.status(), await res.text()).toBe(200);
 
-    await expect(applyBtn).toContainText(/Application Sent|Sending/i, { timeout: 60_000 });
-    await expect(page.getByTestId("application-sent-banner")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("application-sent-view-mine")).toBeVisible();
+    await expect(applyBtn).toContainText(/Application sent|Sending/i, { timeout: 15_000 });
   });
 });

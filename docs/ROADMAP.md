@@ -59,7 +59,7 @@ What we took from the nested **`recruit/`** reference vs what we skipped is summ
 4. Optional future auth upgrade: add SSO/provider-backed auth while preserving current route contracts.  
 5. Expand schema (pipeline tables, screenings storage, membership, notifications, moderation, analytics) only when a Phase B–D slice requires it—avoid premature tables.  
 6. Dedicated **search index / workers** stay deferred until discovery scale (**`docs/TALENTBRIDGE_MVP_PLAN.md`** §6).  
-7. Keep expanding **authenticated Playwright** for any new recruiter/candidate/admin surfaces; baseline is **`e2e/authenticated/`** + **`e2e/auth.setup.ts`** (see **E2E note**).
+7. Keep expanding **authenticated Playwright** for any new recruiter/candidate/admin surfaces; baseline is **`e2e/authenticated/`** + **`e2e/auth.setup.ts`** (see **E2E note**). Covered: **`recruiter-pipeline-audit`**, **`recruiter-admin`**, **`recruiter-notification-email`** (ledger via E2E-only env; prod email/admin: **`docs/PROD_EMAIL_ADMIN.md`**).
 
 ## Reference Boundaries
 

@@ -28,8 +28,11 @@ export async function GET(request: NextRequest) {
 
   const limitRaw = request.nextUrl.searchParams.get("limit");
   const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 30;
+  const includeDelivery = request.nextUrl.searchParams.get("includeDelivery") === "1";
   const [notifications, unreadCount] = await Promise.all([
-    listNotificationsForUser(auth.user.userId, Number.isFinite(limit) ? limit : 30),
+    listNotificationsForUser(auth.user.userId, Number.isFinite(limit) ? limit : 30, {
+      includeDelivery,
+    }),
     countUnreadNotifications(auth.user.userId),
   ]);
 

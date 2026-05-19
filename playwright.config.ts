@@ -6,7 +6,8 @@ const skipWebServer = process.env.PLAYWRIGHT_NO_WEBSERVER === "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  workers: runAuth ? 2 : undefined,
+  // Authenticated specs share one Postgres seed (pipeline application, etc.); parallel files race.
+  workers: runAuth ? 1 : undefined,
   fullyParallel: !runAuth,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -59,11 +60,18 @@ export default defineConfig({
         webServer: {
           command: "npm run dev",
           url: baseURL,
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: !process.env.CI && !runAuth,
           timeout: 120_000,
           env: {
             ...process.env,
             TALENTBRIDGE_E2E_STUB_FIRESTORE_JOBS: runAuth ? "0" : "1",
+            ...(runAuth
+              ? {
+                  TALENTBRIDGE_E2E_ADMIN_RECRUITERS: "1",
+                  TALENTBRIDGE_E2E_FAKE_EMAIL: "1",
+                  TALENTBRIDGE_E2E_EXPOSE_NOTIFICATION_DELIVERY: "1",
+                }
+              : {}),
           },
         },
       }),
