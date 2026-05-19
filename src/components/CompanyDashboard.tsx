@@ -48,6 +48,7 @@ import MarketersScreeningMatrix from "./jobs/MarketersScreeningMatrix";
 import RecruiterScreeningFollowUp from "./jobs/RecruiterScreeningFollowUp";
 import CompanyWorkspacePanel from "./jobs/CompanyWorkspacePanel";
 import AdminCockpitPanel from "./jobs/AdminCockpitPanel";
+import { useRecruiterCompanySelection } from "../lib/recruiterCompanySelection";
 
 const PIPELINE_STATUSES: Application["status"][] = ["applied", "viewed", "interviewing", "rejected", "hired"];
 
@@ -71,6 +72,7 @@ function vacancyMatchesSearch(v: Vacancy, qRaw: string): boolean {
 
 export default function CompanyDashboard() {
   const { user } = useTalentBridgeUser();
+  const { companies, loading: companiesLoading, refreshCompanies } = useRecruiterCompanySelection();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [vacancySearchQuery, setVacancySearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -322,11 +324,18 @@ export default function CompanyDashboard() {
         <button
           type="button"
           data-testid="recruiter-post-vacancy-open"
+          disabled={!companiesLoading && companies.length === 0}
+          title={
+            !companiesLoading && companies.length === 0
+              ? "Create a company in the workspace section first"
+              : undefined
+          }
           onClick={() => {
+            void refreshCompanies();
             setEditingVacancy(null);
             setShowForm(true);
           }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-5 h-5" /> Post Vacancy
         </button>

@@ -12,7 +12,7 @@ type RecruiterCompanySelectionContextValue = {
   activeCompanyId: string;
   activeCompany: CompanySummary | null;
   setActiveCompanyId: (id: string) => void;
-  refreshCompanies: () => Promise<void>;
+  refreshCompanies: (preferCompanyId?: string) => Promise<void>;
 };
 
 const RecruiterCompanySelectionContext = createContext<RecruiterCompanySelectionContextValue | null>(
@@ -24,18 +24,23 @@ export function RecruiterCompanySelectionProvider({ children }: { children: Reac
   const [loading, setLoading] = useState(true);
   const [activeCompanyId, setActiveCompanyIdState] = useState("");
 
-  const refreshCompanies = useCallback(async () => {
+  const refreshCompanies = useCallback(async (preferCompanyId?: string) => {
     setLoading(true);
     try {
       const list = await fetchMyCompanies();
       setCompanies(list);
+      const preferred = preferCompanyId?.trim();
       setActiveCompanyIdState((prev) => {
+        if (preferred && list.some((c) => c.id === preferred)) return preferred;
         const stored =
           typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY)?.trim() : "";
         if (stored && list.some((c) => c.id === stored)) return stored;
         if (prev && list.some((c) => c.id === prev)) return prev;
         return list[0]?.id ?? "";
       });
+      if (preferred && list.some((c) => c.id === preferred) && typeof window !== "undefined") {
+        window.localStorage.setItem(STORAGE_KEY, preferred);
+      }
     } finally {
       setLoading(false);
     }

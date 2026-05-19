@@ -69,7 +69,7 @@ export default function VacancyForm({ vacancy, onSuccess, onCancel }: VacancyFor
     }
   };
 
-  const canPost = Boolean(vacancy) || (Boolean(activeCompanyId) && companies.length > 0);
+  const canPost = Boolean(vacancy) || Boolean(activeCompany?.id);
 
   return (
     <div className="bg-white rounded-3xl shadow-xl border border-neutral-200 overflow-hidden">
