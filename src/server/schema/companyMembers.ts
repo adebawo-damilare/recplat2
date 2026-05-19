@@ -21,4 +21,4 @@ export const companyMembers = pgTable(
   }),
 );
 
-export type CompanyMemberRole = "owner" | "admin" | "recruiter";
+export type CompanyMemberRole = "owner" | "manager" | "recruiter";

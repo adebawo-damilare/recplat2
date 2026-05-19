@@ -1,7 +1,7 @@
 export type CompanySummary = {
   id: string;
   name: string;
-  memberRole: "owner" | "admin" | "recruiter";
+  memberRole: "owner" | "manager" | "recruiter";
   createdAt: string;
 };
 
@@ -9,7 +9,7 @@ export type CompanyMember = {
   id: string;
   userId: string;
   email: string;
-  memberRole: "owner" | "admin" | "recruiter";
+  memberRole: "owner" | "manager" | "recruiter";
   createdAt: string;
 };
 
@@ -49,7 +49,7 @@ export async function fetchCompanyMembers(companyId: string): Promise<CompanyMem
 export async function inviteCompanyMember(
   companyId: string,
   email: string,
-  memberRole: "admin" | "recruiter" = "recruiter",
+  memberRole: "manager" | "recruiter" = "recruiter",
 ): Promise<{ ok: boolean; error?: string }> {
   const res = await fetch(`/api/companies/${encodeURIComponent(companyId)}/members`, {
     method: "POST",

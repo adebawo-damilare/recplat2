@@ -36,8 +36,8 @@ test.describe("Recruiter post vacancy (authenticated)", () => {
     await form.locator("#vacancy-category").selectOption("designers");
     await form.locator("select").nth(1).selectOption("remote");
 
+    await expect(page.getByTestId("recruiter-vacancy-company")).toBeVisible();
     await form.getByPlaceholder("e.g. Senior Frontend Engineer").fill(uniqueTitle);
-    await form.getByPlaceholder("e.g. TechFlow Systems").fill("E2E Posted Co");
     await form.getByPlaceholder("e.g. Remote / London, UK").fill("Remote");
     await form.getByPlaceholder("e.g. $120k - $150k").fill("$130k-$150k");
     await form.getByPlaceholder("Describe the role and day-to-day responsibilities").fill("E2E posted role body.");

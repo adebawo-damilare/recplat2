@@ -702,9 +702,10 @@ export default function CompanyDashboard() {
 
       {user?.canManageUserRoles ? (
         <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-8 mb-12">
-          <h3 className="font-black text-neutral-900 mb-2">Role Management</h3>
+          <h3 className="font-black text-neutral-900 mb-2">Platform account roles</h3>
           <p className="text-sm text-neutral-500 mb-5">
-            Promote or demote a user account by email. This action is restricted to allowlisted recruiter admins.
+            Set whether a user is a candidate or recruiter on TalentBridge. This is separate from company team
+            roles (owner, manager, recruiter) in the workspace above.
           </p>
           <div className="flex flex-col md:flex-row gap-3">
             <input
@@ -719,8 +720,8 @@ export default function CompanyDashboard() {
               onChange={(e) => setRoleValue(e.target.value as "candidate" | "recruiter")}
               className="px-4 py-3 rounded-xl bg-neutral-50 border border-neutral-200 outline-none"
             >
-              <option value="recruiter">Recruiter</option>
-              <option value="candidate">Candidate</option>
+              <option value="recruiter">Recruiter (platform)</option>
+              <option value="candidate">Candidate (platform)</option>
             </select>
             <button
               type="button"

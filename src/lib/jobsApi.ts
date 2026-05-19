@@ -11,7 +11,8 @@ import { isBrowserJobsPostgresOnly, shouldFallbackToFirestoreForJobsApi } from "
 export type VacancyWritePayload = {
   jobTitle: string;
   jobType: JobType;
-  companyName: string;
+  companyId?: string;
+  companyName?: string;
   location: string;
   salary: string;
   description: string;
@@ -150,13 +151,15 @@ function buildVacancyWriteJson(payload: VacancyWritePayload): Record<string, unk
   const base = {
     jobTitle: payload.jobTitle,
     jobType: payload.jobType,
-    companyName: payload.companyName,
     location: payload.location,
     salary: payload.salary,
     description: payload.description,
     requirements: payload.requirements,
   };
   const out: Record<string, unknown> = { ...base };
+  const cid = payload.companyId?.trim();
+  if (cid) out.companyId = cid;
+  else if (payload.companyName?.trim()) out.companyName = payload.companyName.trim();
   const rawCat = payload.categorySlug;
   if (rawCat === null) {
     out.categorySlug = null;

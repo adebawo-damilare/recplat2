@@ -30,18 +30,32 @@ setup.describe("seed sessions", () => {
     }
     expect(recruiterRes.ok(), await recruiterRes.text()).toBeTruthy();
 
+    const companyRes = await request.post("/api/companies", {
+      headers: { "content-type": "application/json" },
+      data: { name: "E2E Labs" },
+    });
+    expect(companyRes.ok(), await companyRes.text()).toBeTruthy();
+    const companyBody = (await companyRes.json()) as { company?: { id?: string } };
+    const e2eCompanyId = companyBody.company?.id;
+    expect(e2eCompanyId).toBeTruthy();
+
+    const jobPayload = (title: string, extra: Record<string, string> = {}) => ({
+      jobTitle: title,
+      companyId: e2eCompanyId,
+      location: "Remote",
+      salary: "$120k-$140k",
+      description: "Automated E2E vacancy",
+      requirements: "Playwright setup",
+      categorySlug: "designers",
+      jobType: "remote",
+      ...extra,
+    });
+
     const vacancyApplyRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
-      data: {
-        jobTitle: `E2E Candidate Apply ${Date.now()}`,
-        companyName: "E2E Labs",
-        location: "Remote",
-        salary: "$120k-$140k",
+      data: jobPayload(`E2E Candidate Apply ${Date.now()}`, {
         description: "Automated E2E vacancy for board apply flow",
-        requirements: "Playwright setup",
-        categorySlug: "designers",
-        jobType: "remote",
-      },
+      }),
     });
     if (!vacancyApplyRes.ok()) {
       throw new Error(`seed vacancy (apply): ${vacancyApplyRes.status()} ${await vacancyApplyRes.text()}`);
@@ -53,16 +67,11 @@ setup.describe("seed sessions", () => {
     const jobBoardApplyTitle = `E2E Job Board Apply ${Date.now()}`;
     const vacancyBoardApplyRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
-      data: {
-        jobTitle: jobBoardApplyTitle,
-        companyName: "E2E Labs",
-        location: "Remote",
-        salary: "$115k-$135k",
+      data: jobPayload(jobBoardApplyTitle, {
         description: "Automated E2E vacancy for job-board apply UI only",
         requirements: "Playwright job board apply",
-        categorySlug: "designers",
-        jobType: "remote",
-      },
+        salary: "$115k-$135k",
+      }),
     });
     expect(vacancyBoardApplyRes.ok(), await vacancyBoardApplyRes.text()).toBeTruthy();
     const vacancyBoardApplyBody = (await vacancyBoardApplyRes.json()) as { job?: { id?: string } };
@@ -72,16 +81,13 @@ setup.describe("seed sessions", () => {
     const jobDetailTitle = `E2E Job Detail ${Date.now()}`;
     const vacancyDetailRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
-      data: {
-        jobTitle: jobDetailTitle,
-        companyName: "E2E Labs",
+      data: jobPayload(jobDetailTitle, {
         location: "Hybrid",
         salary: "$110k-$130k",
         description: "Automated E2E vacancy for public job detail page",
         requirements: "Playwright job detail",
-        categorySlug: "designers",
         jobType: "hybrid",
-      },
+      }),
     });
     expect(vacancyDetailRes.ok(), await vacancyDetailRes.text()).toBeTruthy();
     const vacancyDetailBody = (await vacancyDetailRes.json()) as { job?: { id?: string } };
@@ -92,14 +98,12 @@ setup.describe("seed sessions", () => {
     const vacancyScreeningRes = await request.post("/api/jobs", {
       headers: { "content-type": "application/json" },
       data: {
-        jobTitle: screeningJobTitle,
-        companyName: "E2E Labs",
-        location: "Remote",
-        salary: "$100k-$120k",
-        description: "Automated E2E vacancy for screening flow",
-        requirements: "Playwright screening",
+        ...jobPayload(screeningJobTitle, {
+          description: "Automated E2E vacancy for screening flow",
+          requirements: "Playwright screening",
+          salary: "$100k-$120k",
+        }),
         categorySlug: "marketers",
-        jobType: "remote",
       },
     });
     expect(vacancyScreeningRes.ok(), await vacancyScreeningRes.text()).toBeTruthy();

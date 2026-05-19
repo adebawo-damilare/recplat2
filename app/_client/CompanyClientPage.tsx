@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
 import CompanyDashboard from "../../src/components/CompanyDashboard";
+import { RecruiterCompanySelectionProvider } from "../../src/lib/recruiterCompanySelection";
 
 export default function CompanyClientPage() {
   const router = useRouter();
@@ -16,7 +17,9 @@ export default function CompanyClientPage() {
 
   return (
     <div className="pt-24 min-h-screen bg-neutral-50/50" data-testid="recruiter-dashboard-page">
-      <CompanyDashboard />
+      <RecruiterCompanySelectionProvider>
+        <CompanyDashboard />
+      </RecruiterCompanySelectionProvider>
     </div>
   );
 }

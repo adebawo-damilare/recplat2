@@ -62,7 +62,28 @@ export async function userCanManageCompanyMembers(
     .where(and(eq(companyMembers.userId, userId), eq(companyMembers.companyId, companyId)))
     .limit(1);
   const role = rows[0]?.memberRole;
-  return role === "owner" || role === "admin";
+  return role === "owner" || role === "manager" || role === "admin";
+}
+
+function normalizeMemberRole(raw: string): CompanyMemberRole {
+  if (raw === "owner") return "owner";
+  if (raw === "manager" || raw === "admin") return "manager";
+  return "recruiter";
+}
+
+export async function getCompanyForMember(
+  userId: string,
+  companyId: string,
+): Promise<{ id: string; name: string } | null> {
+  if (!isUuidString(userId) || !isUuidString(companyId)) return null;
+  if (!(await userHasCompanyAccess(userId, companyId))) return null;
+  const db = getDrizzleDb();
+  const rows = await db
+    .select({ id: companies.id, name: companies.name })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 export async function userCanAccessApplication(
@@ -106,7 +127,10 @@ async function ensureMembership(
   await db
     .insert(companyMembers)
     .values({ companyId, userId, memberRole })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [companyMembers.companyId, companyMembers.userId],
+      set: { memberRole },
+    });
 }
 
 export async function listCompaniesForUser(userId: string): Promise<CompanySummary[]> {
@@ -127,9 +151,7 @@ export async function listCompaniesForUser(userId: string): Promise<CompanySumma
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
-    memberRole: (r.memberRole === "owner" || r.memberRole === "admin"
-      ? r.memberRole
-      : "recruiter") as CompanyMemberRole,
+    memberRole: normalizeMemberRole(r.memberRole),
     createdAt: r.createdAt.toISOString(),
   }));
 }
@@ -153,9 +175,7 @@ export async function listMembersForCompany(companyId: string): Promise<CompanyM
     id: r.id,
     userId: r.userId,
     email: r.email,
-    memberRole: (r.memberRole === "owner" || r.memberRole === "admin"
-      ? r.memberRole
-      : "recruiter") as CompanyMemberRole,
+    memberRole: normalizeMemberRole(r.memberRole),
     createdAt: r.createdAt.toISOString(),
   }));
 }
@@ -240,10 +260,10 @@ export async function addCompanyMemberByEmail(input: {
   if (!target) return { ok: false, reason: "USER_NOT_FOUND" };
   if (target.role !== "recruiter") return { ok: false, reason: "NOT_RECRUITER" };
 
+  const rawRole = input.memberRole as string | undefined;
+  const requested = rawRole === "admin" ? "manager" : input.memberRole;
   const role: CompanyMemberRole =
-    input.memberRole === "admin" || input.memberRole === "owner"
-      ? input.memberRole
-      : "recruiter";
+    requested === "manager" ? "manager" : requested === "owner" ? "owner" : "recruiter";
   if (role === "owner") return { ok: false, reason: "INVALID_ROLE" };
 
   const existing = await db
