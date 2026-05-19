@@ -3,6 +3,8 @@ export { companies } from "./companies";
 export { companyMembers } from "./companyMembers";
 export { vacancies } from "./vacancies";
 export { applications } from "./applications";
+export { applicationStatusEvents } from "./applicationStatusEvents";
+export { applicationNotes } from "./applicationNotes";
 export { aiAuditEvents } from "./aiAudit";
 export { users } from "./users";
 export { candidateProfiles } from "./candidateProfiles";
