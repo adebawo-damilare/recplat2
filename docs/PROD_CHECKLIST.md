@@ -73,6 +73,21 @@ That is why **`ALLOW_PROD_CHECKLIST_MUTATIONS=1`** exists when `PROD_CHECKLIST_O
 - [ ] In incognito/unauthenticated context, call `GET /api/applications/mine`
 - [ ] Expect `401` (not `503 AUTH_UNAVAILABLE`)
 
+## 5c) Email notifications (if enabled)
+
+See **`docs/PROD_EMAIL_ADMIN.md`**.
+
+- [ ] `TALENTBRIDGE_EMAIL_ENABLED=1`, `RESEND_API_KEY`, `TALENTBRIDGE_EMAIL_FROM` set on Production
+- [ ] After a screening invite, `notification_delivery_log` has `channel=email` with `status=sent` (or `failed` with detail to fix)
+
+## 5d) Platform admin cockpit (if enabled)
+
+See **`docs/PROD_EMAIL_ADMIN.md`**.
+
+- [ ] `TALENTBRIDGE_ENABLE_ROLE_ADMIN=1` and your email in `TALENTBRIDGE_ROLE_ADMIN_EMAILS`
+- [ ] **Platform admin** block visible on `/dashboard/company` for allowlisted recruiter
+- [ ] `GET /api/admin/summary` returns counts when called with allowlisted session
+
 ## 5b) Role admin controls (if enabled)
 
 - [ ] Confirm env vars are set for this deployment when role admin is intended:
