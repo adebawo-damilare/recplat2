@@ -9,12 +9,7 @@ import { Search, MapPin, Briefcase, DollarSign, ChevronRight, ChevronLeft, X } f
 import type { Vacancy } from "../lib/domainTypes";
 import { refreshTalentBridgeSession } from "../lib/authBrowser";
 import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
-import {
-  applyToVacancyWithFallback,
-  fetchPublicJobsPage,
-  JOB_BOARD_ALL_LANES_PAGE_SIZE,
-  JOB_BOARD_PAGE_SIZE,
-} from "../lib/jobsApi";
+import { applyToVacancyWithFallback, fetchPublicJobsPage, JOB_BOARD_PAGE_SIZE } from "../lib/jobsApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import { talentBridgeUiNotify } from "../lib/talentBridgeUiNotify";
 import { useTalentCategories } from "./jobs/useTalentCategories";
@@ -23,16 +18,7 @@ import type { JobType } from "../shared/jobTypes";
 import { JOB_TYPE_OPTIONS, jobTypeLabel } from "../shared/jobTypes";
 import ApplicationSentBanner from "./jobs/ApplicationSentBanner";
 
-function resolveJobBoardPageSize(
-  laneFilter: string,
-  debouncedSearch: string,
-  jobTypeFilter: "all" | JobType,
-): number {
-  if (laneFilter === "all" && !debouncedSearch && jobTypeFilter === "all") {
-    return JOB_BOARD_ALL_LANES_PAGE_SIZE;
-  }
-  return JOB_BOARD_PAGE_SIZE;
-}
+const PAGE_SIZE = JOB_BOARD_PAGE_SIZE;
 
 type JobBoardProps = {
   syncedQuery?: JobBoardSyncedQuery;
@@ -62,8 +48,6 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const [pageEntryCursors, setPageEntryCursors] = useState<(string | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  const pageSize = resolveJobBoardPageSize(laneFilter, debouncedSearch, jobTypeFilter);
-
   useEffect(() => {
     if (syncedQuery) return;
     const t = setTimeout(() => setInternalDebounced(internalSearch.trim()), 350);
@@ -74,7 +58,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     setPageIndex(0);
     setPageEntryCursors([null]);
     setNextCursor(null);
-  }, [laneFilter, debouncedSearch, jobTypeFilter, pageSize]);
+  }, [laneFilter, debouncedSearch, jobTypeFilter]);
 
   // pageEntryCursors is read inside but omitted from deps: extending the cursor chain after a fetch must not re-trigger load.
   useEffect(() => {
@@ -83,7 +67,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     const lane = laneFilter === "all" ? null : laneFilter;
     const jt = jobTypeFilter === "all" ? null : jobTypeFilter;
     setLoading(true);
-    void fetchPublicJobsPage(pageSize, cursor, lane, debouncedSearch || null, {
+    void fetchPublicJobsPage(PAGE_SIZE, cursor, lane, debouncedSearch || null, {
       includeTotal: true,
       jobType: jt,
     })
@@ -106,7 +90,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     return () => {
       cancelled = true;
     };
-  }, [pageIndex, laneFilter, debouncedSearch, jobTypeFilter, pageSize]);
+  }, [pageIndex, laneFilter, debouncedSearch, jobTypeFilter]);
 
   useEffect(() => {
     setSelectedJob(null);
@@ -154,8 +138,8 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
 
   const canGoPrev = pageIndex > 0 && !loading;
   const canGoNext = Boolean(nextCursor) && !loading;
-  const rangeStart = totalOpen === 0 ? 0 : pageIndex * pageSize + 1;
-  const rangeEnd = pageIndex * pageSize + vacancies.length;
+  const rangeStart = totalOpen === 0 ? 0 : pageIndex * PAGE_SIZE + 1;
+  const rangeEnd = pageIndex * PAGE_SIZE + vacancies.length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="job-board">
