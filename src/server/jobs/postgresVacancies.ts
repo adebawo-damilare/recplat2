@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, lt, or, sql } from "drizzle-orm";
 
 import type { Vacancy } from "../../lib/domainTypes";
 import type { JobType } from "../../shared/jobTypes";
@@ -42,20 +42,25 @@ export async function fetchOpenVacanciesPageFromPostgres(
   categorySlug?: string | null,
   searchText?: string | null,
   jobType?: JobType | null,
+  offset = 0,
 ): Promise<PaginatedVacanciesResult> {
   const pageSize = Math.max(1, Math.min(rawLimit, 50));
+  const safeOffset = Math.max(0, Math.floor(offset));
   const db = getDrizzleDb();
 
-  const cursorPayload = cursor ? decodeVacancyCursor(cursor) : null;
-  if (cursor && !cursorPayload) {
+  const cursorPayload = cursor && safeOffset === 0 ? decodeVacancyCursor(cursor) : null;
+  if (cursor && safeOffset === 0 && !cursorPayload) {
     throw new Error("INVALID_CURSOR");
   }
 
   const conditions = [eq(vacancies.status, "open")];
   if (cursorPayload) {
-    const d = new Date(cursorPayload.createdAtMs);
+    const cursorAt = new Date(cursorPayload.createdAtMs);
     conditions.push(
-      sql`(${vacancies.createdAt}, ${vacancies.id}) < (${d}::timestamptz, ${cursorPayload.id})`,
+      or(
+        lt(vacancies.createdAt, cursorAt),
+        and(eq(vacancies.createdAt, cursorAt), lt(vacancies.id, cursorPayload.id)),
+      )!,
     );
   }
 
@@ -82,7 +87,7 @@ export async function fetchOpenVacanciesPageFromPostgres(
 
   const nextWhere = and(...conditions)!;
 
-  const rows = await db
+  const listQuery = db
     .select({
       v: vacancies,
       catSlug: categories.slug,
@@ -92,7 +97,10 @@ export async function fetchOpenVacanciesPageFromPostgres(
     .leftJoin(categories, eq(vacancies.categoryId, categories.id))
     .where(nextWhere)
     .orderBy(desc(vacancies.createdAt), desc(vacancies.id))
+    .offset(safeOffset)
     .limit(pageSize + 1);
+
+  const rows = await listQuery;
 
   const hasMore = rows.length > pageSize;
   const pageRows = hasMore ? rows.slice(0, pageSize) : rows;

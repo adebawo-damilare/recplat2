@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const limitParam = Number(searchParams.get("limit") || "20");
   const cursor = searchParams.get("cursor");
+  const offsetParam = Math.max(0, Number(searchParams.get("offset") || "0") || 0);
   const categoryParam = searchParams.get("category")?.trim().toLowerCase();
   let categorySlug: string | null = null;
   if (categoryParam && categoryParam !== "all") {
@@ -63,14 +64,21 @@ export async function GET(request: NextRequest) {
 
     if (includeTotal) {
       const [page, total] = await Promise.all([
-        fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam, jobTypeFilter),
+        fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam, jobTypeFilter, offsetParam),
         countOpenVacancies(categorySlug, qParam, jobTypeFilter),
       ]);
       jobs = page.jobs;
       nextCursor = page.nextCursor;
       totalOpen = total;
     } else {
-      const page = await fetchOpenVacanciesPage(limitParam, cursor, categorySlug, qParam, jobTypeFilter);
+      const page = await fetchOpenVacanciesPage(
+        limitParam,
+        cursor,
+        categorySlug,
+        qParam,
+        jobTypeFilter,
+        offsetParam,
+      );
       jobs = page.jobs;
       nextCursor = page.nextCursor;
     }
@@ -83,6 +91,7 @@ export async function GET(request: NextRequest) {
         pagination: {
           nextCursor,
           limit: Math.max(1, Math.min(limitParam, 50)),
+          offset: offsetParam,
         },
       },
       {
