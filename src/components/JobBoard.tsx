@@ -76,10 +76,6 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
         setVacancies(jobs);
         setNextCursor(n);
         setTotalOpen(typeof tOpen === "number" ? tOpen : undefined);
-        setPageEntryCursors((prev) => {
-          if (n && prev.length === pageIndex + 1) return [...prev, n];
-          return prev;
-        });
       })
       .catch((error) => {
         if (!cancelled) console.error("Failed to fetch jobs", error);
@@ -137,9 +133,25 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   };
 
   const canGoPrev = pageIndex > 0 && !loading;
-  const canGoNext = Boolean(nextCursor) && !loading;
   const rangeStart = totalOpen === 0 ? 0 : pageIndex * PAGE_SIZE + 1;
   const rangeEnd = pageIndex * PAGE_SIZE + vacancies.length;
+  const canGoNext =
+    !loading &&
+    (typeof totalOpen === "number" ? rangeEnd < totalOpen : Boolean(nextCursor));
+
+  const goToNextPage = () => {
+    if (!nextCursor || loading) return;
+    setPageEntryCursors((prev) => {
+      if (prev.length > pageIndex + 1) return prev;
+      return [...prev, nextCursor];
+    });
+    setPageIndex((p) => p + 1);
+  };
+
+  const goToPrevPage = () => {
+    if (pageIndex <= 0 || loading) return;
+    setPageIndex((p) => Math.max(0, p - 1));
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="job-board">
@@ -259,7 +271,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
           )}
 
           <div className="flex flex-col gap-2 pt-2" data-testid="job-board-pagination">
-            {typeof totalOpen === "number" && totalOpen > vacancies.length && !loading ? (
+            {typeof totalOpen === "number" && rangeEnd < totalOpen && !loading ? (
               <p className="text-xs text-neutral-500 font-medium">
                 Use Next to see more{laneFilter === "all" ? " across all talent lanes" : ""}.
               </p>
@@ -268,7 +280,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
               <button
                 type="button"
                 disabled={!canGoPrev}
-                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                onClick={goToPrevPage}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
@@ -277,7 +289,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
               <button
                 type="button"
                 disabled={!canGoNext}
-                onClick={() => setPageIndex((p) => p + 1)}
+                onClick={goToNextPage}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
                 data-testid="job-board-next-page"
               >
