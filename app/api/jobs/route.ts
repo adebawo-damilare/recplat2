@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isMvpTalentCategorySlug } from "../../../src/shared/mvpCategories";
+import { isKnownActiveCategorySlug } from "../../../src/server/categories/publicCatalog";
 import { fetchOpenVacanciesPage, insertVacancyForOwner, countOpenVacancies } from "../../../src/server/jobs";
 import { extractCategorySlugForCreate } from "../../../src/server/jobs/vacancyPayload";
 import { enforceJobsApiRateLimit } from "../../../src/server/distributedRateLimit";
@@ -33,15 +33,12 @@ export async function GET(request: NextRequest) {
   const limitParam = Number(searchParams.get("limit") || "20");
   const cursor = searchParams.get("cursor");
   const categoryParam = searchParams.get("category")?.trim().toLowerCase();
-  const categorySlug =
-    categoryParam && categoryParam !== "all"
-      ? isMvpTalentCategorySlug(categoryParam)
-        ? categoryParam
-        : null
-      : null;
-
-  if (categoryParam && categorySlug === null && categoryParam !== "all") {
-    return NextResponse.json({ error: "Unknown category filter." }, { status: 400 });
+  let categorySlug: string | null = null;
+  if (categoryParam && categoryParam !== "all") {
+    if (!(await isKnownActiveCategorySlug(categoryParam))) {
+      return NextResponse.json({ error: "Unknown category filter." }, { status: 400 });
+    }
+    categorySlug = categoryParam;
   }
 
   const jobTypeParam = searchParams.get("jobType")?.trim().toLowerCase();

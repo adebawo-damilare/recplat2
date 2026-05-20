@@ -83,6 +83,15 @@ export async function fetchPublicJobsPage(
 /** Home hero: up to 6 open jobs plus total count for "n of N | Explore all jobs". */
 export const HOME_FEATURED_JOB_LIMIT = 6;
 
+/** Max page size for public `GET /api/jobs` (server caps at 50). */
+export const PUBLIC_JOBS_PAGE_MAX = 50;
+
+/** Default job board page size when lane/search/type filters are active. */
+export const JOB_BOARD_PAGE_SIZE = 25;
+
+/** Larger first page when every lane is shown (no lane/search/type filters). */
+export const JOB_BOARD_ALL_LANES_PAGE_SIZE = PUBLIC_JOBS_PAGE_MAX;
+
 export async function fetchHomeFeaturedJobs(): Promise<{ jobs: Vacancy[]; totalOpen: number }> {
   try {
     const { jobs, totalOpen } = await fetchPublicJobsPage(

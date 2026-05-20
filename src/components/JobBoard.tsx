@@ -9,7 +9,12 @@ import { Search, MapPin, Briefcase, DollarSign, ChevronRight, ChevronLeft, X } f
 import type { Vacancy } from "../lib/domainTypes";
 import { refreshTalentBridgeSession } from "../lib/authBrowser";
 import { fetchMyApplicationsWithFallback } from "../lib/applicationsApi";
-import { fetchPublicJobsPage, applyToVacancyWithFallback } from "../lib/jobsApi";
+import {
+  applyToVacancyWithFallback,
+  fetchPublicJobsPage,
+  JOB_BOARD_ALL_LANES_PAGE_SIZE,
+  JOB_BOARD_PAGE_SIZE,
+} from "../lib/jobsApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
 import { talentBridgeUiNotify } from "../lib/talentBridgeUiNotify";
 import { useTalentCategories } from "./jobs/useTalentCategories";
@@ -18,7 +23,16 @@ import type { JobType } from "../shared/jobTypes";
 import { JOB_TYPE_OPTIONS, jobTypeLabel } from "../shared/jobTypes";
 import ApplicationSentBanner from "./jobs/ApplicationSentBanner";
 
-const PAGE_SIZE = 10;
+function resolveJobBoardPageSize(
+  laneFilter: string,
+  debouncedSearch: string,
+  jobTypeFilter: "all" | JobType,
+): number {
+  if (laneFilter === "all" && !debouncedSearch && jobTypeFilter === "all") {
+    return JOB_BOARD_ALL_LANES_PAGE_SIZE;
+  }
+  return JOB_BOARD_PAGE_SIZE;
+}
 
 type JobBoardProps = {
   syncedQuery?: JobBoardSyncedQuery;
@@ -48,6 +62,8 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const [pageEntryCursors, setPageEntryCursors] = useState<(string | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
+  const pageSize = resolveJobBoardPageSize(laneFilter, debouncedSearch, jobTypeFilter);
+
   useEffect(() => {
     if (syncedQuery) return;
     const t = setTimeout(() => setInternalDebounced(internalSearch.trim()), 350);
@@ -58,7 +74,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     setPageIndex(0);
     setPageEntryCursors([null]);
     setNextCursor(null);
-  }, [laneFilter, debouncedSearch, jobTypeFilter]);
+  }, [laneFilter, debouncedSearch, jobTypeFilter, pageSize]);
 
   // pageEntryCursors is read inside but omitted from deps: extending the cursor chain after a fetch must not re-trigger load.
   useEffect(() => {
@@ -67,7 +83,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     const lane = laneFilter === "all" ? null : laneFilter;
     const jt = jobTypeFilter === "all" ? null : jobTypeFilter;
     setLoading(true);
-    void fetchPublicJobsPage(PAGE_SIZE, cursor, lane, debouncedSearch || null, {
+    void fetchPublicJobsPage(pageSize, cursor, lane, debouncedSearch || null, {
       includeTotal: true,
       jobType: jt,
     })
@@ -90,7 +106,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
     return () => {
       cancelled = true;
     };
-  }, [pageIndex, laneFilter, debouncedSearch, jobTypeFilter]);
+  }, [pageIndex, laneFilter, debouncedSearch, jobTypeFilter, pageSize]);
 
   useEffect(() => {
     setSelectedJob(null);
@@ -138,6 +154,8 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
 
   const canGoPrev = pageIndex > 0 && !loading;
   const canGoNext = Boolean(nextCursor) && !loading;
+  const rangeStart = totalOpen === 0 ? 0 : pageIndex * pageSize + 1;
+  const rangeEnd = pageIndex * pageSize + vacancies.length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="job-board">
@@ -148,7 +166,11 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
           <p className="text-sm text-neutral-500 mt-2" data-testid="job-board-total-open">
             {totalOpen === 0
               ? "No open roles match these filters."
-              : `${totalOpen} open role${totalOpen === 1 ? "" : "s"} match your filters`}
+              : loading
+                ? `${totalOpen} open role${totalOpen === 1 ? "" : "s"} match your filters`
+                : vacancies.length > 0
+                  ? `Showing ${rangeStart}–${rangeEnd} of ${totalOpen} open role${totalOpen === 1 ? "" : "s"}`
+                  : `${totalOpen} open role${totalOpen === 1 ? "" : "s"} match your filters`}
           </p>
         ) : null}
       </div>
@@ -252,24 +274,32 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 pt-2">
-            <button
-              type="button"
-              disabled={!canGoPrev}
-              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
-            >
-              <ChevronLeft className="w-4 h-4" /> Previous
-            </button>
-            <span className="text-xs font-semibold text-neutral-500">Page {pageIndex + 1}</span>
-            <button
-              type="button"
-              disabled={!canGoNext}
-              onClick={() => setPageIndex((p) => p + 1)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
+          <div className="flex flex-col gap-2 pt-2" data-testid="job-board-pagination">
+            {typeof totalOpen === "number" && totalOpen > vacancies.length && !loading ? (
+              <p className="text-xs text-neutral-500 font-medium">
+                Use Next to see more{laneFilter === "all" ? " across all talent lanes" : ""}.
+              </p>
+            ) : null}
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={!canGoPrev}
+                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <ChevronLeft className="w-4 h-4" /> Previous
+              </button>
+              <span className="text-xs font-semibold text-neutral-500">Page {pageIndex + 1}</span>
+              <button
+                type="button"
+                disabled={!canGoNext}
+                onClick={() => setPageIndex((p) => p + 1)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
+                data-testid="job-board-next-page"
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
