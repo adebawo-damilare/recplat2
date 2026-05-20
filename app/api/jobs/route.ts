@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
   if (!catParse.ok) {
     return NextResponse.json({ error: "categorySlug must be a string when provided." }, { status: 400 });
   }
-  if (catParse.slug && !isMvpTalentCategorySlug(catParse.slug)) {
+  if (catParse.slug && !(await isKnownActiveCategorySlug(catParse.slug))) {
     return NextResponse.json({ error: "Unknown category slug." }, { status: 400 });
   }
 
