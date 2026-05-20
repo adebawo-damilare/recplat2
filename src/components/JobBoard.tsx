@@ -45,8 +45,6 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const [totalOpen, setTotalOpen] = useState<number | undefined>(undefined);
   const [selectedJob, setSelectedJob] = useState<Vacancy | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageEntryCursors, setPageEntryCursors] = useState<(string | null)[]>([null]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   useEffect(() => {
     if (syncedQuery) return;
@@ -56,25 +54,21 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
 
   useLayoutEffect(() => {
     setPageIndex(0);
-    setPageEntryCursors([null]);
-    setNextCursor(null);
   }, [laneFilter, debouncedSearch, jobTypeFilter]);
 
-  // pageEntryCursors is read inside but omitted from deps: extending the cursor chain after a fetch must not re-trigger load.
   useEffect(() => {
     let cancelled = false;
-    const cursor = pageEntryCursors[pageIndex] ?? null;
     const lane = laneFilter === "all" ? null : laneFilter;
     const jt = jobTypeFilter === "all" ? null : jobTypeFilter;
     setLoading(true);
-    void fetchPublicJobsPage(PAGE_SIZE, cursor, lane, debouncedSearch || null, {
+    void fetchPublicJobsPage(PAGE_SIZE, null, lane, debouncedSearch || null, {
       includeTotal: true,
       jobType: jt,
+      offset: pageIndex * PAGE_SIZE,
     })
-      .then(({ jobs, nextCursor: n, totalOpen: tOpen }) => {
+      .then(({ jobs, totalOpen: tOpen }) => {
         if (cancelled) return;
         setVacancies(jobs);
-        setNextCursor(n);
         setTotalOpen(typeof tOpen === "number" ? tOpen : undefined);
       })
       .catch((error) => {
@@ -135,23 +129,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const canGoPrev = pageIndex > 0 && !loading;
   const rangeStart = totalOpen === 0 ? 0 : pageIndex * PAGE_SIZE + 1;
   const rangeEnd = pageIndex * PAGE_SIZE + vacancies.length;
-  const canGoNext =
-    !loading &&
-    (typeof totalOpen === "number" ? rangeEnd < totalOpen : Boolean(nextCursor));
-
-  const goToNextPage = () => {
-    if (!nextCursor || loading) return;
-    setPageEntryCursors((prev) => {
-      if (prev.length > pageIndex + 1) return prev;
-      return [...prev, nextCursor];
-    });
-    setPageIndex((p) => p + 1);
-  };
-
-  const goToPrevPage = () => {
-    if (pageIndex <= 0 || loading) return;
-    setPageIndex((p) => Math.max(0, p - 1));
-  };
+  const canGoNext = !loading && typeof totalOpen === "number" && rangeEnd < totalOpen;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="job-board">
@@ -280,7 +258,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
               <button
                 type="button"
                 disabled={!canGoPrev}
-                onClick={goToPrevPage}
+                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
@@ -289,7 +267,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
               <button
                 type="button"
                 disabled={!canGoNext}
-                onClick={goToNextPage}
+                onClick={() => setPageIndex((p) => p + 1)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
                 data-testid="job-board-next-page"
               >

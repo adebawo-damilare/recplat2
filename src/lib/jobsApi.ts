@@ -34,16 +34,18 @@ export async function fetchPublicJobsPage(
   cursor?: string | null,
   categorySlug?: string | null,
   q?: string | null,
-  options?: { includeTotal?: boolean; jobType?: JobType | null },
+  options?: { includeTotal?: boolean; jobType?: JobType | null; offset?: number },
 ): Promise<{ jobs: Vacancy[]; nextCursor: string | null; totalOpen?: number }> {
   const csRaw = categorySlug?.trim().toLowerCase();
   const cs = csRaw && csRaw !== "all" ? csRaw : null;
   const includeTotal = options?.includeTotal === true;
   const jobType = options?.jobType ?? null;
+  const offset = Math.max(0, options?.offset ?? 0);
 
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
-    if (cursor) qs.set("cursor", cursor);
+    if (offset > 0) qs.set("offset", String(offset));
+    else if (cursor) qs.set("cursor", cursor);
     if (cs) qs.set("category", cs);
     if (q?.trim()) qs.set("q", q.trim().slice(0, 200));
     if (includeTotal) qs.set("includeTotal", "1");

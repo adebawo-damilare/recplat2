@@ -50,6 +50,19 @@ test.describe("Public API", () => {
     expect(typeof body.pagination?.nextCursor === "string" || body.pagination?.nextCursor === null).toBeTruthy();
   });
 
+  test("GET /api/jobs offset=10 returns page 2 when enough open jobs exist", async ({ request }) => {
+    const first = await request.get("/api/jobs?limit=10&includeTotal=1");
+    if (first.status() === 503) return;
+    expect(first.ok()).toBeTruthy();
+    const firstBody = (await first.json()) as { totalOpen?: number; jobs?: unknown[] };
+    if ((firstBody.totalOpen ?? 0) <= 10) return;
+
+    const second = await request.get("/api/jobs?limit=10&offset=10&includeTotal=1");
+    expect(second.ok(), await second.text()).toBeTruthy();
+    const secondBody = (await second.json()) as { jobs?: { id?: string }[] };
+    expect(secondBody.jobs?.length ?? 0).toBeGreaterThan(0);
+  });
+
   test("GET /api/jobs rejects unknown jobType filter with 400", async ({ request }) => {
     const res = await request.get("/api/jobs?limit=1&jobType=not_a_real_type");
     if (res.status() === 503) return;
