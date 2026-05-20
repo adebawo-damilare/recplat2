@@ -44,7 +44,10 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [totalOpen, setTotalOpen] = useState<number | undefined>(undefined);
   const [selectedJob, setSelectedJob] = useState<Vacancy | null>(null);
-  const [pageIndex, setPageIndex] = useState(0);
+  const [internalPageIndex, setInternalPageIndex] = useState(0);
+
+  const pageIndex = syncedQuery?.pageIndex ?? internalPageIndex;
+  const onPageChange = syncedQuery?.onPageChange ?? setInternalPageIndex;
 
   useEffect(() => {
     if (syncedQuery) return;
@@ -53,8 +56,9 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   }, [internalSearch, syncedQuery]);
 
   useLayoutEffect(() => {
-    setPageIndex(0);
-  }, [laneFilter, debouncedSearch, jobTypeFilter]);
+    if (syncedQuery) return;
+    setInternalPageIndex(0);
+  }, [laneFilter, debouncedSearch, jobTypeFilter, syncedQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,7 +262,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
               <button
                 type="button"
                 disabled={!canGoPrev}
-                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                onClick={() => onPageChange(Math.max(0, pageIndex - 1))}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
@@ -267,7 +271,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
               <button
                 type="button"
                 disabled={!canGoNext}
-                onClick={() => setPageIndex((p) => p + 1)}
+                onClick={() => onPageChange(pageIndex + 1)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
                 data-testid="job-board-next-page"
               >

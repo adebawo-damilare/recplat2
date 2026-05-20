@@ -28,6 +28,20 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page.getByTestId("job-board-search")).toHaveValue("engineer", { timeout: 10_000 });
   });
 
+  test("jobs page hydrates page from URL query", async ({ page }) => {
+    await page.goto("/jobs", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("job-board")).toBeVisible();
+    const totalLine = page.getByTestId("job-board-total-open");
+    const totalText = await totalLine.textContent({ timeout: 20_000 }).catch(() => "");
+    const match = totalText?.match(/of (\d+) open/);
+    if (!match || Number(match[1]) <= 10) return;
+
+    await page.goto("/jobs?page=2", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/[?&]page=2/);
+    await expect(page.getByText("Page 2")).toBeVisible({ timeout: 20_000 });
+    await expect(totalLine).toContainText(/Showing 11/, { timeout: 20_000 });
+  });
+
   test("talent route shows sign-in when logged out (board after auth)", async ({ page }) => {
     await page.goto("/talent", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("talent-sign-in-gate")).toBeVisible({ timeout: 30_000 });
