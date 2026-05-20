@@ -83,6 +83,9 @@ export async function fetchPublicJobsPage(
 /** Home hero: up to 6 open jobs plus total count for "n of N | Explore all jobs". */
 export const HOME_FEATURED_JOB_LIMIT = 6;
 
+/** Job board list page size (cursor pagination via Next on the board). */
+export const JOB_BOARD_PAGE_SIZE = 10;
+
 export async function fetchHomeFeaturedJobs(): Promise<{ jobs: Vacancy[]; totalOpen: number }> {
   try {
     const { jobs, totalOpen } = await fetchPublicJobsPage(

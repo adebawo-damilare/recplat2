@@ -8,12 +8,12 @@ import { isMvpTalentCategorySlug } from "../../shared/mvpCategories";
 /** Resolves slug to FK id only for known MVP lanes and active catalog rows. */
 export async function resolveActiveCategoryIdBySlug(rawSlug: string): Promise<string | null> {
   const slug = rawSlug.trim().toLowerCase();
-  if (!slug || !isMvpTalentCategorySlug(slug)) {
+  if (!slug) {
     return null;
   }
 
   if (!hasPostgresConfigured()) {
-    return null;
+    return isMvpTalentCategorySlug(slug) ? slug : null;
   }
 
   const db = getDrizzleDb();
