@@ -317,13 +317,22 @@ export default function PipelineCandidatePanel({
                         {screeningInvitationStatusLabel(screening.status)}
                       </p>
                       {screening.status === "submitted" && screeningDetail?.answers.length ? (
-                        <div className="space-y-3 max-h-48 overflow-y-auto">
-                          {screeningDetail.answers.map((a) => (
-                            <div key={a.questionId} className="text-sm">
-                              <p className="font-semibold text-neutral-800 mb-1">{a.prompt}</p>
-                              <p className="text-neutral-600 whitespace-pre-wrap line-clamp-4">{a.answerText}</p>
-                            </div>
-                          ))}
+                        <div className="space-y-3">
+                          <div className="max-h-48 overflow-y-auto space-y-3">
+                            {screeningDetail.answers.map((a) => (
+                              <div key={a.questionId} className="text-sm">
+                                <p className="font-semibold text-neutral-800 mb-1">{a.prompt}</p>
+                                <p className="text-neutral-600 whitespace-pre-wrap line-clamp-4">{a.answerText}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <a
+                            href={`/dashboard/screenings/${encodeURIComponent(screening.id)}`}
+                            className="inline-flex text-xs font-bold text-violet-800 hover:underline"
+                            data-testid="recruiter-pipeline-open-screening-review"
+                          >
+                            Open full review
+                          </a>
                         </div>
                       ) : screening.status === "pending" ? (
                         <p className="text-sm text-neutral-600">Waiting for the candidate to submit responses.</p>
