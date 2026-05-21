@@ -160,5 +160,26 @@ test.describe("Recruiter screening flow (authenticated)", () => {
     ]);
     await expect(page.getByTestId("recruiter-screening-review")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(/E2E answer 1/i)).toBeVisible({ timeout: 15_000 });
+
+    const scoreButtons = page.locator("[data-testid^='recruiter-screening-score-'][data-testid$='-4']");
+    const scoreCount = await scoreButtons.count();
+    expect(scoreCount).toBeGreaterThan(0);
+    for (let i = 0; i < scoreCount; i += 1) {
+      await scoreButtons.nth(i).click();
+    }
+
+    await page.getByTestId("recruiter-screening-reviewer-note").fill("E2E recruiter overall note.");
+
+    const reviewPatch = page.waitForResponse(
+      (r) => r.url().includes("/review") && r.request().method() === "PATCH" && r.ok(),
+      { timeout: 45_000 },
+    );
+    await page.getByTestId("recruiter-screening-save-scores").click();
+    await reviewPatch;
+
+    await expect(page.getByTestId("recruiter-screening-overall-score")).toContainText(/Overall 4 \/ 5/, {
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("recruiter-screening-overall-score")).toContainText(/saved/i);
   });
 });

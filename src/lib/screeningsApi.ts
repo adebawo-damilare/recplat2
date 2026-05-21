@@ -29,10 +29,28 @@ export type ScreeningCandidateSummary = {
   email: string;
 };
 
+export type ScreeningQuestionScore = {
+  questionId: string;
+  score: number;
+  note: string | null;
+};
+
+export type ScreeningReview = {
+  id: string;
+  invitationId: string;
+  reviewerUserId: string;
+  overallScore: number | null;
+  reviewerNote: string | null;
+  questionScores: ScreeningQuestionScore[];
+  reviewedAt: string;
+  updatedAt: string;
+};
+
 export type ScreeningInvitationDetail = ScreeningInvitationSummary & {
   questions: ScreeningQuestion[];
   answers: ScreeningAnswer[];
   candidate?: ScreeningCandidateSummary;
+  review?: ScreeningReview | null;
 };
 
 export async function inviteToScreening(applicationId: string): Promise<{
@@ -159,6 +177,24 @@ export async function fetchScreeningMatrix(options?: {
     questions: raw.questions,
     rows: raw.rows,
   };
+}
+
+export async function saveScreeningReview(
+  invitationId: string,
+  payload: {
+    questionScores: { questionId: string; score: number; note?: string | null }[];
+    reviewerNote?: string | null;
+  },
+): Promise<{ ok: boolean; review?: ScreeningReview; error?: string }> {
+  const res = await fetch(`/api/screenings/${encodeURIComponent(invitationId)}/review`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+  const raw = (await res.json().catch(() => ({}))) as { review?: ScreeningReview; error?: string };
+  if (!res.ok) return { ok: false, error: raw.error || "Could not save screening scores." };
+  return { ok: true, review: raw.review };
 }
 
 export async function submitScreening(

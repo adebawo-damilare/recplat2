@@ -9,6 +9,7 @@ export {
   listScreeningMatrixForOwner,
   submitScreeningInvitation,
 } from "./postgresScreenings";
+export { loadScreeningReviewForInvitation, upsertScreeningReviewForInvitation } from "./postgresScreeningReviews";
 export type {
   ScreeningAnswerDto,
   ScreeningFollowUpItem,
@@ -19,3 +20,4 @@ export type {
   ScreeningMatrixRow,
   ScreeningQuestionDto,
 } from "./postgresScreenings";
+export type { ScreeningReviewDto, ScreeningQuestionScoreDto } from "./postgresScreeningReviews";

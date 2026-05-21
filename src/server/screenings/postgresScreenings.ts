@@ -7,6 +7,7 @@ import {
   type ScreeningInvitationStatus,
 } from "../../shared/screeningPilot";
 import { formatCandidateFullName } from "../../lib/candidateName";
+import type { ScreeningReviewDto } from "./postgresScreeningReviews";
 import {
   listCompanyIdsForUser,
   userCanAccessApplication,
@@ -56,6 +57,8 @@ export type ScreeningInvitationDetail = ScreeningInvitationSummary & {
   answers: ScreeningAnswerDto[];
   /** Present when a recruiter loads the invitation (review page). */
   candidate?: ScreeningCandidateSummary;
+  /** Recruiter scores for a submitted screening, when saved. */
+  review?: ScreeningReviewDto | null;
 };
 
 type ApplicationContext = {
@@ -282,6 +285,12 @@ export async function getInvitationDetailForUser(
         }
       : undefined;
 
+  let review: ScreeningReviewDto | null | undefined;
+  if (role === "recruiter" && r.status === "submitted") {
+    const { loadScreeningReviewForInvitation } = await import("./postgresScreeningReviews");
+    review = await loadScreeningReviewForInvitation(invitationId);
+  }
+
   return {
     ok: true,
     invitation: {
@@ -289,6 +298,7 @@ export async function getInvitationDetailForUser(
       questions,
       answers,
       ...(candidate ? { candidate } : {}),
+      ...(role === "recruiter" ? { review: review ?? null } : {}),
     },
   };
 }
