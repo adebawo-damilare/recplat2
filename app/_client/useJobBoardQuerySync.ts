@@ -34,35 +34,6 @@ function pageParamFromIndex(pageIndex: number): string {
   return pageIndex <= 0 ? "" : String(pageIndex + 1);
 }
 
-type JobBoardQueryQuad = { cat: string; q: string; jt: string; page: string };
-
-function quadFromSearchParams(searchParams: { get: (k: string) => string | null }): JobBoardQueryQuad {
-  return {
-    cat: (searchParams.get("category") || "").trim().toLowerCase(),
-    q: qFromSearchParams(searchParams),
-    jt: (searchParams.get("jobType") || "").trim().toLowerCase(),
-    page: (searchParams.get("page") || "").trim(),
-  };
-}
-
-function quadFromState(
-  lane: string,
-  q: string,
-  jt: "all" | JobType,
-  pageIndex: number,
-): JobBoardQueryQuad {
-  return {
-    cat: lane === "all" ? "" : lane.trim().toLowerCase(),
-    q: q.trim().slice(0, 200),
-    jt: jt === "all" ? "" : jt,
-    page: pageParamFromIndex(pageIndex),
-  };
-}
-
-function quadsEqual(a: JobBoardQueryQuad, b: JobBoardQueryQuad): boolean {
-  return a.cat === b.cat && a.q === b.q && a.jt === b.jt && a.page === b.page;
-}
-
 /** Canonical query string for /jobs (category, q, jobType, page). */
 function serializeToQuery(lane: string, q: string, jt: "all" | JobType, pageIndex: number): string {
   const p = new URLSearchParams();
@@ -76,14 +47,24 @@ function serializeToQuery(lane: string, q: string, jt: "all" | JobType, pageInde
   return s ? `?${s}` : "";
 }
 
+function locationMatchesState(
+  pathname: string,
+  lane: string,
+  q: string,
+  jt: "all" | JobType,
+  pageIndex: number,
+): boolean {
+  if (typeof window === "undefined") return true;
+  const desired = `${pathname}${serializeToQuery(lane, q, jt, pageIndex)}`;
+  const current = `${pathname}${window.location.search}`;
+  return desired === current;
+}
+
 /**
  * Keeps /jobs filters and pagination in the query string for shareable URLs (Next app only).
- * Wired from `JobsClientPage` into `JobBoard` as `syncedQuery`.
  *
- * `q` is pushed on debounce. It is **not** read back from the URL when only `q`
- * changes (avoids clobbering in-progress typing while the address bar lags).
- * Full `q` sync happens on first hydration, when **category or jobType** in the
- * URL changes, or on **popstate** (browser back/forward).
+ * URL writes happen in one `useEffect` only (never duplicate `router.replace` from handlers).
+ * Compare against `window.location` — not `searchParams` in deps — to avoid replace loops.
  *
  * `page` is 1-based in the URL (`?page=2` = second page). Filter changes reset to page 1.
  */
@@ -92,34 +73,23 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
   const router = useRouter();
   const pathname = usePathname();
 
-  const [laneFilter, setLaneFilter] = useState("all");
-  const [jobTypeFilter, setJobTypeFilter] = useState<"all" | JobType>("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pageIndex, setPageIndex] = useState(0);
+  const [laneFilter, setLaneFilter] = useState(() =>
+    normalizeLaneFromParams(searchParams.get("category") || "all", lanes),
+  );
+  const [jobTypeFilter, setJobTypeFilter] = useState<"all" | JobType>(() =>
+    normalizeJobTypeFromParams(searchParams.get("jobType")),
+  );
+  const [searchTerm, setSearchTerm] = useState(() => qFromSearchParams(searchParams));
+  const [debouncedSearch, setDebouncedSearch] = useState(() => qFromSearchParams(searchParams));
+  const [pageIndex, setPageIndex] = useState(() => pageIndexFromSearchParams(searchParams));
+
   const prevLaneJobTypeKey = useRef<string | null>(null);
   const prevDebouncedSearch = useRef<string | null>(null);
   const routerRef = useRef(router);
   routerRef.current = router;
-  /** Quad we last `router.replace`d; until URL matches, ignore stale URL hydration. */
-  const lastPushedQuad = useRef<JobBoardQueryQuad | null>(null);
+  const urlSyncReady = useRef(false);
 
   useLayoutEffect(() => {
-    const fromWin =
-      typeof window !== "undefined"
-        ? quadFromSearchParams(new URLSearchParams(window.location.search))
-        : null;
-    const fromSp = quadFromSearchParams(searchParams);
-
-    if (lastPushedQuad.current !== null) {
-      const winOk = fromWin !== null && quadsEqual(fromWin, lastPushedQuad.current);
-      const spOk = quadsEqual(fromSp, lastPushedQuad.current);
-      if (!winOk && !spOk) {
-        return;
-      }
-      lastPushedQuad.current = null;
-    }
-
     const spSource =
       typeof window !== "undefined" ? new URLSearchParams(window.location.search) : searchParams;
     const lane = normalizeLaneFromParams(spSource.get("category") || "all", lanes);
@@ -130,12 +100,14 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
 
     setLaneFilter(lane);
     setJobTypeFilter(jt);
-    setPageIndex(pageFromUrl);
+    setPageIndex((cur) => (cur === pageFromUrl ? cur : pageFromUrl));
 
     if (prevLaneJobTypeKey.current === null) {
       prevLaneJobTypeKey.current = catJt;
+      prevDebouncedSearch.current = qUrl.trim();
       setSearchTerm(qUrl);
       setDebouncedSearch(qUrl.trim());
+      urlSyncReady.current = true;
       return;
     }
 
@@ -160,21 +132,18 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
   }, [debouncedSearch]);
 
   useEffect(() => {
-    const stateQ = quadFromState(laneFilter, debouncedSearch, jobTypeFilter, pageIndex);
-    const urlSource =
-      typeof window !== "undefined" ? new URLSearchParams(window.location.search) : searchParams;
-    const urlQ = quadFromSearchParams(urlSource);
-    if (quadsEqual(stateQ, urlQ)) return;
-    lastPushedQuad.current = stateQ;
+    if (!urlSyncReady.current) return;
+    if (locationMatchesState(pathname, laneFilter, debouncedSearch, jobTypeFilter, pageIndex)) {
+      return;
+    }
     routerRef.current.replace(
       `${pathname}${serializeToQuery(laneFilter, debouncedSearch, jobTypeFilter, pageIndex)}`,
       { scroll: false },
     );
-  }, [debouncedSearch, laneFilter, jobTypeFilter, pageIndex, pathname, searchParams.toString()]);
+  }, [debouncedSearch, laneFilter, jobTypeFilter, pageIndex, pathname]);
 
   useEffect(() => {
     const syncFromWindow = () => {
-      lastPushedQuad.current = null;
       const sp = new URLSearchParams(window.location.search);
       const lane = normalizeLaneFromParams(sp.get("category") || "all", lanes);
       const jt = normalizeJobTypeFromParams(sp.get("jobType"));
@@ -190,29 +159,19 @@ export function useJobBoardQuerySync(lanes: { slug: string }[]): JobBoardSyncedQ
     return () => window.removeEventListener("popstate", syncFromWindow);
   }, [lanes]);
 
-  const pushUrl = (lane: string, q: string, jt: "all" | JobType, page: number) => {
-    const nextQuad = quadFromState(lane, q, jt, page);
-    lastPushedQuad.current = nextQuad;
-    router.replace(`${pathname}${serializeToQuery(lane, q, jt, page)}`, { scroll: false });
-  };
-
   const onLaneChange = (lane: string) => {
     const nextLane = lane === "all" ? "all" : normalizeLaneFromParams(lane, lanes);
     setLaneFilter(nextLane);
     setPageIndex(0);
-    pushUrl(nextLane, debouncedSearch, jobTypeFilter, 0);
   };
 
   const onJobTypeChange = (jt: "all" | JobType) => {
     setJobTypeFilter(jt);
     setPageIndex(0);
-    pushUrl(laneFilter, debouncedSearch, jt, 0);
   };
 
   const onPageChange = (nextIndex: number) => {
-    const safe = Math.max(0, Math.floor(nextIndex));
-    setPageIndex(safe);
-    pushUrl(laneFilter, debouncedSearch, jobTypeFilter, safe);
+    setPageIndex(Math.max(0, Math.floor(nextIndex)));
   };
 
   return {
