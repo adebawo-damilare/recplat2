@@ -11,6 +11,8 @@ export { candidateProfiles } from "./candidateProfiles";
 export { categoryScreeningQuestions } from "./categoryScreeningQuestions";
 export { screeningInvitations } from "./screeningInvitations";
 export { screeningAnswers } from "./screeningAnswers";
+export { screeningReviews } from "./screeningReviews";
+export { screeningReviewScores } from "./screeningReviewScores";
 export { categoryFields } from "./categoryFields";
 export { candidateProfileFieldValues } from "./candidateProfileFieldValues";
 export { notifications } from "./notifications";

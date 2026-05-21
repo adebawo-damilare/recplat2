@@ -96,7 +96,13 @@ export default function ScreeningDetailClientPage({ invitationId }: ScreeningDet
   }
 
   if (user.role === "recruiter") {
-    return <RecruiterScreeningReview detail={detail} />;
+    return (
+      <RecruiterScreeningReview
+        invitationId={invitationId}
+        detail={detail}
+        onReload={load}
+      />
+    );
   }
 
   return (
