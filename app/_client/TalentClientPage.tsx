@@ -1,13 +1,32 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import SignIn from "../../src/components/SignIn";
 import TalentBoard from "../../src/components/TalentBoard";
 import PortfolioViewer from "../../src/components/PortfolioViewer";
 import type { CandidateProfile } from "../../src/lib/domainTypes";
 import { formatCandidateFullName } from "../../src/lib/candidateName";
 import { useTalentBridgeUser } from "../../src/lib/useTalentBridgeUser";
+import { useTalentBoardQuerySync } from "./useTalentBoardQuerySync";
+
+function TalentBoardWithSyncedQuery({
+  onViewPortfolio,
+}: {
+  onViewPortfolio: (candidate: CandidateProfile) => void;
+}) {
+  const syncedQuery = useTalentBoardQuerySync();
+  return <TalentBoard syncedQuery={syncedQuery} onViewPortfolio={onViewPortfolio} />;
+}
+
+function TalentBoardFallback() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="h-12 w-2/3 max-w-md rounded-xl bg-neutral-200/80 animate-pulse mb-8" />
+      <div className="h-14 w-full rounded-2xl bg-neutral-200/60 animate-pulse" />
+    </div>
+  );
+}
 
 export default function TalentClientPage() {
   const router = useRouter();
@@ -35,7 +54,9 @@ export default function TalentClientPage() {
 
   return (
     <div className="pt-24 min-h-screen bg-neutral-50/50" data-testid="talent-board-root">
-      <TalentBoard onViewPortfolio={(candidate) => setPortfolioCandidate(candidate)} />
+      <Suspense fallback={<TalentBoardFallback />}>
+        <TalentBoardWithSyncedQuery onViewPortfolio={(candidate) => setPortfolioCandidate(candidate)} />
+      </Suspense>
       {portfolioCandidate && (
         <PortfolioViewer
           content={portfolioCandidate.portfolioContent}
