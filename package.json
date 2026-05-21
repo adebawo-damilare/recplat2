@@ -38,6 +38,7 @@
     "release:preview:db:check:migrations": "dotenv -o -e .env.local -- npm run db:check:migrations",
     "release:preview:db:repair-migration-checksums": "dotenv -o -e .env.local -- npm run db:repair-migration-checksums",
     "release:prod:smoke": "dotenv -e .env.release -- npm run smoke:api",
+    "release:prod:smoke:screening-review": "dotenv -o -e .env.release -- node scripts/smoke-screening-review-prod.mjs",
     "test:e2e": "playwright test",
     "test:e2e:auth": "node scripts/e2e-auth.mjs",
     "test:e2e:ui": "playwright test --ui",

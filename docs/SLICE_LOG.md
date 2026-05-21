@@ -12,4 +12,4 @@ Chronological record of shipped slices and post-deploy checks. Update when mergi
 | 2026-05-19 | E2E: pipeline audit, admin APIs, email ledger | `f4c1053` | `test:e2e:auth` 34/34 |
 | 2026-05-19 | Docs: prod email/admin runbook | `e3bd3ae` | configure Vercel per **`docs/PROD_EMAIL_ADMIN.md`** |
 
-**After each prod deploy:** `npm run release:prod:db:check:migrations` → `npm run release:prod:smoke` (optionally `SMOKE_EXPECT_POSTGRES_READY=1`). Optional prod config: **`docs/PROD_EMAIL_ADMIN.md`**.
+**After each prod deploy:** `npm run release:prod:db:check:migrations` → `npm run release:prod:smoke` (optionally `SMOKE_EXPECT_POSTGRES_READY=1`). Screening scores: `npm run release:prod:smoke:screening-review` (optional `SMOKE_RECRUITER_EMAIL` / `SMOKE_RECRUITER_PASSWORD` for API round-trip). Optional prod config: **`docs/PROD_EMAIL_ADMIN.md`**.
