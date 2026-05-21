@@ -136,6 +136,8 @@ export type ScreeningFollowUpItem = {
   submittedAt: string | null;
   reminderText: string;
   linkPath: string | null;
+  overallScore: number | null;
+  reviewedAt: string | null;
 };
 
 export async function fetchScreeningFollowUp(options?: {

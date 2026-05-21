@@ -4,7 +4,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { BellRing, ClipboardCopy, RefreshCw } from "lucide-react";
+import { BellRing, ClipboardCopy, RefreshCw, Star } from "lucide-react";
 
 import {
   SCREENING_ENABLED_CATEGORY_SLUGS,
@@ -181,6 +181,42 @@ function FollowUpRowBody({ item }: { item: ScreeningFollowUpItem }) {
         ) : null}
       </div>
       <p className="text-sm text-neutral-600 mt-2 line-clamp-3">{item.reminderText}</p>
+      {item.kind === "awaiting_review" ? (
+        <FollowUpScoreBadge overallScore={item.overallScore} reviewedAt={item.reviewedAt} />
+      ) : null}
     </div>
+  );
+}
+
+function FollowUpScoreBadge({
+  overallScore,
+  reviewedAt,
+}: {
+  overallScore: number | null;
+  reviewedAt: string | null;
+}) {
+  if (overallScore != null) {
+    return (
+      <p
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 border border-amber-100"
+        data-testid="recruiter-follow-up-score"
+      >
+        <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" aria-hidden />
+        Scored {overallScore}/5
+        {reviewedAt ? (
+          <span className="font-medium text-amber-800/70">
+            · {new Date(reviewedAt).toLocaleDateString()}
+          </span>
+        ) : null}
+      </p>
+    );
+  }
+  return (
+    <p
+      className="mt-3 inline-flex items-center rounded-lg bg-neutral-100 px-2.5 py-1 text-xs font-bold text-neutral-600 border border-neutral-200"
+      data-testid="recruiter-follow-up-not-scored"
+    >
+      Not scored yet
+    </p>
   );
 }
