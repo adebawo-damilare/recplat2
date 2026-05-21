@@ -180,6 +180,16 @@ async function main() {
         const allFour = saved.questionScores.every((s) => s.score === 4);
         if (!allFour) throw new Error("persisted question scores mismatch");
         console.log("prod-api: review persisted after save (scores round-trip ok)");
+
+        const followUp = await fetchJson("GET", "/api/screenings/follow-up", { headers: { cookie } });
+        if (!followUp.res.ok) {
+          throw new Error(`GET follow-up failed ${followUp.res.status}`);
+        }
+        const row = (followUp.body.items ?? []).find((i) => i.invitationId === pick.invitation_id);
+        if (!row?.overallScore) {
+          throw new Error("follow-up queue missing overallScore after save");
+        }
+        console.log(`prod-api: follow-up shows Scored ${row.overallScore}/5 for ${pick.job_title}`);
       }
     }
 

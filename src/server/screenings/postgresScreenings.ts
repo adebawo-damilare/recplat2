@@ -21,6 +21,7 @@ import {
   categoryScreeningQuestions,
   screeningAnswers,
   screeningInvitations,
+  screeningReviews,
   vacancies,
 } from "../schema";
 
@@ -597,6 +598,9 @@ export type ScreeningFollowUpItem = {
   submittedAt: string | null;
   reminderText: string;
   linkPath: string | null;
+  /** Set when a recruiter saved scores for a submitted screening. */
+  overallScore: number | null;
+  reviewedAt: string | null;
 };
 
 function buildFollowUpReminderText(input: {
@@ -658,6 +662,8 @@ export async function listRecruiterScreeningFollowUpForOwner(
       invitationStatus: screeningInvitations.status,
       invitedAt: screeningInvitations.invitedAt,
       submittedAt: screeningInvitations.submittedAt,
+      overallScore: screeningReviews.overallScore,
+      reviewedAt: screeningReviews.reviewedAt,
     })
     .from(applications)
     .innerJoin(vacancies, eq(applications.vacancyId, vacancies.id))
@@ -667,6 +673,7 @@ export async function listRecruiterScreeningFollowUpForOwner(
       sql`${applications.candidateUserId} = ${candidateProfiles.userId}::text`,
     )
     .leftJoin(screeningInvitations, eq(screeningInvitations.applicationId, applications.id))
+    .leftJoin(screeningReviews, eq(screeningReviews.invitationId, screeningInvitations.id))
     .where(and(inArray(vacancies.companyId, companyIds), inArray(categories.slug, laneSlugs))!)
     .orderBy(desc(applications.createdAt));
 
@@ -714,6 +721,10 @@ export async function listRecruiterScreeningFollowUpForOwner(
         categorySlug,
       }),
       linkPath,
+      overallScore:
+        kind === "awaiting_review" && r.overallScore != null ? Number(r.overallScore) : null,
+      reviewedAt:
+        kind === "awaiting_review" && r.reviewedAt ? r.reviewedAt.toISOString() : null,
     });
   }
 
@@ -721,6 +732,9 @@ export async function listRecruiterScreeningFollowUpForOwner(
     const rank = FOLLOW_UP_KIND_RANK[a.kind] - FOLLOW_UP_KIND_RANK[b.kind];
     if (rank !== 0) return rank;
     if (a.kind === "awaiting_review") {
+      const aScored = a.overallScore != null ? 1 : 0;
+      const bScored = b.overallScore != null ? 1 : 0;
+      if (aScored !== bScored) return aScored - bScored;
       return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
     }
     if (a.kind === "awaiting_candidate") {

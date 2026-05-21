@@ -181,5 +181,20 @@ test.describe("Recruiter screening flow (authenticated)", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("recruiter-screening-overall-score")).toContainText(/saved/i);
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/screenings/follow-up") && r.request().method() === "GET" && r.ok(),
+        { timeout: 45_000 },
+      ),
+      page.goto("/dashboard/company", { waitUntil: "domcontentloaded" }),
+    ]);
+    const followUp = page.getByTestId("recruiter-screening-follow-up");
+    await followUp.scrollIntoViewIfNeeded();
+    const scoredRow = followUp
+      .locator("li")
+      .filter({ hasText: titlePattern })
+      .filter({ has: page.getByTestId("recruiter-follow-up-score") });
+    await expect(scoredRow.first()).toContainText(/Scored 4\/5/, { timeout: 30_000 });
   });
 });
