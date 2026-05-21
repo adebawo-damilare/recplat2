@@ -140,16 +140,8 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight mb-4">Discover Your Next Role</h1>
         <p className="text-neutral-600 text-lg">Browse through active opportunities from innovative companies.</p>
-        {typeof totalOpen === "number" ? (
-          <p className="text-sm text-neutral-500 mt-2" data-testid="job-board-total-open">
-            {totalOpen === 0
-              ? "No open roles match these filters."
-              : loading
-                ? `${totalOpen} open role${totalOpen === 1 ? "" : "s"} match your filters`
-                : vacancies.length > 0
-                  ? `Showing ${rangeStart}–${rangeEnd} of ${totalOpen} open role${totalOpen === 1 ? "" : "s"}`
-                  : `${totalOpen} open role${totalOpen === 1 ? "" : "s"} match your filters`}
-          </p>
+        {typeof totalOpen === "number" && totalOpen === 0 && !loading ? (
+          <p className="text-sm text-neutral-500 mt-2">No open roles match these filters.</p>
         ) : null}
       </div>
 
@@ -253,11 +245,6 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
           )}
 
           <div className="flex flex-col gap-2 pt-2" data-testid="job-board-pagination">
-            {typeof totalOpen === "number" && rangeEnd < totalOpen && !loading ? (
-              <p className="text-xs text-neutral-500 font-medium">
-                Use Next to see more{laneFilter === "all" ? " across all talent lanes" : ""}.
-              </p>
-            ) : null}
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
@@ -278,6 +265,14 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
                 Next <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+            {typeof totalOpen === "number" && totalOpen > 0 && !loading ? (
+              <p
+                className="text-center text-[11px] text-neutral-400 font-medium"
+                data-testid="job-board-total-open"
+              >
+                Showing {rangeStart}–{rangeEnd} of {totalOpen}
+              </p>
+            ) : null}
           </div>
         </div>
 
