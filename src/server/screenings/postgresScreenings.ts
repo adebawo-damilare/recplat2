@@ -6,6 +6,7 @@ import {
   screeningLaneLabel,
   type ScreeningInvitationStatus,
 } from "../../shared/screeningPilot";
+import { formatCandidateFullName } from "../../lib/candidateName";
 import {
   listCompanyIdsForUser,
   userCanAccessApplication,
@@ -45,9 +46,16 @@ export type ScreeningInvitationSummary = {
   vacancy: { jobTitle: string; companyName: string; categorySlug: string | null };
 };
 
+export type ScreeningCandidateSummary = {
+  name: string;
+  email: string;
+};
+
 export type ScreeningInvitationDetail = ScreeningInvitationSummary & {
   questions: ScreeningQuestionDto[];
   answers: ScreeningAnswerDto[];
+  /** Present when a recruiter loads the invitation (review page). */
+  candidate?: ScreeningCandidateSummary;
 };
 
 type ApplicationContext = {
@@ -235,10 +243,17 @@ export async function getInvitationDetailForUser(
       categorySlug: categories.slug,
       postedByUserId: vacancies.postedByUserId,
       companyId: vacancies.companyId,
+      firstName: candidateProfiles.firstName,
+      lastName: candidateProfiles.lastName,
+      emailSnapshot: candidateProfiles.emailSnapshot,
     })
     .from(screeningInvitations)
     .innerJoin(vacancies, eq(screeningInvitations.vacancyId, vacancies.id))
     .leftJoin(categories, eq(vacancies.categoryId, categories.id))
+    .leftJoin(
+      candidateProfiles,
+      sql`${screeningInvitations.candidateUserId} = ${candidateProfiles.userId}::text`,
+    )
     .where(eq(screeningInvitations.id, invitationId))
     .limit(1);
 
@@ -256,12 +271,24 @@ export async function getInvitationDetailForUser(
   const answers =
     r.status === "submitted" ? await loadAnswersForInvitation(invitationId) : [];
 
+  const candidate =
+    role === "recruiter"
+      ? {
+          name:
+            formatCandidateFullName(r.firstName, r.lastName) ||
+            r.emailSnapshot?.trim() ||
+            "Candidate",
+          email: r.emailSnapshot?.trim() || "",
+        }
+      : undefined;
+
   return {
     ok: true,
     invitation: {
       ...mapInvitationSummary(r),
       questions,
       answers,
+      ...(candidate ? { candidate } : {}),
     },
   };
 }

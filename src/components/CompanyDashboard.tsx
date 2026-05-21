@@ -71,7 +71,12 @@ function vacancyMatchesSearch(v: Vacancy, qRaw: string): boolean {
   return hay.includes(q);
 }
 
-export default function CompanyDashboard() {
+type CompanyDashboardProps = {
+  /** Deep-link from screening review (`/dashboard/company?application=…`). */
+  initialOpenApplicationId?: string | null;
+};
+
+export default function CompanyDashboard({ initialOpenApplicationId = null }: CompanyDashboardProps) {
   const { user } = useTalentBridgeUser();
   const { companies, loading: companiesLoading, refreshCompanies } = useRecruiterCompanySelection();
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
@@ -240,6 +245,12 @@ export default function CompanyDashboard() {
     },
     [pipelineRows, screeningMatrixLaneFilter],
   );
+
+  useEffect(() => {
+    const appId = initialOpenApplicationId?.trim();
+    if (!appId || pipelineLoading) return;
+    void openPipelineApplicant(appId);
+  }, [initialOpenApplicationId, pipelineLoading, openPipelineApplicant]);
 
   const handleDelete = async (id: string) => {
     const confirmed = await talentBridgeUiConfirm("Are you sure you want to close this vacancy?", {

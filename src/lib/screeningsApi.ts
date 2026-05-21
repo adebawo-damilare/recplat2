@@ -24,9 +24,15 @@ export type ScreeningAnswer = {
   answerText: string;
 };
 
+export type ScreeningCandidateSummary = {
+  name: string;
+  email: string;
+};
+
 export type ScreeningInvitationDetail = ScreeningInvitationSummary & {
   questions: ScreeningQuestion[];
   answers: ScreeningAnswer[];
+  candidate?: ScreeningCandidateSummary;
 };
 
 export async function inviteToScreening(applicationId: string): Promise<{

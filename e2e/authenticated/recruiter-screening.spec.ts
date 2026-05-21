@@ -15,7 +15,7 @@ test.describe("Recruiter screening flow (authenticated)", () => {
   test.describe.configure({ mode: "serial" });
 
   test("invite → candidate submit → matrix row + CSV export", async ({ page, browser }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
 
     const seedRaw = await readFile(seedPath, "utf8");
     const seed = JSON.parse(seedRaw) as {
@@ -75,6 +75,9 @@ test.describe("Recruiter screening flow (authenticated)", () => {
       storageState: path.join(__dirname, "..", ".auth", "candidate.json"),
     });
     const candidatePage = await candidateContext.newPage();
+    await candidatePage.addInitScript(() => {
+      (window as unknown as { __TALENTBRIDGE_E2E_NO_ALERTS?: boolean }).__TALENTBRIDGE_E2E_NO_ALERTS = true;
+    });
 
     const detailPromise = candidatePage.waitForResponse(
       (r) =>
@@ -142,5 +145,20 @@ test.describe("Recruiter screening flow (authenticated)", () => {
     await exportBtn.click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/screening-marketers.*\.csv$/i);
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes(`/api/screenings/${encodeURIComponent(invitationId)}`) &&
+          r.request().method() === "GET" &&
+          r.ok(),
+        { timeout: 45_000 },
+      ),
+      page.goto(`/dashboard/screenings/${encodeURIComponent(invitationId)}`, {
+        waitUntil: "domcontentloaded",
+      }),
+    ]);
+    await expect(page.getByTestId("recruiter-screening-review")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/E2E answer 1/i)).toBeVisible({ timeout: 15_000 });
   });
 });
