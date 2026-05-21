@@ -9,31 +9,42 @@ import { Search, User, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { CandidateProfile } from "../lib/domainTypes";
 import { formatCandidateFullName } from "../lib/candidateName";
 import { fetchCandidatesPage } from "../lib/candidatesApi";
+import type { TalentBoardSyncedQuery } from "./talent/talentBoardSyncedQueryTypes";
 import ProfileCard from "./ProfileCard";
 
 const PAGE_SIZE = 10;
 
 interface TalentBoardProps {
   onViewPortfolio: (candidate: CandidateProfile) => void;
+  syncedQuery?: TalentBoardSyncedQuery;
 }
 
-export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
+export default function TalentBoard({ onViewPortfolio, syncedQuery }: TalentBoardProps) {
+  const [internalSearch, setInternalSearch] = useState("");
+  const [internalDebounced, setInternalDebounced] = useState("");
+  const [internalPageIndex, setInternalPageIndex] = useState(0);
+
+  const searchTerm = syncedQuery?.searchTerm ?? internalSearch;
+  const setSearchTerm = syncedQuery?.setSearchTerm ?? setInternalSearch;
+  const debouncedSearch = syncedQuery?.debouncedSearch ?? internalDebounced;
+  const pageIndex = syncedQuery?.pageIndex ?? internalPageIndex;
+  const onPageChange = syncedQuery?.onPageChange ?? setInternalPageIndex;
+
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pageIndex, setPageIndex] = useState(0);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
+    if (syncedQuery) return;
+    const t = setTimeout(() => setInternalDebounced(internalSearch.trim()), 350);
     return () => clearTimeout(t);
-  }, [searchTerm]);
+  }, [internalSearch, syncedQuery]);
 
   useLayoutEffect(() => {
-    setPageIndex(0);
-  }, [debouncedSearch]);
+    if (syncedQuery) return;
+    setInternalPageIndex(0);
+  }, [debouncedSearch, syncedQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +92,7 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
           <input
             type="text"
+            data-testid="talent-board-search"
             placeholder="Search by name, skills, or headline..."
             className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
             value={searchTerm}
@@ -152,7 +164,7 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
               <button
                 type="button"
                 disabled={!canGoPrev}
-                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                onClick={() => onPageChange(Math.max(0, pageIndex - 1))}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
@@ -161,14 +173,17 @@ export default function TalentBoard({ onViewPortfolio }: TalentBoardProps) {
               <button
                 type="button"
                 disabled={!canGoNext}
-                onClick={() => setPageIndex((p) => p + 1)}
+                onClick={() => onPageChange(pageIndex + 1)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
             </div>
             {total > 0 && (
-              <p className="text-center text-[11px] text-neutral-400 font-medium">
+              <p
+                className="text-center text-[11px] text-neutral-400 font-medium"
+                data-testid="talent-board-total"
+              >
                 Showing {start}–{end} of {total}
               </p>
             )}
