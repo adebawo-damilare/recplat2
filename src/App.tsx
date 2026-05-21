@@ -18,6 +18,7 @@ import CompanyDashboard from "./components/CompanyDashboard";
 import HomePage from "./components/home/HomePage";
 import AppNav from "./components/layout/AppNav";
 import AppFooter from "./components/layout/AppFooter";
+import AlertProvider from "./components/ui/alert/AlertProvider";
 import { AppView } from "./appView";
 import { formatCandidateFullName } from "./lib/candidateName";
 
@@ -85,6 +86,7 @@ export default function App() {
   };
 
   return (
+    <AlertProvider>
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans">
       <AppNav currentView={view} user={user} onNavigate={navigateTo} onAuthAction={handleAuthAction} />
 
@@ -147,5 +149,6 @@ export default function App() {
 
       <AppFooter onNavigate={navigateTo} />
     </div>
+    </AlertProvider>
   );
 }

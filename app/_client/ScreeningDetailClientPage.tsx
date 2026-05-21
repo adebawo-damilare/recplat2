@@ -60,10 +60,10 @@ export default function ScreeningDetailClientPage({ invitationId }: ScreeningDet
       }));
       const result = await submitScreening(invitationId, payload);
       if (!result.ok) {
-        talentBridgeUiNotify(result.error || "Could not submit screening.");
+        talentBridgeUiNotify(result.error || "Could not submit screening.", "error");
         return;
       }
-      talentBridgeUiNotify("Screening submitted. Thank you!");
+      talentBridgeUiNotify("Screening submitted. Thank you!", "success");
       await load();
     } finally {
       setSubmitting(false);

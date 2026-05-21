@@ -9,6 +9,7 @@ import { User, Mail, Briefcase, FileText, Code, Clock, Save, ArrowLeft, External
 import { fetchCategoryProfileFields, type CategoryFieldDefinition } from "../lib/categoryFieldsApi";
 import { fetchMyCandidateProfile, saveMyCandidateProfile } from "../lib/candidatesApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
+import { talentBridgeUiNotify } from "../lib/talentBridgeUiNotify";
 import { candidateHasDisplayableName } from "../lib/candidateName";
 import { MVP_TALENT_CATEGORIES } from "../shared/mvpCategories";
 
@@ -101,12 +102,12 @@ export default function CandidateForm({ onSuccess, onCancel }: CandidateFormProp
         categoryFieldValues: formData.categoryFieldValues,
       });
       if (!saved) {
-        alert("Failed to save profile. Check that you are signed in.");
+        talentBridgeUiNotify("Failed to save profile. Check that you are signed in.", "error");
         return;
       }
       onSuccess();
     } catch (error) {
-      alert("Failed to save profile. Please see console for details.");
+      talentBridgeUiNotify("Failed to save profile. Please see console for details.", "error");
     } finally {
       setLoading(false);
     }

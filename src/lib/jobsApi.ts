@@ -257,7 +257,7 @@ export type ApplyToVacancyResult = "created" | "already_applied" | false;
 export async function applyToVacancyWithFallback(vacancyId: string): Promise<ApplyToVacancyResult> {
   const signedIn = await ensureSignedIn();
   if (!signedIn) {
-    talentBridgeUiNotify("Please sign in to apply for jobs.");
+    talentBridgeUiNotify("Please sign in to apply for jobs.", "info");
     return false;
   }
 
@@ -276,7 +276,7 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<App
     };
     if (res.ok) {
       if (raw.created === false) {
-        talentBridgeUiNotify(raw.message || "You have already applied to this job.");
+        talentBridgeUiNotify(raw.message || "You have already applied to this job.", "warning");
         return "already_applied";
       }
       return "created";
@@ -284,15 +284,16 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<App
     if (res.status === 403 && raw.code === "FORBIDDEN_ROLE") {
       talentBridgeUiNotify(
         raw.error || "This action requires a candidate account. Sign in as a candidate or register a new account.",
+        "warning",
       );
       return false;
     }
     if (res.status === 400 || res.status === 404) {
-      talentBridgeUiNotify(raw.error || "This job is not available to apply to.");
+      talentBridgeUiNotify(raw.error || "This job is not available to apply to.", "error");
       return false;
     }
     if (res.status === 429) {
-      talentBridgeUiNotify(raw.error || "Too many requests. Wait a moment and try again.");
+      talentBridgeUiNotify(raw.error || "Too many requests. Wait a moment and try again.", "warning");
       return false;
     }
     if (res.status === 503) {
@@ -301,15 +302,16 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<App
           (raw.code === "JOBS_POSTGRES_REQUIRED"
             ? "Applications are not configured on this deployment (DATABASE_URL missing)."
             : "Database temporarily unavailable. Try again shortly."),
+        "error",
       );
       return false;
     }
     if (res.status >= 500) {
-      talentBridgeUiNotify(raw.error || "Server error while saving your application. Try again.");
+      talentBridgeUiNotify(raw.error || "Server error while saving your application. Try again.", "error");
       return false;
     }
     if (!shouldFallback(res.status, raw)) {
-      talentBridgeUiNotify(raw.error || "Unable to apply right now.");
+      talentBridgeUiNotify(raw.error || "Unable to apply right now.", "error");
       return false;
     }
   } catch (error) {
@@ -317,10 +319,10 @@ export async function applyToVacancyWithFallback(vacancyId: string): Promise<App
   }
 
   if (isBrowserJobsPostgresOnly()) {
-    talentBridgeUiNotify("Could not reach the applications API. Check your connection and try again.");
+    talentBridgeUiNotify("Could not reach the applications API. Check your connection and try again.", "error");
     return false;
   }
 
-  talentBridgeUiNotify("Unable to apply right now.");
+  talentBridgeUiNotify("Unable to apply right now.", "error");
   return false;
 }
