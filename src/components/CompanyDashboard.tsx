@@ -28,6 +28,7 @@ import {
   type RecruiterBoardApplication,
 } from "../lib/recruiterApplicationsApi";
 import { useTalentBridgeUser } from "../lib/useTalentBridgeUser";
+import { talentBridgeUiConfirm } from "../lib/talentBridgeUiNotify";
 import { formatCandidateFullName } from "../lib/candidateName";
 import { jobTypeLabel } from "../shared/jobTypes";
 import VacancyForm from './VacancyForm';
@@ -241,7 +242,12 @@ export default function CompanyDashboard() {
   );
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to close this vacancy?")) return;
+    const confirmed = await talentBridgeUiConfirm("Are you sure you want to close this vacancy?", {
+      title: "Close vacancy",
+      confirmLabel: "Close vacancy",
+      cancelLabel: "Keep open",
+    });
+    if (!confirmed) return;
     try {
       await closeVacancyWithFallback(id);
       await fetchDataForUser();

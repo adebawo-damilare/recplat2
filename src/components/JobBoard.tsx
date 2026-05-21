@@ -105,11 +105,11 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
   const handleApply = async () => {
     const u = await refreshTalentBridgeSession();
     if (!u) {
-      talentBridgeUiNotify("Please sign in to apply for jobs.");
+      talentBridgeUiNotify("Please sign in to apply for jobs.", "info");
       return;
     }
     if (u.role !== "candidate") {
-      talentBridgeUiNotify("Only candidate accounts can apply. Use a candidate account or register as a candidate.");
+      talentBridgeUiNotify("Only candidate accounts can apply. Use a candidate account or register as a candidate.", "warning");
       return;
     }
     if (!selectedJob?.id) return;
@@ -121,7 +121,7 @@ export default function JobBoard({ syncedQuery }: JobBoardProps) {
         setAppliedJobs((prev) => new Set(prev).add(selectedJob.id!));
       }
       if (result === "created") {
-        talentBridgeUiNotify("Application sent successfully!");
+        talentBridgeUiNotify("Application sent successfully!", "success");
       }
     } catch (error) {
       console.error("Failed to apply", error);

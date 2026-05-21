@@ -81,12 +81,6 @@ test.describe("Recruiter vacancy lifecycle (authenticated)", () => {
     await expect(jobHeading).toBeVisible({ timeout: 30_000 });
     const card = jobHeading.locator("..").locator("..").locator("..");
 
-    page.once("dialog", (d) => {
-      expect(d.type()).toBe("confirm");
-      expect(d.message()).toContain("close");
-      void d.accept();
-    });
-
     const patchPromise = page.waitForResponse(
       (r) =>
         r.request().method() === "PATCH" &&
@@ -95,6 +89,9 @@ test.describe("Recruiter vacancy lifecycle (authenticated)", () => {
       { timeout: 45_000 },
     );
     await card.getByRole("button", { name: /Close Vacancy/i }).click();
+    await expect(page.getByTestId("app-alert")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("app-alert")).toContainText(/close this vacancy/i);
+    await page.getByTestId("app-alert-confirm").click();
     const patchRes = await patchPromise;
     expect(patchRes.ok(), await patchRes.text()).toBeTruthy();
 

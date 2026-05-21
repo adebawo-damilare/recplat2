@@ -106,7 +106,7 @@ export default function PipelineCandidatePanel({
     try {
       const ok = await postApplicationNote(row.id, noteText.trim());
       if (!ok) {
-        talentBridgeUiNotify("Could not save note.");
+        talentBridgeUiNotify("Could not save note.", "error");
         return;
       }
       setNoteText("");
@@ -122,13 +122,14 @@ export default function PipelineCandidatePanel({
     try {
       const result = await inviteToScreening(row.id);
       if (!result.ok) {
-        talentBridgeUiNotify(result.error || "Could not send screening invitation.");
+        talentBridgeUiNotify(result.error || "Could not send screening invitation.", "error");
         return;
       }
       talentBridgeUiNotify(
         result.invitation?.status === "submitted"
           ? "Candidate already completed this screening."
           : "Screening invitation sent.",
+        result.invitation?.status === "submitted" ? "info" : "success",
       );
       await loadScreening(row.id);
       onScreeningChange?.();

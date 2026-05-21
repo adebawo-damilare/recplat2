@@ -17,11 +17,11 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
   const handleApply = async () => {
     const u = await refreshTalentBridgeSession();
     if (!u) {
-      talentBridgeUiNotify("Please sign in to apply for jobs.");
+      talentBridgeUiNotify("Please sign in to apply for jobs.", "info");
       return;
     }
     if (u.role !== "candidate") {
-      talentBridgeUiNotify("Only candidate accounts can apply. Use a candidate account or register as a candidate.");
+      talentBridgeUiNotify("Only candidate accounts can apply. Use a candidate account or register as a candidate.", "warning");
       return;
     }
     if (!job.id) return;
@@ -32,7 +32,7 @@ export default function JobDetailClientPage({ job }: { job: Vacancy }) {
         setApplied(true);
       }
       if (result === "created") {
-        talentBridgeUiNotify("Application sent successfully!");
+        talentBridgeUiNotify("Application sent successfully!", "success");
       }
     } catch (e) {
       console.error(e);

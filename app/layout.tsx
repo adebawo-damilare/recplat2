@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AppProviders from "./_client/AppProviders";
 import NextAppNav from "../src/components/layout/next/NextAppNav";
 import NextAppFooter from "../src/components/layout/next/NextAppFooter";
 
@@ -23,9 +24,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body className="min-h-screen bg-neutral-50 text-neutral-900 font-sans">
-        <NextAppNav />
-        <main>{children}</main>
-        <NextAppFooter />
+        <AppProviders>
+          <NextAppNav />
+          <main>{children}</main>
+          <NextAppFooter />
+        </AppProviders>
       </body>
     </html>
   );
