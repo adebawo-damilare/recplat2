@@ -33,7 +33,7 @@ test.describe("Marketing shell / navigation", () => {
     await expect(page.getByTestId("job-board")).toBeVisible();
     const totalLine = page.getByTestId("job-board-total-open");
     const totalText = await totalLine.textContent({ timeout: 20_000 }).catch(() => "");
-    const match = totalText?.match(/of (\d+) open/);
+    const match = totalText?.match(/of (\d+)/);
     if (!match || Number(match[1]) <= 10) return;
 
     await page.goto("/jobs?page=2", { waitUntil: "domcontentloaded" });
